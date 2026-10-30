@@ -47,6 +47,9 @@ let _fbAuthInstance = null;
 let _fbInitPromise = null;
 
 function isFirebaseClientConfigured() {
+  if (typeof appState !== "undefined" && appState && appState.serverFirebaseEnabled === false && !getNightMerchantApiBaseUrl()) {
+    return false;
+  }
   const cfg = getNightMerchantRuntimeConfig();
   const fb = cfg && cfg.firebaseConfig && typeof cfg.firebaseConfig === "object" ? cfg.firebaseConfig : null;
   return Boolean(fb && typeof fb.apiKey === "string" && fb.apiKey.trim() && typeof fb.projectId === "string" && fb.projectId.trim());
@@ -61,8 +64,8 @@ async function initFirebaseClientIfConfigured() {
     try {
       const cfg = getNightMerchantRuntimeConfig();
       const [appMod, authMod] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
+        import("https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js"),
       ]);
       const existingApps = typeof appMod.getApps === "function" ? appMod.getApps() : [];
       const fbApp = existingApps.length > 0 ? existingApps[0] : appMod.initializeApp(cfg.firebaseConfig);
@@ -109,6 +112,18 @@ async function signInWithFirebaseCustomToken(customToken) {
   if (!auth || !_fbAuthModule) return null;
   const cred = await _fbAuthModule.signInWithCustomToken(auth, customToken);
   return cred && cred.user ? cred.user.getIdToken() : null;
+}
+
+async function signInWithFirebaseEmailPassword(email, password) {
+  if (!email || !password || !isFirebaseClientConfigured()) return null;
+  const auth = await initFirebaseClientIfConfigured();
+  if (!auth || !_fbAuthModule || typeof _fbAuthModule.signInWithEmailAndPassword !== "function") return null;
+  try {
+    const cred = await _fbAuthModule.signInWithEmailAndPassword(auth, email, password);
+    return cred && cred.user ? cred.user.getIdToken() : null;
+  } catch (_err) {
+    return null;
+  }
 }
 
 async function signInWithFirebaseGooglePopup() {
@@ -2583,7 +2598,10 @@ async function bootstrap() {
   try {
     let me = await apiRequest("/api/auth/me");
     appState.googleClientId = me.googleClientId || "";
-    if (!me.authenticated) {
+    if (typeof me.firebaseEnabled === "boolean") {
+      appState.serverFirebaseEnabled = me.firebaseEnabled;
+    }
+    if (!me.authenticated && me.firebaseEnabled !== false) {
       const existingToken = await getFirebaseIdToken();
       if (existingToken) {
         try {
@@ -4177,8 +4195,12 @@ function renderAuthView() {
         payload.preferredColor = selectedColor;
       }
       const res = await apiRequest(endpoint, "POST", payload);
-      if (res.firebaseCustomToken && isFirebaseClientConfigured()) {
-        await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+      if (isFirebaseClientConfigured()) {
+        if (res.firebaseCustomToken) {
+          await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+        } else if (res.user && res.user.email && payload.password) {
+          await signInWithFirebaseEmailPassword(res.user.email, payload.password);
+        }
       }
       appState.user = res.user;
       appState.csrfToken = res.csrfToken || null;
@@ -4209,8 +4231,12 @@ function renderAuthView() {
           preferredColor: "Ruby",
         });
       }
-      if (res.firebaseCustomToken && isFirebaseClientConfigured()) {
-        await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+      if (isFirebaseClientConfigured()) {
+        if (res.firebaseCustomToken) {
+          await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+        } else if (res.user && res.user.email) {
+          await signInWithFirebaseEmailPassword(res.user.email, demoPass);
+        }
       }
       appState.user = res.user;
       appState.csrfToken = res.csrfToken || null;

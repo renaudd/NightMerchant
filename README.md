@@ -47,7 +47,8 @@ python3 src/server.py
 | Variable | Description |
 | :--- | :--- |
 | `NIGHTMERCHANT_USE_FIREBASE` | Set to `1` to use Firebase Auth + Cloud Firestore |
-| `FIREBASE_PROJECT_ID` | Firebase / Google Cloud Project ID |
+| `FIREBASE_PROJECT_ID` | Firebase / Google Cloud Project ID (`nightmerchant-f183d`) |
+| `FIREBASE_WEB_API_KEY` | Firebase Web API Key from `firebaseConfig.apiKey` (for password login verification) |
 | `NIGHTMERCHANT_PUBLIC_URL` | `https://dashiellrenaud.com/nightmerchant` |
 | `NIGHTMERCHANT_ALLOWED_ORIGINS` | Optional comma-separated extra CORS origins |
 | `EMAILJS_SERVICE_ID` | EmailJS Service ID for Invite-Only game emails |
