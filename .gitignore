@@ -1,0 +1,30 @@
+# OS & Editor metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python caches & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Local SQLite databases, logs, raw working camera assets, and runtime secrets
+*.db
+*.db-shm
+*.db-wal
+/data/
+/assets/
+!src/data/
+!public/assets/
+server.log
+*.log
+.env
+.env.*
+.session_secret
+*service-account*.json
+*credentials*.json
+firebase-debug.log

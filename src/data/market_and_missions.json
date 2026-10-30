@@ -1,0 +1,3189 @@
+{
+  "market": [
+    {
+      "id": "grn_1",
+      "name": "Spelt",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        14,
+        9,
+        6,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_2",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        10,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_3",
+      "name": "Millet",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        9,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_4",
+      "name": "Rye",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        18,
+        11,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_5",
+      "name": "Barley",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        17,
+        10,
+        7,
+        4,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_6",
+      "name": "Oats",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        9,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_7",
+      "name": "Spelt",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        22,
+        14,
+        8,
+        5,
+        3
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_8",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        20,
+        12,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_9",
+      "name": "Barley",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        9,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_10",
+      "name": "Oats",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        12,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_11",
+      "name": "Rye",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        9,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_12",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        10,
+        7,
+        5,
+        4,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "cw_1",
+      "name": "Cretan",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        42,
+        26,
+        16,
+        11,
+        6
+      ],
+      "buy": [
+        14,
+        10,
+        7,
+        5,
+        3
+      ]
+    },
+    {
+      "id": "cw_2",
+      "name": "Ceretanum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        36,
+        23,
+        14,
+        10,
+        5
+      ],
+      "buy": [
+        12,
+        9,
+        6,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "cw_3",
+      "name": "Passum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        20,
+        12,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "cw_4",
+      "name": "Massico",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        30,
+        19,
+        12,
+        8,
+        4
+      ],
+      "buy": [
+        10,
+        8,
+        5,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "cw_5",
+      "name": "Vienna",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        32,
+        20,
+        13,
+        9,
+        5
+      ],
+      "buy": [
+        11,
+        8,
+        5,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "cw_6",
+      "name": "Posca",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        18,
+        11,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "cw_7",
+      "name": "Carenum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        22,
+        14,
+        8,
+        5,
+        3
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "cw_8",
+      "name": "Narbo",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        24,
+        15,
+        9,
+        6,
+        4
+      ],
+      "buy": [
+        8,
+        6,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "cw_9",
+      "name": "Massalia",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        28,
+        17,
+        11,
+        7,
+        4
+      ],
+      "buy": [
+        9,
+        7,
+        5,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "fw_1",
+      "name": "Pompeiian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        72,
+        45,
+        28,
+        20,
+        10
+      ],
+      "buy": [
+        24,
+        18,
+        12,
+        9,
+        5
+      ]
+    },
+    {
+      "id": "fw_2",
+      "name": "Lunense",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        74,
+        47,
+        28,
+        21,
+        10
+      ],
+      "buy": [
+        25,
+        19,
+        13,
+        10,
+        5
+      ]
+    },
+    {
+      "id": "fw_3",
+      "name": "Praetutium",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        77,
+        49,
+        30,
+        22,
+        11
+      ],
+      "buy": [
+        26,
+        20,
+        13,
+        10,
+        6
+      ]
+    },
+    {
+      "id": "fw_4",
+      "name": "Rhaeticum",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        85,
+        54,
+        34,
+        25,
+        13
+      ],
+      "buy": [
+        29,
+        22,
+        14,
+        11,
+        7
+      ]
+    },
+    {
+      "id": "fw_5",
+      "name": "Hadrianum",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        89,
+        58,
+        36,
+        26,
+        13
+      ],
+      "buy": [
+        31,
+        23,
+        16,
+        12,
+        7
+      ]
+    },
+    {
+      "id": "fw_6",
+      "name": "Alban",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        92,
+        62,
+        39,
+        28,
+        14
+      ],
+      "buy": [
+        33,
+        25,
+        17,
+        13,
+        8
+      ]
+    },
+    {
+      "id": "fw_7",
+      "name": "Falernian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        94,
+        64,
+        41,
+        30,
+        16
+      ],
+      "buy": [
+        35,
+        26,
+        17,
+        14,
+        9
+      ]
+    },
+    {
+      "id": "fw_8",
+      "name": "Caecuban",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        96,
+        65,
+        42,
+        31,
+        16
+      ],
+      "buy": [
+        36,
+        27,
+        18,
+        14,
+        9
+      ]
+    },
+    {
+      "id": "fw_9",
+      "name": "Opimian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        97,
+        66,
+        43,
+        32,
+        18
+      ],
+      "buy": [
+        37,
+        28,
+        18,
+        15,
+        10
+      ]
+    },
+    {
+      "id": "ma_1",
+      "name": "Chickens",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        20,
+        12,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "ma_2",
+      "name": "Pheasants",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        22,
+        14,
+        8,
+        5,
+        3
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "ma_3",
+      "name": "Hares",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        18,
+        11,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "ma_4",
+      "name": "Lamb",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        32,
+        20,
+        13,
+        9,
+        5
+      ],
+      "buy": [
+        11,
+        8,
+        5,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "ma_5",
+      "name": "Pig",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        42,
+        26,
+        16,
+        11,
+        6
+      ],
+      "buy": [
+        14,
+        10,
+        7,
+        5,
+        3
+      ]
+    },
+    {
+      "id": "ma_6",
+      "name": "Geese",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        30,
+        19,
+        12,
+        8,
+        4
+      ],
+      "buy": [
+        10,
+        8,
+        5,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "ma_7",
+      "name": "Oysters",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        24,
+        15,
+        9,
+        6,
+        4
+      ],
+      "buy": [
+        8,
+        6,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "ma_8",
+      "name": "Goat",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        36,
+        23,
+        14,
+        10,
+        5
+      ],
+      "buy": [
+        12,
+        9,
+        6,
+        4,
+        2
+      ]
+    },
+    {
+      "id": "ma_9",
+      "name": "Ducks",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        28,
+        17,
+        11,
+        7,
+        4
+      ],
+      "buy": [
+        9,
+        7,
+        5,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "ea_1",
+      "name": "Deer",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        48,
+        30,
+        19,
+        13,
+        7
+      ],
+      "buy": [
+        16,
+        12,
+        8,
+        6,
+        3
+      ],
+      "combatText": null,
+      "combat": null
+    },
+    {
+      "id": "ea_2",
+      "name": "Buffalo",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        60,
+        38,
+        23,
+        17,
+        8
+      ],
+      "buy": [
+        20,
+        15,
+        10,
+        8,
+        4
+      ],
+      "combatText": null,
+      "combat": null
+    },
+    {
+      "id": "ea_3",
+      "name": "Boar",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        54,
+        34,
+        21,
+        15,
+        8
+      ],
+      "buy": [
+        18,
+        13,
+        9,
+        7,
+        4
+      ],
+      "combatText": "1(R) -1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": -1,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_4",
+      "name": "Leopard",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        91,
+        60,
+        37,
+        27,
+        14
+      ],
+      "buy": [
+        32,
+        24,
+        16,
+        12,
+        8
+      ],
+      "combatText": "1 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 1,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_5",
+      "name": "Bear",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        83,
+        52,
+        33,
+        24,
+        12
+      ],
+      "buy": [
+        28,
+        21,
+        14,
+        11,
+        6
+      ],
+      "combatText": "3 -2(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 2,
+        "flat": 3,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_6",
+      "name": "Crocodile",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        88,
+        56,
+        35,
+        26,
+        13
+      ],
+      "buy": [
+        30,
+        22,
+        15,
+        12,
+        7
+      ],
+      "combatText": "2 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 2,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_7",
+      "name": "Tiger",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        94,
+        64,
+        41,
+        30,
+        16
+      ],
+      "buy": [
+        35,
+        26,
+        17,
+        14,
+        9
+      ],
+      "combatText": "2(R) -1(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 1,
+        "flat": 0,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_8",
+      "name": "Lion",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        96,
+        65,
+        42,
+        31,
+        16
+      ],
+      "buy": [
+        36,
+        27,
+        18,
+        14,
+        9
+      ],
+      "combatText": "2(R) -2 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -2,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_9",
+      "name": "Rhinoceros",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        99,
+        71,
+        46,
+        35,
+        20
+      ],
+      "buy": [
+        39,
+        29,
+        20,
+        16,
+        11
+      ],
+      "combatText": "3(R) -4 CP",
+      "combat": {
+        "dice": 3,
+        "negDice": 0,
+        "flat": -4,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "wpn_1",
+      "name": "Sagittae",
+      "subtitle": "Arrows",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        24,
+        15,
+        9,
+        6,
+        4
+      ],
+      "buy": [
+        8,
+        6,
+        4,
+        3,
+        2
+      ],
+      "combatText": "No combat bonus (0 CP)",
+      "combat": null
+    },
+    {
+      "id": "wpn_2",
+      "name": "Scuta",
+      "subtitle": "Shields",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        26,
+        20,
+        11,
+        9,
+        5
+      ],
+      "buy": [
+        14,
+        11,
+        6,
+        5,
+        3
+      ],
+      "combatText": "Ignore (R) Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsDice": 1
+      }
+    },
+    {
+      "id": "wpn_3",
+      "name": "Pugiones",
+      "subtitle": "Daggers",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        22,
+        15,
+        9,
+        7,
+        5
+      ],
+      "buy": [
+        11,
+        8,
+        5,
+        4,
+        3
+      ],
+      "combatText": "2 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 2
+      }
+    },
+    {
+      "id": "wpn_4",
+      "name": "Gladii",
+      "subtitle": "Shortswords",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        31,
+        22,
+        14,
+        11,
+        9
+      ],
+      "buy": [
+        17,
+        12,
+        8,
+        6,
+        5
+      ],
+      "combatText": "1(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "wpn_5",
+      "name": "Hastae",
+      "subtitle": "Spears",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        40,
+        29,
+        16,
+        14,
+        11
+      ],
+      "buy": [
+        22,
+        16,
+        9,
+        8,
+        6
+      ],
+      "combatText": "2(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "wpn_6",
+      "name": "Spathae",
+      "subtitle": "Swords",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        43,
+        32,
+        18,
+        16,
+        11
+      ],
+      "buy": [
+        24,
+        17,
+        10,
+        9,
+        6
+      ],
+      "combatText": "1(R) +1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "wpn_7",
+      "name": "Manicae",
+      "subtitle": "Armguards",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        50,
+        36,
+        20,
+        18,
+        13
+      ],
+      "buy": [
+        28,
+        20,
+        11,
+        10,
+        7
+      ],
+      "combatText": "Ignore 1 Wound",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 1
+      }
+    },
+    {
+      "id": "wpn_8",
+      "name": "Galeae",
+      "subtitle": "Helmets",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        58,
+        41,
+        23,
+        22,
+        14
+      ],
+      "buy": [
+        32,
+        23,
+        13,
+        12,
+        8
+      ],
+      "combatText": "Ignore 2 Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 2
+      }
+    },
+    {
+      "id": "wpn_9",
+      "name": "Arcus",
+      "subtitle": "Bows",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        67,
+        45,
+        24,
+        22,
+        16
+      ],
+      "buy": [
+        37,
+        25,
+        13,
+        12,
+        9
+      ],
+      "combatText": "2(R) -1 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -1
+      }
+    },
+    {
+      "id": "wpn_10",
+      "name": "Pila",
+      "subtitle": "Javelins",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        46,
+        30,
+        18,
+        13,
+        7
+      ],
+      "buy": [
+        18,
+        13,
+        9,
+        7,
+        4
+      ],
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      }
+    },
+    {
+      "id": "wpn_11",
+      "name": "Pila",
+      "subtitle": "Javelins",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        46,
+        30,
+        18,
+        13,
+        7
+      ],
+      "buy": [
+        18,
+        13,
+        9,
+        7,
+        4
+      ],
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      }
+    },
+    {
+      "id": "wpn_12",
+      "name": "Loricae",
+      "subtitle": "Body Armor",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        88,
+        56,
+        35,
+        26,
+        13
+      ],
+      "buy": [
+        30,
+        22,
+        15,
+        12,
+        7
+      ],
+      "combatText": "No combat bonus (0 CP)",
+      "combat": null
+    },
+    {
+      "id": "mrb_1",
+      "name": "Carrara",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        66,
+        41,
+        26,
+        18,
+        9
+      ],
+      "buy": [
+        22,
+        16,
+        11,
+        8,
+        5
+      ]
+    },
+    {
+      "id": "mrb_2",
+      "name": "Carrara",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        83,
+        52,
+        33,
+        24,
+        12
+      ],
+      "buy": [
+        28,
+        21,
+        14,
+        11,
+        6
+      ]
+    },
+    {
+      "id": "mrb_3",
+      "name": "Pavonazzetto",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        72,
+        45,
+        28,
+        20,
+        10
+      ],
+      "buy": [
+        24,
+        18,
+        12,
+        9,
+        5
+      ]
+    },
+    {
+      "id": "mrb_4",
+      "name": "Pavonazzetto",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        88,
+        56,
+        35,
+        26,
+        13
+      ],
+      "buy": [
+        30,
+        22,
+        15,
+        12,
+        7
+      ]
+    },
+    {
+      "id": "mrb_5",
+      "name": "Proconesio",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        77,
+        49,
+        30,
+        22,
+        11
+      ],
+      "buy": [
+        26,
+        20,
+        13,
+        10,
+        6
+      ]
+    },
+    {
+      "id": "mrb_6",
+      "name": "Proconesio",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        91,
+        60,
+        37,
+        27,
+        14
+      ],
+      "buy": [
+        32,
+        24,
+        16,
+        12,
+        8
+      ]
+    },
+    {
+      "id": "mrb_7",
+      "name": "Cipollino",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        83,
+        52,
+        33,
+        24,
+        12
+      ],
+      "buy": [
+        28,
+        21,
+        14,
+        11,
+        6
+      ]
+    },
+    {
+      "id": "mrb_8",
+      "name": "Cipollino",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        93,
+        63,
+        40,
+        29,
+        14
+      ],
+      "buy": [
+        34,
+        26,
+        17,
+        13,
+        8
+      ]
+    },
+    {
+      "id": "mrb_9",
+      "name": "Numidian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        88,
+        56,
+        35,
+        26,
+        13
+      ],
+      "buy": [
+        30,
+        22,
+        15,
+        12,
+        7
+      ]
+    },
+    {
+      "id": "mrb_10",
+      "name": "Numidian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        96,
+        65,
+        42,
+        31,
+        16
+      ],
+      "buy": [
+        36,
+        27,
+        18,
+        14,
+        9
+      ]
+    },
+    {
+      "id": "mrb_11",
+      "name": "Imperial Porphyry",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        91,
+        60,
+        37,
+        27,
+        14
+      ],
+      "buy": [
+        32,
+        24,
+        16,
+        12,
+        8
+      ]
+    },
+    {
+      "id": "mrb_12",
+      "name": "Imperial Porphyry",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        100,
+        72,
+        46,
+        36,
+        22
+      ],
+      "buy": [
+        40,
+        30,
+        20,
+        16,
+        12
+      ]
+    },
+    {
+      "id": "grd_1",
+      "name": "Lucius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        12,
+        9,
+        6,
+        5,
+        4
+      ],
+      "combatText": "(R) CP & +■■ Cart Space",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "bonusBlocks": 2,
+      "bonusGuards": 0
+    },
+    {
+      "id": "grd_2",
+      "name": "Servius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        14,
+        11,
+        6,
+        5,
+        4
+      ],
+      "combatText": "(R) CP & +▲ Cart Space",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "bonusBlocks": 0,
+      "bonusGuards": 1
+    },
+    {
+      "id": "grd_3",
+      "name": "Pliny",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        10,
+        8,
+        5,
+        4,
+        3
+      ],
+      "combatText": "1 CP & Cheap Wines Sell at +1 Rarity",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1
+      },
+      "rarityBonus": "Cheap Wine"
+    },
+    {
+      "id": "grd_4",
+      "name": "Rufus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        13,
+        10,
+        6,
+        5,
+        4
+      ],
+      "combatText": "2 CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 2
+      }
+    },
+    {
+      "id": "grd_5",
+      "name": "Decimus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        12,
+        9,
+        6,
+        5,
+        4
+      ],
+      "combatText": "(R) CP & Ignore 1 Wound",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 1
+      }
+    },
+    {
+      "id": "grd_6",
+      "name": "Manius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ],
+      "combatText": "1 CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "grd_7",
+      "name": "Agrippa",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        11,
+        8,
+        5,
+        4,
+        3
+      ],
+      "combatText": "2(R) - 1 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -1
+      }
+    },
+    {
+      "id": "grd_8",
+      "name": "Marcus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ],
+      "combatText": "(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "grd_9",
+      "name": "Paolo",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        16,
+        12,
+        8,
+        7,
+        6
+      ],
+      "combatText": "2(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "grd_10",
+      "name": "Michele",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        15,
+        12,
+        7,
+        6,
+        5
+      ],
+      "combatText": "(R) + 1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "grd_11",
+      "name": "Gnaeus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        11,
+        8,
+        5,
+        4,
+        3
+      ],
+      "combatText": "(R) CP & Meat Animals Sell at +1 Rarity",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "rarityBonus": "Meat Animals"
+    },
+    {
+      "id": "grd_12",
+      "name": "Gordianus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ],
+      "combatText": "(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    }
+  ],
+  "missiones": [
+    {
+      "id": "mis_1",
+      "name": "Patronize The Arts",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "--",
+      "cell": "D1",
+      "rewardText": "Any Wine on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "mode": "any"
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Sell Marble at -- Scarcity in D1 (Horti Sallustiani)."
+    },
+    {
+      "id": "mis_2",
+      "name": "Javelins For The Games",
+      "kind": "delivery",
+      "item": "Pila",
+      "category": "Weapons",
+      "blocks": 2,
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      },
+      "pickupCell": "B6",
+      "deliverCell": "B3",
+      "fencedSell": [
+        38,
+        22,
+        16,
+        10,
+        7
+      ],
+      "rewardText": "10(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 10
+      },
+      "favor": [],
+      "text": "Pick up Pila (Weapons • 2■ • 1 CP (destroyed if used)) in B6 (Via Ostiensis), Deliver to B3 (Circus Flaminius). [Fenced Sell: 38/22/16/10/7]"
+    },
+    {
+      "id": "mis_3",
+      "name": "Imperial Mausoleum Marble",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "+",
+      "cell": "A1",
+      "rewardText": "Caracalla & Domna Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla",
+        "Domna"
+      ],
+      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+    },
+    {
+      "id": "mis_4",
+      "name": "Price Gouge Grapes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "++",
+      "cell": "D4",
+      "rewardText": "Geta Favor (-Domna)",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "-Domna",
+        "Geta"
+      ],
+      "text": "Sell Cheap Wine at ++ Scarcity in D4 (Forum Vespasiani)."
+    },
+    {
+      "id": "mis_5",
+      "name": "Feed The Plebes",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "=",
+      "cell": "B4",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Grain at = Scarcity in B4 (Trans Tiberim)."
+    },
+    {
+      "id": "mis_6",
+      "name": "Feed The Plebes",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "--",
+      "cell": "E2",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Grain at -- Scarcity in E2 (Subura)."
+    },
+    {
+      "id": "mis_7",
+      "name": "Notte Bianca",
+      "kind": "expose",
+      "exposeType": "patricii",
+      "exposeCount": 4,
+      "description": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)",
+      "rewardText": "16(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 16
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_8",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "=",
+      "cell": "C6",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Cheap Wine at = Scarcity in C6 (Remuria / Aventinus Minor)."
+    },
+    {
+      "id": "mis_9",
+      "name": "Uber Drinks",
+      "kind": "delivery",
+      "item": "Ceretanum",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "A5",
+      "deliverCell": "C1",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        8,
+        6
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Ceretanum (Cheap Wine • 1■) in A5 (Horti Caesaris), Deliver to C1 (Mons Pincius). [Fenced Sell: 32/20/13/8/6]"
+    },
+    {
+      "id": "mis_10",
+      "name": "Price Gouge Grain",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "+",
+      "cell": "C1",
+      "rewardText": "4(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 4
+      },
+      "favor": [],
+      "text": "Sell Grain at + Scarcity in C1 (Mons Pincius)."
+    },
+    {
+      "id": "mis_11",
+      "name": "Sports",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "-",
+      "cell": "A2",
+      "rewardText": "Top card of Goods deck",
+      "reward": {
+        "type": "top_good"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at - Scarcity in A2 (Circus Agonalis)."
+    },
+    {
+      "id": "mis_12",
+      "name": "Animal Sacrifice",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "+",
+      "cell": "C2",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Meat Animals at + Scarcity in C2 (Septa Julia)."
+    },
+    {
+      "id": "mis_13",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "-",
+      "cell": "D2",
+      "rewardText": "Cheapest Guard on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Guards",
+        "mode": "cheapest"
+      },
+      "favor": [],
+      "text": "Sell Cheap Wine at - Scarcity in D2 (Collis Quirinalis)."
+    },
+    {
+      "id": "mis_14",
+      "name": "Feast",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "-",
+      "cell": "E1",
+      "rewardText": "Cheapest Weapon on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Weapons",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Meat Animals at - Scarcity in E1 (Via Nomentana)."
+    },
+    {
+      "id": "mis_15",
+      "name": "Grain Delivery",
+      "kind": "delivery",
+      "item": "Spelt",
+      "category": "Grain",
+      "blocks": 2,
+      "pickupCell": "E6",
+      "deliverCell": "F4",
+      "fencedSell": [
+        20,
+        13,
+        8,
+        5,
+        4
+      ],
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Spelt (Grain • 2■) in E6 (Caeliolus), Deliver to F4 (Collis Esquilinus). [Fenced Sell: 20/13/8/5/4]"
+    },
+    {
+      "id": "mis_16",
+      "name": "Arm The Vigiles",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "--",
+      "cell": "A4",
+      "rewardText": "Cheapest Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Weapons at -- Scarcity in A4 (Via Aurelia)."
+    },
+    {
+      "id": "mis_17",
+      "name": "Rhino Racing",
+      "kind": "delivery",
+      "item": "Rhinoceros",
+      "category": "Exotic Animals",
+      "blocks": 4,
+      "combatText": "3(R) -4 CP",
+      "combat": {
+        "dice": 3,
+        "negDice": 0,
+        "flat": -4,
+        "mandatory": true
+      },
+      "pickupCell": "F3",
+      "deliverCell": "A2",
+      "fencedSell": [
+        76,
+        50,
+        28,
+        18,
+        10
+      ],
+      "rewardText": "(R) x 20(d)",
+      "reward": {
+        "type": "dice_cash",
+        "multiplier": 20
+      },
+      "favor": [],
+      "text": "Pick up Rhinoceros (Exotic Animals • 4■ • 3(R) -4 CP) in F3 (Via Tiburtina), Deliver to A2 (Circus Agonalis). [Fenced Sell: 76/50/28/18/10]"
+    },
+    {
+      "id": "mis_18",
+      "name": "Hunting Games",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "+",
+      "cell": "B3",
+      "rewardText": "Caracalla & Geta Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at + Scarcity in B3 (Circus Flaminius)."
+    },
+    {
+      "id": "mis_19",
+      "name": "Shields For The Cohortes Urbanae",
+      "kind": "delivery",
+      "item": "Scuta",
+      "category": "Weapons",
+      "blocks": 2,
+      "combatText": "Ignore (R) Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsDice": 1
+      },
+      "pickupCell": "B6",
+      "deliverCell": "C2",
+      "fencedSell": [
+        26,
+        18,
+        10,
+        7,
+        4
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Scuta (Weapons • 2■ • Ignore (R) Wounds) in B6 (Via Ostiensis), Deliver to C2 (Septa Julia). [Fenced Sell: 26/18/10/7/4]"
+    },
+    {
+      "id": "mis_20",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Opimian",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "D3",
+      "deliverCell": "B5",
+      "fencedSell": [
+        80,
+        60,
+        40,
+        30,
+        15
+      ],
+      "rewardText": "Cheapest Mkt Marble",
+      "reward": {
+        "type": "market_pick",
+        "track": "Marble",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "-Caracalla",
+        "Aurelius"
+      ],
+      "text": "Pick up Opimian (Fine Wine • 1■) in D3 (Forum Augustum), Deliver to B5 (Collis Aventinus). [Fenced Sell: 80/60/40/30/15]"
+    },
+    {
+      "id": "mis_21",
+      "name": "Conspire",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "-",
+      "cell": "B1",
+      "rewardText": "Any Cheap W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Cheap Wine",
+        "mode": "any"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Weapons at - Scarcity in B1 (Via Flaminia)."
+    },
+    {
+      "id": "mis_22",
+      "name": "Vigilante",
+      "kind": "kill",
+      "targetDeck": "Nefarii",
+      "description": "Kill a Nefarius in Combat",
+      "rewardText": "Any Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "any"
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Kill a Nefarius in Combat"
+    },
+    {
+      "id": "mis_23",
+      "name": "Armor For The Guards",
+      "kind": "delivery",
+      "item": "Galeae",
+      "category": "Weapons",
+      "blocks": 1,
+      "combatText": "Ignore 2 Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 2
+      },
+      "pickupCell": "F1",
+      "deliverCell": "A4",
+      "fencedSell": [
+        32,
+        22,
+        13,
+        11,
+        8
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Galeae (Weapons • 1■ • Ignore 2 Wounds) in F1 (Castra Praetoria), Deliver to A4 (Via Aurelia). [Fenced Sell: 32/22/13/11/8]"
+    },
+    {
+      "id": "mis_24",
+      "name": "Marble Delivery",
+      "kind": "delivery",
+      "item": "Imperial Porphyry",
+      "category": "Marble",
+      "blocks": 2,
+      "pickupCell": "F3",
+      "deliverCell": "B2",
+      "fencedSell": [
+        76,
+        52,
+        31,
+        23,
+        13
+      ],
+      "rewardText": "Priciest Mkt Guard",
+      "reward": {
+        "type": "market_pick",
+        "track": "Guards",
+        "mode": "priciest"
+      },
+      "favor": [
+        "-Geta",
+        "Caracalla"
+      ],
+      "text": "Pick up Imperial Porphyry (Marble • 2■) in F3 (Via Tiburtina), Deliver to B2 (Pantheum / Thermae Neronae). [Fenced Sell: 76/52/31/23/13]"
+    },
+    {
+      "id": "mis_25",
+      "name": "Chariot Games",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "=",
+      "cell": "C5",
+      "rewardText": "Any Weapon on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Weapons",
+        "mode": "any"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at = Scarcity in C5 (Circus Maximus)."
+    },
+    {
+      "id": "mis_26",
+      "name": "Martial Law",
+      "kind": "expose",
+      "exposeType": "legiones",
+      "exposeCount": 12,
+      "description": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)",
+      "rewardText": "40(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 40
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_27",
+      "name": "Poultry Delivery",
+      "kind": "delivery",
+      "item": "Chickens",
+      "category": "Meat Animals",
+      "blocks": 1,
+      "pickupCell": "C1",
+      "deliverCell": "D5",
+      "fencedSell": [
+        19,
+        12,
+        7,
+        5,
+        4
+      ],
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [],
+      "text": "Pick up Chickens (Meat Animals • 1■) in C1 (Mons Pincius), Deliver to D5 (Mons Palatinus). [Fenced Sell: 19/12/7/5/4]"
+    },
+    {
+      "id": "mis_28",
+      "name": "Decorate The Baths",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "=",
+      "cell": "D6",
+      "rewardText": "Caracalla Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Sell Marble at = Scarcity in D6 (Thermae Antoninianae)."
+    },
+    {
+      "id": "mis_29",
+      "name": "Grain Delivery",
+      "kind": "delivery",
+      "item": "Durum",
+      "category": "Grain",
+      "blocks": 2,
+      "pickupCell": "C6",
+      "deliverCell": "D3",
+      "fencedSell": [
+        20,
+        12,
+        7,
+        5,
+        3
+      ],
+      "rewardText": "(R) Influence Cards",
+      "reward": {
+        "type": "dice_influence",
+        "dice": 1
+      },
+      "favor": [],
+      "text": "Pick up Durum (Grain • 2■) in C6 (Remuria / Aventinus Minor), Deliver to D3 (Forum Augustum). [Fenced Sell: 20/12/7/5/3]"
+    },
+    {
+      "id": "mis_30",
+      "name": "Arm The Praetoriani",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "++",
+      "cell": "E4",
+      "rewardText": "Caracalla Favor (-Plautilla)",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "-Plautilla",
+        "Caracalla"
+      ],
+      "text": "Sell Weapons at ++ Scarcity in E4 (Amphitheatrum Flavium)."
+    },
+    {
+      "id": "mis_31",
+      "name": "Seafood Delivery",
+      "kind": "delivery",
+      "item": "Oysters",
+      "category": "Meat Animals",
+      "blocks": 1,
+      "pickupCell": "B4",
+      "deliverCell": "F2",
+      "fencedSell": [
+        24,
+        16,
+        10,
+        9,
+        6
+      ],
+      "rewardText": "10(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 10
+      },
+      "favor": [],
+      "text": "Pick up Oysters (Meat Animals • 1■) in B4 (Trans Tiberim), Deliver to F2 (Collis Viminalis). [Fenced Sell: 24/16/10/9/6]"
+    },
+    {
+      "id": "mis_32",
+      "name": "Feast",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "=",
+      "cell": "E6",
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Meat Animals at = Scarcity in E6 (Caeliolus)."
+    },
+    {
+      "id": "mis_33",
+      "name": "Price Gouge Grain",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "++",
+      "cell": "D3",
+      "rewardText": "2(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 2
+      },
+      "favor": [
+        "-Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Grain at ++ Scarcity in D3 (Forum Augustum)."
+    },
+    {
+      "id": "mis_34",
+      "name": "Regicide",
+      "kind": "kill_emperor",
+      "description": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)",
+      "rewardText": "You Win The Game",
+      "reward": {
+        "type": "win_game"
+      },
+      "favor": [],
+      "text": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)"
+    },
+    {
+      "id": "mis_35",
+      "name": "Uber Drinks",
+      "kind": "delivery",
+      "item": "Falernian",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "D1",
+      "deliverCell": "F4",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        8,
+        6
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Falernian (Fine Wine • 1■) in D1 (Horti Sallustiani), Deliver to F4 (Collis Esquilinus). [Fenced Sell: 32/20/13/8/6]"
+    },
+    {
+      "id": "mis_36",
+      "name": "Hunting Games",
+      "kind": "delivery",
+      "item": "Deer",
+      "category": "Exotic Animals",
+      "blocks": 2,
+      "pickupCell": "E6",
+      "deliverCell": "A2",
+      "fencedSell": [
+        16,
+        12,
+        8,
+        6,
+        3
+      ],
+      "rewardText": "(R) x 10(d)",
+      "reward": {
+        "type": "dice_cash",
+        "multiplier": 10
+      },
+      "favor": [],
+      "text": "Pick up Deer (Exotic Animals • 2■) in E6 (Caeliolus), Deliver to A2 (Circus Agonalis). [Fenced Sell: 16/12/8/6/3]"
+    },
+    {
+      "id": "mis_37",
+      "name": "Revolt",
+      "kind": "kill",
+      "targetDeck": "Legiones",
+      "description": "Kill a Legionary in Combat",
+      "rewardText": "Cheapest Fine W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Fine Wine",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Kill a Legionary in Combat"
+    },
+    {
+      "id": "mis_38",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Cretan",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "B2",
+      "deliverCell": "C5",
+      "fencedSell": [
+        42,
+        26,
+        16,
+        11,
+        6
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Cretan (Cheap Wine • 1■) in B2 (Pantheum / Thermae Neronae), Deliver to C5 (Circus Maximus). [Fenced Sell: 42/26/16/11/6]"
+    },
+    {
+      "id": "mis_39",
+      "name": "Arm The Cohortes Urbanae",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "=",
+      "cell": "B6",
+      "rewardText": "Cheapest Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Weapons at = Scarcity in B6 (Via Ostiensis)."
+    },
+    {
+      "id": "mis_40",
+      "name": "Quid Pro Quo",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "-",
+      "cell": "A5",
+      "rewardText": "Cheapest Exotic A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Exotic Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Fine Wine at - Scarcity in A5 (Horti Caesaris)."
+    },
+    {
+      "id": "mis_41",
+      "name": "City Of Thieves",
+      "kind": "expose",
+      "exposeType": "nefarii",
+      "exposeCount": 8,
+      "description": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)",
+      "rewardText": "26(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 26
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_42",
+      "name": "Patronize The Arts",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "-",
+      "cell": "E3",
+      "rewardText": "Any Exotic A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Exotic Animals",
+        "mode": "any"
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Sell Marble at - Scarcity in E3 (Thermae Traiani)."
+    },
+    {
+      "id": "mis_43",
+      "name": "Sacrificial Lamb",
+      "kind": "delivery",
+      "item": "Lamb",
+      "category": "Meat Animals",
+      "blocks": 2,
+      "pickupCell": "F4",
+      "deliverCell": "C2",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        9,
+        5
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Lamb (Meat Animals • 2■) in F4 (Collis Esquilinus), Deliver to C2 (Septa Julia). [Fenced Sell: 32/20/13/9/5]"
+    },
+    {
+      "id": "mis_44",
+      "name": "Wine Merchant",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "=",
+      "cell": "F4",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Fine Wine at = Scarcity in F4 (Collis Esquilinus)."
+    },
+    {
+      "id": "mis_45",
+      "name": "Arm The Uprising",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "+",
+      "cell": "E5",
+      "rewardText": "Cheapest Cheap W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Cheap Wine",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Weapons at + Scarcity in E5 (Sucusa)."
+    },
+    {
+      "id": "mis_46",
+      "name": "Royal Banquet Wine",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "+",
+      "cell": "D5",
+      "rewardText": "Geta Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Fine Wine at + Scarcity in D5 (Mons Palatinus)."
+    },
+    {
+      "id": "mis_47",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Hadrianum",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "C3",
+      "deliverCell": "F2",
+      "fencedSell": [
+        74,
+        48,
+        34,
+        24,
+        14
+      ],
+      "rewardText": "Cheapest Mkt Animal",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "-Plautilla",
+        "Caracalla"
+      ],
+      "text": "Pick up Hadrianum (Fine Wine • 1■) in C3 (Forum Traiani), Deliver to F2 (Collis Viminalis). [Fenced Sell: 74/48/34/24/14]"
+    },
+    {
+      "id": "mis_48",
+      "name": "Wine For The Theater",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "+",
+      "cell": "A3",
+      "rewardText": "2(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 2
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Cheap Wine at + Scarcity in A3 (Theatrum Pompeii)."
+    },
+    {
+      "id": "mis_49",
+      "name": "Assassin",
+      "kind": "kill",
+      "targetDeck": "Patricii",
+      "description": "Kill a Patricius in Combat",
+      "rewardText": "10(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 10,
+        "count": 1
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Kill a Patricius in Combat"
+    },
+    {
+      "id": "mis_50",
+      "name": "Festival Wine",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "--",
+      "cell": "B2",
+      "rewardText": "(R)(R) Influence Cards",
+      "reward": {
+        "type": "dice_influence",
+        "dice": 2
+      },
+      "favor": [],
+      "text": "Sell Fine Wine at -- Scarcity in B2 (Pantheum / Thermae Neronae)."
+    },
+    {
+      "id": "mis_51",
+      "name": "Regime Change",
+      "kind": "kill_emperor_cancel",
+      "description": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)",
+      "rewardText": "20(d) & Cancels all active regicide missions",
+      "reward": {
+        "type": "regime_change",
+        "amount": 20
+      },
+      "favor": [],
+      "text": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)"
+    },
+    {
+      "id": "mis_52",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Narbo",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "B4",
+      "deliverCell": "E6",
+      "fencedSell": [
+        24,
+        15,
+        9,
+        6,
+        4
+      ],
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [],
+      "text": "Pick up Narbo (Cheap Wine • 1■) in B4 (Trans Tiberim), Deliver to E6 (Caeliolus). [Fenced Sell: 24/15/9/6/4]"
+    },
+    {
+      "id": "mis_53",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "--",
+      "cell": "F3",
+      "rewardText": "2 Influence Cards",
+      "reward": {
+        "type": "influence",
+        "count": 2
+      },
+      "favor": [],
+      "text": "Sell Cheap Wine at -- Scarcity in F3 (Via Tiburtina)."
+    },
+    {
+      "id": "mis_54",
+      "name": "Imperial Tomb Marble",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "+",
+      "cell": "A1",
+      "rewardText": "8(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 8
+      },
+      "favor": [
+        "Domna",
+        "Geta"
+      ],
+      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+    },
+    {
+      "id": "mis_55",
+      "name": "Ashes of Severus",
+      "kind": "delivery",
+      "item": "Hadrianum",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "F5",
+      "deliverCell": "A1",
+      "fencedSell": [
+        44,
+        28,
+        18,
+        12,
+        7
+      ],
+      "rewardText": "10(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 10,
+        "count": 1
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Pick up Hadrianum (Fine Wine • 1■) in F5 (Amphitheatrum Castrense), Deliver to A1 (Mausoleum Hadriani). [Fenced Sell: 44/28/18/12/7]"
+    }
+  ]
+}

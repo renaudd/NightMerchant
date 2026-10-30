@@ -1,0 +1,22 @@
+.git
+.gitignore
+.DS_Store
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+/data/
+/assets/
+!src/data/
+!public/assets/
+server.log
+*.log
+.env
+.env.*
+.session_secret
+*service-account*.json
+*credentials*.json
+scripts/
+README.md
+NightMerchant Rule Book.md
