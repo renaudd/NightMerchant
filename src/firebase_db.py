@@ -95,6 +95,14 @@ def _format_firestore_user(doc_data: Dict[str, Any], csrf_token: Optional[str] =
         is_admin = False
     else:
         is_admin = bool(doc_data.get("isAdmin")) or (uname.lower() in admin_set)
+    if "needsUsernameSetup" in doc_data:
+        needs_uname = bool(doc_data.get("needsUsernameSetup"))
+    else:
+        needs_uname = (
+            str(doc_data.get("authProvider") or "") == "google"
+            and not bool(doc_data.get("usernameConfirmed"))
+            and int(doc_data.get("gamesPlayed") or 0) == 0
+        )
     out: Dict[str, Any] = {
         "id": int(doc_data["id"]),
         "username": uname,
@@ -105,6 +113,7 @@ def _format_firestore_user(doc_data: Dict[str, Any], csrf_token: Optional[str] =
         "preferredColor": normalize_cart_color(doc_data.get("preferredColor"), "Z1"),
         "settings": merged_settings,
         "isAdmin": is_admin,
+        "needsUsernameSetup": needs_uname,
         "gamesPlayed": int(doc_data.get("gamesPlayed") or 0),
         "gamesWon": int(doc_data.get("gamesWon") or 0),
         "bestWealth": int(doc_data.get("bestWealth") or 0),
@@ -138,12 +147,13 @@ def _allocate_and_store_user(
     display_clean: str,
     preferred_color: str,
     auth_provider: str = "firebase",
+    needs_username_setup: bool = False,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     from google.cloud import firestore as gc_firestore
 
     clean_color = normalize_cart_color(preferred_color, "Z1")
     now = int(time.time())
-    is_admin = username_clean in _admin_usernames()
+    is_admin = (not needs_username_setup) and (username_clean in _admin_usernames())
 
     counter_ref = fs.collection("nm_counters").document("users")
     uname_ref = fs.collection("nm_usernames").document(username_clean)
@@ -180,6 +190,8 @@ def _allocate_and_store_user(
             "preferredColor": clean_color,
             "settings": dict(DEFAULT_USER_SETTINGS),
             "isAdmin": is_admin,
+            "needsUsernameSetup": bool(needs_username_setup),
+            "usernameConfirmed": not bool(needs_username_setup),
             "gamesPlayed": 0,
             "gamesWon": 0,
             "bestWealth": 0,
@@ -290,8 +302,8 @@ def authenticate_user(username: str, password: str) -> Tuple[Optional[Dict[str, 
                 user_doc = u_snap.to_dict()
 
     web_api_key = (
-        os.getenv("FIREBASE_SERVER_API_KEY", "").strip()
-        or os.getenv("FIREBASE_WEB_API_KEY", "").strip()
+        os.getenv("FIREBASE_SERVER_API_KEY", "").strip("<>\"' \t\r\n")
+        or os.getenv("FIREBASE_WEB_API_KEY", "").strip("<>\"' \t\r\n")
     )
     if not web_api_key:
         return None, "FIREBASE_WEB_API_KEY is required on the server for password verification."
@@ -371,7 +383,7 @@ def verify_and_sync_firebase_id_token(
     id_token: str,
     username: Optional[str] = None,
     display_name: Optional[str] = None,
-    preferred_color: str = "Z1",
+    preferred_color: str = "Z3",
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Verify a Firebase Auth OIDC ID token and load or create the Firestore merchant profile."""
     from firebase_admin import auth as fb_auth
@@ -413,13 +425,19 @@ def verify_and_sync_firebase_id_token(
     # Provision new Firestore user profile
     sign_in_provider = str(decoded.get("firebase", {}).get("sign_in_provider", "firebase"))
     provider_label = "google" if "google" in sign_in_provider else "firebase"
+    needs_uname_setup = False
 
     if username and username.strip():
-        cand_uname = username.strip().lower()
-        if len(cand_uname) < 3 or len(cand_uname) > 32 or not all(c.isalnum() or c in "_-." for c in cand_uname):
-            return None, "Username must be 3–32 letters, numbers, underscores, hyphens, or periods."
+        cand_uname, u_err = local_helpers.validate_permanent_username(username)
+        if u_err:
+            return None, u_err
         if fs.collection("nm_usernames").document(cand_uname).get().exists:
             return None, "That username is already registered."
+    elif provider_label == "google":
+        needs_uname_setup = True
+        cand_uname = f"pending_{secrets.token_hex(4)}"
+        while fs.collection("nm_usernames").document(cand_uname).get().exists:
+            cand_uname = f"pending_{secrets.token_hex(4)}"
     else:
         base_u = "".join(c for c in email_clean.split("@")[0] if c.isalnum() or c in "_-.")[:24]
         if len(base_u) < 3:
@@ -443,6 +461,7 @@ def verify_and_sync_firebase_id_token(
         display_clean=disp,
         preferred_color=preferred_color,
         auth_provider=provider_label,
+        needs_username_setup=needs_uname_setup,
     )
     if err or not created_u:
         return None, err or "Could not provision merchant profile."
@@ -454,7 +473,7 @@ def authenticate_or_create_google_user(
     email: str,
     display_name: str,
     google_sub: str,
-    preferred_color: str = "Z1",
+    preferred_color: str = "Z3",
     verified_token: bool = False,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     if not verified_token:
@@ -468,16 +487,11 @@ def authenticate_or_create_google_user(
         if u_snap.exists:
             return _format_firestore_user(u_snap.to_dict()), None
 
-    base_u = "".join(c for c in email_clean.split("@")[0] if c.isalnum() or c in "_-.")[:24]
-    if len(base_u) < 3:
-        base_u = f"merchant_{secrets.token_hex(3)}"
-    cand = base_u
-    sfx = 1
+    cand = f"pending_{secrets.token_hex(4)}"
     while fs.collection("nm_usernames").document(cand).get().exists:
-        sfx += 1
-        cand = f"{base_u[:20]}_{sfx}"
+        cand = f"pending_{secrets.token_hex(4)}"
     fb_uid = f"google:{google_sub}"
-    disp = (display_name or cand).strip()[:40]
+    disp = (display_name or email_clean.split("@")[0].replace(".", " ").title()).strip()[:40]
     return _allocate_and_store_user(
         fs=fs,
         firebase_uid=fb_uid,
@@ -486,7 +500,62 @@ def authenticate_or_create_google_user(
         display_clean=disp,
         preferred_color=preferred_color,
         auth_provider="google",
+        needs_username_setup=True,
     )
+
+
+def set_permanent_username(
+    user_id: int,
+    username: str,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    from google.cloud import firestore as gc_firestore
+
+    clean_uname, u_err = local_helpers.validate_permanent_username(username)
+    if u_err:
+        return None, u_err
+
+    fs = _ensure_firebase()
+    u_ref = fs.collection("nm_users").document(str(int(user_id)))
+    new_uname_ref = fs.collection("nm_usernames").document(clean_uname)
+
+    @gc_firestore.transactional
+    def _txn_set_uname(transaction):
+        u_snap = u_ref.get(transaction=transaction)
+        if not u_snap.exists:
+            return None, "Account not found."
+        u_data = dict(u_snap.to_dict())
+        formatted_before = _format_firestore_user(u_data)
+        if not formatted_before.get("needsUsernameSetup"):
+            return None, "Your Collegium username is permanent and has already been set."
+
+        new_uname_snap = new_uname_ref.get(transaction=transaction)
+        if new_uname_snap.exists and int(new_uname_snap.to_dict().get("userId", -1)) != int(user_id):
+            return None, "That username is already registered. Please choose another."
+
+        old_uname = str(u_data.get("username") or "").strip().lower()
+        fb_uid = str(u_data.get("firebaseUid") or "")
+        is_admin = bool(u_data.get("isAdmin")) or (clean_uname in _admin_usernames())
+        old_disp = str(u_data.get("displayName") or "").strip()
+        new_disp = clean_uname if (not old_disp or old_disp.lower().startswith("pending_")) else old_disp
+
+        updates = {
+            "username": clean_uname,
+            "displayName": new_disp,
+            "needsUsernameSetup": False,
+            "usernameConfirmed": True,
+            "isAdmin": is_admin,
+        }
+        transaction.set(new_uname_ref, {"userId": int(user_id), "firebaseUid": fb_uid})
+        if old_uname and old_uname != clean_uname:
+            transaction.delete(fs.collection("nm_usernames").document(old_uname))
+        transaction.update(u_ref, updates)
+        u_data.update(updates)
+        return u_data, None
+
+    updated_doc, err = _txn_set_uname(fs.transaction())
+    if err or not updated_doc:
+        return None, err or "Could not save permanent username."
+    return _format_firestore_user(updated_doc), None
 
 
 def create_session(user_id: int) -> Tuple[str, str]:
@@ -681,6 +750,9 @@ def resolve_users_by_usernames(
     seen_ids = set()
 
     for uname in clean_list:
+        if uname.startswith("pending_"):
+            missing.append(uname)
+            continue
         un_snap = fs.collection("nm_usernames").document(uname).get()
         if not un_snap.exists:
             missing.append(uname)

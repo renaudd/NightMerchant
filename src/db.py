@@ -192,6 +192,24 @@ def _admin_usernames() -> set:
     }
 
 
+def validate_permanent_username(username: Any) -> Tuple[str, Optional[str]]:
+    if not isinstance(username, str):
+        return "", "Please enter a valid username."
+    clean = username.strip()
+    while clean.startswith("@"):
+        clean = clean[1:].strip()
+    clean = clean.lower()
+    if len(clean) < 3 or len(clean) > 32:
+        return "", "Username must be between 3 and 32 characters."
+    if not clean[0].isalnum() or not all(c.isascii() and (c.isalnum() or c in "_-.") for c in clean):
+        return "", "Username must start with a letter or number and contain only letters, numbers, underscores (_), hyphens (-), or periods (.)."
+    if clean.startswith("pending_"):
+        return "", "Usernames may not start with 'pending_'."
+    if clean == "mercator_romanus":
+        return "", "That username is reserved."
+    return clean, None
+
+
 def _format_user_dict(row: sqlite3.Row, csrf_token: Optional[str] = None) -> Dict[str, Any]:
     keys = row.keys()
     email_val = row["email"] if "email" in keys and row["email"] else f"{row['username']}@roma.local"
@@ -205,6 +223,11 @@ def _format_user_dict(row: sqlite3.Row, csrf_token: Optional[str] = None) -> Dic
         is_admin_val = bool(row["is_admin"]) or (uname_lower in admin_set)
     else:
         is_admin_val = uname_lower in admin_set
+    needs_uname_val = (
+        bool(row["needs_username_setup"])
+        if "needs_username_setup" in keys and row["needs_username_setup"] is not None
+        else False
+    )
     res: Dict[str, Any] = {
         "id": row["id"],
         "username": row["username"],
@@ -215,6 +238,7 @@ def _format_user_dict(row: sqlite3.Row, csrf_token: Optional[str] = None) -> Dic
         "preferredColor": normalize_cart_color(row["preferred_color"], "Z1"),
         "settings": _parse_user_settings(settings_raw),
         "isAdmin": is_admin_val,
+        "needsUsernameSetup": needs_uname_val,
         "gamesPlayed": row["games_played"],
         "gamesWon": row["games_won"],
         "bestWealth": row["best_wealth"],
@@ -242,6 +266,7 @@ def init_db() -> None:
                     preferred_color TEXT NOT NULL DEFAULT 'Z1',
                     settings_json TEXT NOT NULL DEFAULT '{}',
                     is_admin INTEGER NOT NULL DEFAULT 0,
+                    needs_username_setup INTEGER NOT NULL DEFAULT 0,
                     games_played INTEGER NOT NULL DEFAULT 0,
                     games_won INTEGER NOT NULL DEFAULT 0,
                     best_wealth INTEGER NOT NULL DEFAULT 0,
@@ -265,6 +290,8 @@ def init_db() -> None:
                 conn.execute("ALTER TABLE users ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
             if "is_admin" not in existing_cols:
                 conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+            if "needs_username_setup" not in existing_cols:
+                conn.execute("ALTER TABLE users ADD COLUMN needs_username_setup INTEGER NOT NULL DEFAULT 0")
             admin_usernames = sorted(_admin_usernames())
             if "mercator_romanus" not in admin_usernames:
                 conn.execute("UPDATE users SET is_admin = 0 WHERE LOWER(username) = 'mercator_romanus'")
@@ -770,17 +797,12 @@ def authenticate_or_create_google_user(
                     row = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
                 return _format_user_dict(row), None
 
-            # Create new account tied to this Google email
-            base_username = "".join(c for c in email_clean.split("@")[0] if c.isalnum() or c in "_-.")[:24]
-            if len(base_username) < 3:
-                base_username = f"merchant_{secrets.token_hex(3)}"
-            candidate = base_username
-            suffix = 1
+            # Create new account tied to this Google email; prompt once for permanent @username
+            candidate = f"pending_{secrets.token_hex(4)}"
             while conn.execute("SELECT id FROM users WHERE username = ?", (candidate,)).fetchone():
-                suffix += 1
-                candidate = f"{base_username[:20]}_{suffix}"
+                candidate = f"pending_{secrets.token_hex(4)}"
 
-            clean_color = normalize_cart_color(preferred_color, "Z1")
+            clean_color = normalize_cart_color(preferred_color, "Z3")
             salt_hex = secrets.token_hex(16)
             random_pw_hash = _hash_password(secrets.token_urlsafe(32), salt_hex)
             now = int(time.time())
@@ -790,15 +812,66 @@ def authenticate_or_create_google_user(
                 """
                 INSERT INTO users (
                     username, email, google_sub, auth_provider, display_name,
-                    password_hash, password_salt, preferred_color, settings_json, created_at
+                    password_hash, password_salt, preferred_color, settings_json,
+                    needs_username_setup, created_at
                 )
-                VALUES (?, ?, ?, 'google', ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, 'google', ?, ?, ?, ?, ?, 1, ?)
                 """,
                 (candidate, email_clean, sub_clean, display_clean, random_pw_hash, salt_hex, clean_color, default_settings_json, now),
             )
             user_id = cur.lastrowid
             row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
             return _format_user_dict(row), None
+    finally:
+        conn.close()
+
+
+def set_permanent_username(
+    user_id: int,
+    username: str,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    clean_uname, u_err = validate_permanent_username(username)
+    if u_err:
+        return None, u_err
+
+    conn = get_connection()
+    try:
+        with conn:
+            row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            if not row:
+                return None, "Account not found."
+            keys = row.keys()
+            needs_setup = (
+                bool(row["needs_username_setup"])
+                if "needs_username_setup" in keys and row["needs_username_setup"] is not None
+                else False
+            )
+            if not needs_setup:
+                return None, "Your Collegium username is permanent and has already been set."
+
+            conflict = conn.execute(
+                "SELECT id FROM users WHERE LOWER(username) = ? AND id != ?",
+                (clean_uname, user_id),
+            ).fetchone()
+            if conflict:
+                return None, "That username is already registered. Please choose another."
+
+            is_admin_val = 1 if (bool(row["is_admin"]) or clean_uname in _admin_usernames()) else 0
+            old_disp = str(row["display_name"] or "").strip()
+            new_disp = clean_uname if (not old_disp or old_disp.lower().startswith("pending_")) else old_disp
+
+            conn.execute(
+                """
+                UPDATE users
+                SET username = ?, display_name = ?, needs_username_setup = 0, is_admin = ?
+                WHERE id = ?
+                """,
+                (clean_uname, new_disp, is_admin_val, user_id),
+            )
+            updated_row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            return _format_user_dict(updated_row), None
+    except sqlite3.IntegrityError:
+        return None, "That username is already registered. Please choose another."
     finally:
         conn.close()
 
@@ -1181,7 +1254,7 @@ def resolve_users_by_usernames(
     conn = get_connection()
     try:
         rows = conn.execute(
-            f"SELECT id, username, display_name, email FROM users WHERE LOWER(username) IN ({placeholders})",
+            f"SELECT id, username, display_name, email FROM users WHERE COALESCE(needs_username_setup, 0) = 0 AND LOWER(username) IN ({placeholders})",
             tuple(clean_list),
         ).fetchall()
         by_uname = {str(r["username"]).lower(): r for r in rows}

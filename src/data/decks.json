@@ -3238,7 +3238,7 @@
     {
       "id": "inf_16",
       "name": "Plautilla Favor",
-      "effectText": "Gain one Favor with Plautilla's Faction (Sapphire) and 6(d) (can be played after encounter is revealed)",
+      "effectText": "Receive 6(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_plautilla",
       "favorGain": {
         "faction": "Plautilla",
@@ -3261,7 +3261,7 @@
     {
       "id": "inf_18",
       "name": "Aurelian Favor",
-      "effectText": "Gain one Favor with the Aurelian Faction (Amethyst) and 6(d) (can be played after encounter is revealed)",
+      "effectText": "Receive 6(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_aurelius",
       "favorGain": {
         "faction": "Aurelius",
@@ -3300,7 +3300,7 @@
     {
       "id": "inf_26",
       "name": "Geta Favor",
-      "effectText": "Gain one Favor with Geta's Faction (Emerald) and 5(d) (can be played after encounter is revealed)",
+      "effectText": "Receive 5(d), gain 1 Geta Favor (Emerald), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_geta",
       "favorGain": {
         "faction": "Geta",
@@ -3465,7 +3465,7 @@
     {
       "id": "inf_52",
       "name": "Domna Favor",
-      "effectText": "Gain one Favor with Domna's Faction (Diamond) and 6(d) (can be played after encounter is revealed)",
+      "effectText": "Receive 6(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_domna",
       "favorGain": {
         "faction": "Domna",
@@ -3481,7 +3481,7 @@
     {
       "id": "inf_53",
       "name": "Caracalla Favor",
-      "effectText": "Gain one Favor with Caracalla's Faction (Ruby) and 5(d) (can be played after encounter is revealed)",
+      "effectText": "Receive 5(d), gain 1 Caracalla Favor (Ruby), and lose 1 Geta Favor (Emerald) and 1 Plautilla Favor (Sapphire) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_caracalla",
       "favorGain": {
         "faction": "Caracalla",

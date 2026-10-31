@@ -56,7 +56,14 @@ function getEffectiveFirebaseConfig() {
     typeof appState.runtimeFirebaseConfig === "object"
       ? appState.runtimeFirebaseConfig
       : {};
-  return { ...baseFb, ...runtimeFb };
+  const merged = { ...baseFb, ...runtimeFb };
+  if (typeof merged.apiKey === "string") {
+    merged.apiKey = merged.apiKey.replace(/^[<>"'\s]+|[<>"'\s]+$/g, "");
+  }
+  if (typeof merged.projectId === "string") {
+    merged.projectId = merged.projectId.replace(/^[<>"'\s]+|[<>"'\s]+$/g, "");
+  }
+  return merged;
 }
 
 function isFirebaseClientConfigured() {
@@ -675,6 +682,16 @@ const DIE_SWATCH_COLORS = {
 function getCartColorLabel(colorId) {
   const found = CART_COLOR_PALETTE.find((c) => c.id === colorId);
   return found ? found.label : colorId || "Cobalt";
+}
+
+function getPlayerHexColor(colorId) {
+  if (!colorId) return "#EBA439";
+  if (typeof colorId === "string" && colorId.startsWith("#")) return colorId;
+  const found = CART_COLOR_PALETTE.find((c) => c.id === colorId || c.label === colorId);
+  if (found && found.hex) return found.hex;
+  if (DIE_SWATCH_COLORS[colorId]) return DIE_SWATCH_COLORS[colorId];
+  if (DIE_SYMBOL_COLORS[colorId]) return DIE_SYMBOL_COLORS[colorId];
+  return "#EBA439";
 }
 
 /**
@@ -1938,6 +1955,62 @@ function renderPhysicalMissionCardNode(m, opts = {}) {
   );
 }
 
+const FACTION_FAVOR_INFLUENCE_SPECS = {
+  "Plautilla Favor": {
+    effectText:
+      "Receive 6(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+    gems: ["Plautilla", "-Caracalla"],
+  },
+  "Aurelian Favor": {
+    effectText:
+      "Receive 6(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+    gems: ["Aurelius", "-Caracalla"],
+  },
+  "Geta Favor": {
+    effectText:
+      "Receive 5(d), gain 1 Geta Favor (Emerald), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+    gems: ["Geta", "-Caracalla"],
+  },
+  "Domna Favor": {
+    effectText:
+      "Receive 6(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
+    gems: ["Domna", "-Plautilla", "-Aurelius"],
+  },
+  "Caracalla Favor": {
+    effectText:
+      "Receive 5(d), gain 1 Caracalla Favor (Ruby), and lose 1 Geta Favor (Emerald) and 1 Plautilla Favor (Sapphire) (can be played after encounter is revealed)",
+    gems: ["Caracalla", "-Geta", "-Plautilla"],
+  },
+};
+
+function getInfluenceCardEffectText(c) {
+  if (!c) return "";
+  const cname = String(c.name || "").trim();
+  if (FACTION_FAVOR_INFLUENCE_SPECS[cname]) {
+    return FACTION_FAVOR_INFLUENCE_SPECS[cname].effectText;
+  }
+  return String(c.effectText || "");
+}
+
+function getInfluenceCardFavorList(c) {
+  if (!c) return [];
+  const cname = String(c.name || "").trim();
+  const extra = c.favorGain && Array.isArray(c.favorGain.extraFavor) ? c.favorGain.extraFavor : null;
+  if (extra && extra.length > 0) {
+    const pos = extra.filter((x) => !String(x || "").trim().startsWith("-"));
+    const neg = extra.filter((x) => String(x || "").trim().startsWith("-"));
+    return [...pos, ...neg];
+  }
+  if (FACTION_FAVOR_INFLUENCE_SPECS[cname]) {
+    return FACTION_FAVOR_INFLUENCE_SPECS[cname].gems;
+  }
+  if (cname.includes("Favor")) {
+    const fKey = cname.replace("Favor", "").replace("Aurelian", "Aurelius").trim();
+    return [fKey];
+  }
+  return [];
+}
+
 /**
  * Renders an Influence card in the physical 5:7 format with unified classical art.
  */
@@ -1951,8 +2024,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
   const footerItems = [];
   const cname = String(c.name || "");
   if (cname.includes("Favor")) {
-    const fKey = cname.replace("Favor", "").replace("Aurelian", "Aurelius").trim();
-    footerItems.push(...renderFactionGemNodes([fKey]));
+    footerItems.push(...renderFactionGemNodes(getInfluenceCardFavorList(c)));
   } else if (cname === "Cartwright") {
     footerItems.push(el("span", { text: "+ ■ ■" }));
   } else if (cname === "Thug") {
@@ -1992,7 +2064,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
       el(
         "div",
         { className: "phys-card-body" },
-        el("div", { style: { fontWeight: "700", fontSize: "0.72rem" }, text: c.effectText || "" })
+        el("div", { style: { fontWeight: "700", fontSize: "0.72rem" }, text: getInfluenceCardEffectText(c) })
       ),
       el("div", { className: "phys-card-footer" }, ...footerItems)
     )
@@ -2670,8 +2742,10 @@ async function bootstrap() {
       appState.user = me.user;
       appState.csrfToken = me.csrfToken || null;
       applyUserDefaultBoardView(me.user.settings);
-      await refreshPortalOverview();
-      await handlePendingInviteDeepLink();
+      if (!me.user.needsUsernameSetup) {
+        await refreshPortalOverview();
+        await handlePendingInviteDeepLink();
+      }
     }
   } catch (err) {
     console.error(err);
@@ -2683,7 +2757,7 @@ async function bootstrap() {
 function startPolling() {
   if (appState.pollTimer) clearInterval(appState.pollTimer);
   appState.pollTimer = setInterval(async () => {
-    if (!appState.user) return;
+    if (!appState.user || appState.user.needsUsernameSetup) return;
     if (appState.activeTab === "tabletop" && appState.currentGameId) {
       try {
         const res = await apiRequest(`/api/games/${appState.currentGameId}`);
@@ -3839,6 +3913,12 @@ function renderApp() {
     } else {
       contentNodes.push(renderAuthView());
     }
+  } else if (appState.user.needsUsernameSetup) {
+    if (appState.activeTab === "rulebook" || appState.activeTab === "reference") {
+      contentNodes.push(renderRulebookView());
+    } else {
+      contentNodes.push(renderGoogleUsernameSetupView());
+    }
   } else if (appState.activeTab === "tabletop" && appState.gameSummary) {
     contentNodes.push(renderTabletopView());
   } else if (appState.activeTab === "rulebook" || appState.activeTab === "reference") {
@@ -3892,7 +3972,26 @@ function renderApp() {
 
 function renderTopbar() {
   const navButtons = [];
-  if (appState.user) {
+  if (appState.user && appState.user.needsUsernameSetup) {
+    navButtons.push(
+      el("button", {
+        className: `nav-btn ${appState.activeTab !== "rulebook" && appState.activeTab !== "reference" ? "active" : ""}`,
+        text: "🏛️ Choose Username",
+        onClick: () => {
+          appState.activeTab = "portal";
+          renderApp();
+        },
+      }),
+      el("button", {
+        className: `nav-btn ${appState.activeTab === "rulebook" || appState.activeTab === "reference" ? "active" : ""}`,
+        text: "📜 Rulebook",
+        onClick: () => {
+          appState.activeTab = "rulebook";
+          renderApp();
+        },
+      })
+    );
+  } else if (appState.user) {
     navButtons.push(
       el("button", {
         className: `nav-btn ${appState.activeTab === "portal" ? "active" : ""}`,
@@ -3957,7 +4056,7 @@ function renderTopbar() {
 
   const userStripChildren = [];
   if (appState.user) {
-    if (appState.activeTab === "portal") {
+    if (appState.activeTab === "portal" && !appState.user.needsUsernameSetup) {
       userStripChildren.push(
         el("button", {
           type: "button",
@@ -3998,7 +4097,8 @@ function renderTopbar() {
         className: "brand",
         style: { cursor: "pointer" },
         onClick: () => {
-          appState.activeTab = appState.user && appState.gameSummary ? "tabletop" : "portal";
+          appState.activeTab =
+            appState.user && !appState.user.needsUsernameSetup && appState.gameSummary ? "tabletop" : "portal";
           renderApp();
         },
       },
@@ -4016,7 +4116,7 @@ function renderTopbar() {
 
 async function handlePendingInviteDeepLink() {
   const targetGameId = String(appState.pendingInviteGameId || "").trim();
-  if (!targetGameId || !appState.user) return;
+  if (!targetGameId || !appState.user || appState.user.needsUsernameSetup) return;
   appState.pendingInviteGameId = null;
 
   try {
@@ -4062,8 +4162,31 @@ async function handlePendingInviteDeepLink() {
   }
 }
 
-function openGoogleSignInModal() {
-  const useFirebaseGoogle = isFirebaseClientConfigured();
+async function handleGoogleSignInClick() {
+  if (isFirebaseClientConfigured()) {
+    try {
+      const idToken = await signInWithFirebaseGooglePopup();
+      const res = await apiRequest("/api/auth/firebase", "POST", { idToken });
+      appState.user = res.user;
+      appState.csrfToken = res.csrfToken || null;
+      applyUserDefaultBoardView(res.user.settings);
+      appState.activeTab = "portal";
+      if (res.user && res.user.needsUsernameSetup) {
+        showToast("Google account verified! Choose your permanent Collegium username to finish joining.");
+        renderApp();
+        return;
+      }
+      await refreshPortalOverview();
+      showToast(`Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`);
+      renderApp();
+      await handlePendingInviteDeepLink();
+    } catch (err) {
+      showToast(err.message || "Google sign-in was cancelled or failed.", true);
+    }
+    return;
+  }
+
+  // Local offline development fallback when Firebase OAuth is not configured
   const emailInput = el("input", {
     className: "form-input",
     type: "email",
@@ -4071,62 +4194,7 @@ function openGoogleSignInModal() {
     value: "",
     autocomplete: "email",
   });
-  const nameInput = el("input", {
-    className: "form-input",
-    type: "text",
-    placeholder: "Optional — defaults to your Google profile name",
-    value: "",
-  });
-  let selectedColor = "Z3";
-  const colorButtons = [];
-  const swatchGrid = el(
-    "div",
-    { className: "color-swatch-grid" },
-    ...CART_COLOR_PALETTE.slice(0, 6).map((c) => {
-      const btn = el(
-        "button",
-        {
-          type: "button",
-          className: `color-swatch-option ${c.id === selectedColor ? "selected" : ""}`,
-          onClick: () => {
-            selectedColor = c.id;
-            colorButtons.forEach((b) => b.node.classList.toggle("selected", b.id === selectedColor));
-          },
-        },
-        renderCartIconNode(c.id, "", c.label),
-        el("span", { text: c.label })
-      );
-      colorButtons.push({ id: c.id, node: btn });
-      return btn;
-    })
-  );
-
-  const submitGoogle = async () => {
-    const nameVal = nameInput.value.trim();
-    if (useFirebaseGoogle) {
-      try {
-        const idToken = await signInWithFirebaseGooglePopup();
-        const res = await apiRequest("/api/auth/firebase", "POST", {
-          idToken,
-          displayName: nameVal,
-          preferredColor: selectedColor,
-        });
-        appState.user = res.user;
-        appState.csrfToken = res.csrfToken || null;
-        applyUserDefaultBoardView(res.user.settings);
-        closeModal();
-        await refreshPortalOverview();
-        showToast(
-          `Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`
-        );
-        renderApp();
-        await handlePendingInviteDeepLink();
-      } catch (err) {
-        showToast(err.message || "Google sign-in was cancelled or failed.", true);
-      }
-      return;
-    }
-
+  const submitLocalGoogle = async () => {
     const emailVal = emailInput.value.trim();
     if (!emailVal || !emailVal.includes("@")) {
       showToast("Please enter a valid Google email address.", true);
@@ -4135,72 +4203,181 @@ function openGoogleSignInModal() {
     try {
       const res = await apiRequest("/api/auth/google", "POST", {
         email: emailVal,
-        displayName: nameVal || emailVal.split("@")[0],
+        displayName: emailVal.split("@")[0].replace(/\./g, " "),
         googleSub: `google_${emailVal.toLowerCase()}`,
-        preferredColor: selectedColor,
       });
       appState.user = res.user;
       appState.csrfToken = res.csrfToken;
       applyUserDefaultBoardView(res.user.settings);
+      appState.activeTab = "portal";
       closeModal();
+      if (res.user && res.user.needsUsernameSetup) {
+        showToast("Google account verified! Choose your permanent Collegium username to finish joining.");
+        renderApp();
+        return;
+      }
       await refreshPortalOverview();
-      showToast(
-        `Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`
-      );
+      showToast(`Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`);
       renderApp();
       await handlePendingInviteDeepLink();
     } catch (err) {
       showToast(err.message, true);
     }
   };
-
   showModal(
-    "Sign in with Google — Collegium Mercatorum",
+    "Local Dev — Simulate Google Sign-In",
     el(
       "div",
       {},
-      el(
-        "div",
-        {
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            padding: "0.65rem 0.85rem",
-            background: "#fbf7ee",
-            borderRadius: "4px",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--bevel-sunken)",
-            marginBottom: "0.9rem",
-          },
-        },
-        renderGoogleLogoSvg(),
-        el(
-          "div",
-          { style: { fontSize: "0.84rem", color: "var(--text-main)" } },
-          useFirebaseGoogle
-            ? "Authenticate securely via Firebase Google Sign-In and choose your default merchant cart color."
-            : "Local development mode: enter an email address to simulate Google Sign-In."
-        )
-      ),
-      !useFirebaseGoogle
-        ? el("div", { className: "form-group" }, el("label", { text: "Google Account Email Address" }), emailInput)
-        : null,
-      el("div", { className: "form-group" }, el("label", { text: "Display Name (for new accounts)" }), nameInput),
-      el("div", { className: "form-group" }, el("label", { text: "Preferred Merchant Cart Color" }), swatchGrid),
+      el("div", { className: "form-group" }, el("label", { text: "Simulated Google Email Address" }), emailInput),
       el(
         "div",
         { style: { display: "flex", gap: "0.6rem", justifyContent: "flex-end", marginTop: "1rem" } },
         el("button", { type: "button", className: "btn", text: "Cancel", onClick: closeModal }),
-        el(
-          "button",
-          {
-            type: "button",
-            className: "btn btn-primary",
-            onClick: submitGoogle,
+        el("button", { type: "button", className: "btn btn-primary", text: "Continue", onClick: submitLocalGoogle })
+      )
+    )
+  );
+}
+
+function renderGoogleUsernameSetupView() {
+  const user = appState.user || {};
+  const previewNode = el("div", {
+    style: {
+      fontSize: "0.84rem",
+      color: "var(--gold-bright)",
+      fontWeight: "700",
+      marginTop: "0.35rem",
+    },
+    text: "Preview: @your_username",
+  });
+  const errorBox = el("div", {
+    style: {
+      display: "none",
+      padding: "0.55rem 0.75rem",
+      marginBottom: "0.85rem",
+      borderRadius: "4px",
+      background: "rgba(153, 27, 27, 0.12)",
+      border: "1px solid #b91c1c",
+      color: "#991b1b",
+      fontSize: "0.84rem",
+      fontWeight: "600",
+    },
+  });
+
+  const unameInput = el("input", {
+    className: "form-input",
+    type: "text",
+    placeholder: "e.g. marcus_aurelius",
+    maxLength: 34,
+    autocomplete: "username",
+    onInput: (e) => {
+      const cleaned = String(e.target.value || "")
+        .replace(/^@+/, "")
+        .trim()
+        .toLowerCase();
+      previewNode.textContent = cleaned
+        ? `Other players will invite you as: @${cleaned}`
+        : "Preview: @your_username";
+      errorBox.style.display = "none";
+    },
+  });
+
+  let submitting = false;
+  const submitBtn = el("button", {
+    type: "submit",
+    className: "btn btn-primary",
+    style: { width: "100%", padding: "0.68rem", fontWeight: "700" },
+    text: "Confirm Permanent Username & Enter Portal",
+  });
+
+  const handleConfirm = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+    const rawVal = String(unameInput.value || "")
+      .replace(/^@+/, "")
+      .trim()
+      .toLowerCase();
+    if (rawVal.length < 3 || rawVal.length > 32) {
+      errorBox.textContent = "Username must be between 3 and 32 characters.";
+      errorBox.style.display = "block";
+      return;
+    }
+    if (!/^[a-z0-9][a-z0-9_.-]*$/.test(rawVal)) {
+      errorBox.textContent =
+        "Username must start with a letter or number and contain only letters, numbers, underscores (_), hyphens (-), or periods (.).";
+      errorBox.style.display = "block";
+      return;
+    }
+    submitting = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Confirming Username…";
+    try {
+      const res = await apiRequest("/api/profile/set-username", "POST", { username: rawVal });
+      appState.user = res.user;
+      applyUserDefaultBoardView(res.user.settings);
+      await refreshPortalOverview();
+      showToast(`Salve, @${res.user.username}! Your permanent Collegium username is set.`);
+      renderApp();
+      await handlePendingInviteDeepLink();
+    } catch (err) {
+      submitting = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Confirm Permanent Username & Enter Portal";
+      errorBox.textContent = err.message || "Could not save username.";
+      errorBox.style.display = "block";
+    }
+  };
+
+  return el(
+    "div",
+    { className: "portal-container" },
+    el(
+      "div",
+      {
+        className: "auth-card",
+        style: { maxWidth: "520px", margin: "2rem auto" },
+      },
+      el("h2", {
+        className: "panel-title fresco-banner-header fresco-merchants",
+        text: "🏛️ Welcome — Choose Your Permanent Username",
+      }),
+      el("p", {
+        style: { fontSize: "0.9rem", color: "var(--text-main)", marginTop: "0" },
+        text: `Signed in with Google as ${user.displayName || "Merchant"} (${maskEmailClient(user.email)}).`,
+      }),
+      el(
+        "div",
+        {
+          style: {
+            padding: "0.65rem 0.85rem",
+            marginBottom: "1rem",
+            borderRadius: "4px",
+            background: "#fbf7ee",
+            border: "1px solid var(--gold)",
+            boxShadow: "var(--bevel-sunken)",
+            fontSize: "0.84rem",
+            color: "var(--text-main)",
+            lineHeight: "1.45",
           },
-          "Continue with Google"
-        )
+        },
+        el("strong", { text: "Permanent Invite Handle: " }),
+        el("span", {
+          text: "Choose the permanent @username that other players will use to invite you to games. Once confirmed, your username cannot be changed (you can still customize your Display Name and Cart Color anytime in Player Profile).",
+        })
+      ),
+      errorBox,
+      el(
+        "form",
+        { onSubmit: handleConfirm },
+        el(
+          "div",
+          { className: "form-group" },
+          el("label", { text: "Permanent Collegium Username (3–32 characters)" }),
+          unameInput,
+          previewNode
+        ),
+        submitBtn
       )
     )
   );
@@ -4423,7 +4600,7 @@ function renderAuthView() {
       {
         type: "button",
         className: "btn-google",
-        onClick: openGoogleSignInModal,
+        onClick: handleGoogleSignInClick,
       },
       renderGoogleLogoSvg(),
       el("span", { text: "Sign in with Google" })
@@ -4472,7 +4649,7 @@ function renderAuthView() {
   return el(
     "div",
     { className: "portal-container" },
-    el("div", { className: "landing-hero-grid" }, showcaseCard, authCard)
+    el("div", { className: "landing-hero-grid" }, authCard, showcaseCard)
   );
 }
 
@@ -12802,7 +12979,9 @@ function openMarketSourceModal(gs, viewer) {
   const infSelect = el(
     "select",
     { className: "form-input" },
-    ...(viewer.influence || []).map((c) => el("option", { value: c.id, text: `${c.name} — ${c.effectText}` }))
+    ...(viewer.influence || []).map((c) =>
+      el("option", { value: c.id, text: `${c.name} — ${getInfluenceCardEffectText(c)}` })
+    )
   );
   const goodSelect = el(
     "select",
@@ -13354,6 +13533,19 @@ function renderProfileView() {
     el(
       "form",
       { onSubmit: handleSaveProfile },
+      el(
+        "div",
+        { className: "form-group" },
+        el("label", { text: "Permanent Collegium Username (Used for Game Invitations)" }),
+        el("input", {
+          className: "form-input",
+          type: "text",
+          value: `@${user.username || ""}`,
+          readOnly: true,
+          disabled: true,
+          style: { opacity: "0.85", fontWeight: "700", cursor: "not-allowed" },
+        })
+      ),
       el("div", { className: "form-group" }, el("label", { text: "Roman Merchant Title / Display Name" }), displayNameInput),
       el("div", { className: "form-group" }, el("label", { text: "Account Email Address (Required)" }), emailInput),
       el("div", { className: "form-group" }, el("label", { text: "Merchant Cart Icon & Token Color" }), colorGrid),

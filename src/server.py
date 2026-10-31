@@ -87,10 +87,10 @@ def _build_public_firebase_config() -> Optional[Dict[str, str]]:
     if not storage.is_firebase_enabled():
         return None
     api_key = (
-        os.getenv("FIREBASE_CLIENT_API_KEY", "").strip()
-        or os.getenv("FIREBASE_WEB_API_KEY", "").strip()
+        os.getenv("FIREBASE_CLIENT_API_KEY", "").strip("<>\"' \t\r\n")
+        or os.getenv("FIREBASE_WEB_API_KEY", "").strip("<>\"' \t\r\n")
     )
-    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip()
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip("<>\"' \t\r\n")
     if not api_key or not project_id:
         return None
     auth_domain = (
@@ -570,7 +570,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             id_token = str(body.get("idToken") or self._get_bearer_token() or "").strip()
             username_opt = str(body.get("username", "")).strip() or None
             display_opt = str(body.get("displayName", "")).strip() or None
-            pref_color = store.normalize_cart_color(str(body.get("preferredColor", "Z1")), "Z1")
+            pref_color = store.normalize_cart_color(str(body.get("preferredColor", "Z3")), "Z3")
             user, f_err = store.verify_and_sync_firebase_id_token(
                 id_token=id_token,
                 username=username_opt,
@@ -587,7 +587,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/auth/google":
-            preferred_color = store.normalize_cart_color(str(body.get("preferredColor", "Z1")), "Z1")
+            preferred_color = store.normalize_cart_color(str(body.get("preferredColor", "Z3")), "Z3")
             fb_id_token = str(body.get("idToken", "")).strip()
             if fb_id_token and storage.is_firebase_enabled() and hasattr(store, "verify_and_sync_firebase_id_token"):
                 user, g_err = store.verify_and_sync_firebase_id_token(
@@ -666,6 +666,28 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": True, "message": "Signed out."}, set_cookie=clear_cookie)
             return
 
+        if path == "/api/profile/set-username":
+            user = self._require_auth(require_csrf=True)
+            if not user:
+                return
+            if not check_rate_limit(f"set_uname:{client_ip}:{user['id']}", 15, 60.0):
+                self._send_json(429, {"ok": False, "error": "Too many username attempts. Please wait a minute."})
+                return
+            raw_uname = str(body.get("username", ""))
+            updated_user, u_err = store.set_permanent_username(user_id=user["id"], username=raw_uname)
+            if u_err or not updated_user:
+                self._send_json(400, {"ok": False, "error": u_err or "Could not set permanent username."})
+                return
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "message": f"Permanent Collegium username @{updated_user['username']} confirmed!",
+                    "user": updated_user,
+                },
+            )
+            return
+
         if path == "/api/profile/update":
             user = self._require_auth(require_csrf=True)
             if not user:
@@ -690,6 +712,20 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(200, {"ok": True, "message": "Profile settings saved.", "user": updated_user})
             return
+
+        if path.startswith("/api/games/"):
+            user = self._require_auth(require_csrf=True)
+            if not user:
+                return
+            if user.get("needsUsernameSetup"):
+                self._send_json(
+                    400,
+                    {
+                        "ok": False,
+                        "error": "Please choose your permanent Collegium username before creating or joining games.",
+                    },
+                )
+                return
 
         if path == "/api/games/create":
             user = self._require_auth(require_csrf=True)
