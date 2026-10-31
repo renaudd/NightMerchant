@@ -83,6 +83,31 @@ def _allowed_origins() -> Set[str]:
     return DEFAULT_ALLOWED_ORIGINS | extra
 
 
+def _build_public_firebase_config() -> Optional[Dict[str, str]]:
+    if not storage.is_firebase_enabled():
+        return None
+    api_key = (
+        os.getenv("FIREBASE_CLIENT_API_KEY", "").strip()
+        or os.getenv("FIREBASE_WEB_API_KEY", "").strip()
+    )
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip()
+    if not api_key or not project_id:
+        return None
+    auth_domain = (
+        os.getenv("FIREBASE_AUTH_DOMAIN", "").strip()
+        or f"{project_id}.firebaseapp.com"
+    )
+    cfg: Dict[str, str] = {
+        "apiKey": api_key,
+        "authDomain": auth_domain,
+        "projectId": project_id,
+    }
+    app_id = os.getenv("FIREBASE_APP_ID", "").strip()
+    if app_id:
+        cfg["appId"] = app_id
+    return cfg
+
+
 def _ensure_fresh_engine() -> None:
     global _engine_last_mtime
     eng_file = getattr(game_engine, "__file__", None)
@@ -292,7 +317,14 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             if not check_rate_limit(f"api:{client_ip}", 240, 60.0):
                 self._send_json(429, {"ok": False, "error": "Too many requests. Please slow down."})
                 return
-            self._handle_api_get(path)
+            try:
+                self._handle_api_get(path)
+            except Exception as exc:
+                sys.stderr.write(f"[NightMerchant] Unhandled API GET error on {path}: {type(exc).__name__}\n")
+                try:
+                    self._send_json(500, {"ok": False, "error": "An unexpected server error occurred. Please try again."})
+                except Exception:
+                    pass
             return
 
         # Serve static files from PUBLIC_DIR with strict path traversal protection
@@ -356,6 +388,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
         if path == "/api/auth/me":
             user, _ = self._resolve_request_user()
             google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+            fb_client_cfg = _build_public_firebase_config()
             if not user:
                 self._send_json(
                     200,
@@ -366,6 +399,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                         "csrfToken": None,
                         "googleClientId": google_client_id,
                         "firebaseEnabled": storage.is_firebase_enabled(),
+                        "firebaseConfig": fb_client_cfg,
                     },
                 )
                 return
@@ -380,6 +414,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                     "csrfToken": csrf,
                     "googleClientId": google_client_id,
                     "firebaseEnabled": storage.is_firebase_enabled(),
+                    "firebaseConfig": fb_client_cfg,
                 },
             )
             return
@@ -438,6 +473,16 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"ok": False, "error": "Unknown API endpoint."})
 
     def do_POST(self) -> None:
+        try:
+            self._handle_api_post()
+        except Exception as exc:
+            sys.stderr.write(f"[NightMerchant] Unhandled API POST error on {self.path}: {type(exc).__name__}\n")
+            try:
+                self._send_json(500, {"ok": False, "error": "An unexpected server error occurred. Please try again."})
+            except Exception:
+                pass
+
+    def _handle_api_post(self) -> None:
         _ensure_fresh_engine()
         store = storage.get_backend()
         parsed_url = urllib.parse.urlparse(self.path)
@@ -497,6 +542,23 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             self._send_json(
                 200,
                 {"ok": True, "user": user, "csrfToken": csrf_token, "firebaseCustomToken": fb_custom_token},
+                set_cookie=cookie_str,
+            )
+            return
+
+        if path == "/api/auth/demo":
+            if storage.is_firebase_enabled() or not hasattr(store, "get_or_create_local_demo_user"):
+                self._send_json(403, {"ok": False, "error": "Sandbox demo sign-in is disabled in production."})
+                return
+            user, d_err = store.get_or_create_local_demo_user()
+            if d_err or not user:
+                self._send_json(500, {"ok": False, "error": d_err or "Could not create local demo session."})
+                return
+            raw_token, csrf_token = store.create_session(user["id"])
+            cookie_str = self._format_session_cookie(raw_token)
+            self._send_json(
+                200,
+                {"ok": True, "user": user, "csrfToken": csrf_token},
                 set_cookie=cookie_str,
             )
             return
@@ -918,7 +980,10 @@ def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
     store.init_db()
     # Strictly enforce 127.0.0.1 loopback in local development and tests;
     # only bind container interface when running inside managed Cloud Run (K_SERVICE).
-    is_cloud_run = bool(os.getenv("K_SERVICE", "").strip())
+    is_cloud_run = bool(
+        os.getenv("K_SERVICE", "").strip()
+        or os.getenv("NIGHTMERCHANT_CLOUD_RUN", "").strip() == "1"
+    )
     if is_cloud_run:
         bind_host = host
     else:
@@ -935,5 +1000,9 @@ def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
 
 if __name__ == "__main__":
     port_num = int(os.getenv("PORT") or os.getenv("NIGHTMERCHANT_PORT", "8080"))
-    default_host = "" if os.getenv("K_SERVICE", "").strip() else "127.0.0.1"
+    in_container = bool(
+        os.getenv("K_SERVICE", "").strip()
+        or os.getenv("NIGHTMERCHANT_CLOUD_RUN", "").strip() == "1"
+    )
+    default_host = "" if in_container else "127.0.0.1"
     run_server(default_host, port_num)

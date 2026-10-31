@@ -9,7 +9,7 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        14,
+        13,
         9,
         6,
         4,
@@ -32,9 +32,9 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        10,
-        7,
-        5,
+        14,
+        9,
+        6,
         4,
         2
       ],
@@ -55,17 +55,17 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        9,
+        10,
         7,
         5,
         4,
         2
       ],
       "buy": [
-        5,
         4,
         3,
         2,
+        1,
         1
       ]
     },
@@ -78,14 +78,14 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        18,
-        11,
-        7,
+        13,
+        8,
         5,
-        3
+        4,
+        2
       ],
       "buy": [
-        6,
+        5,
         4,
         3,
         2,
@@ -124,14 +124,37 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        9,
-        7,
-        5,
+        8,
+        6,
         4,
+        3,
         2
       ],
       "buy": [
+        4,
+        3,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "grn_7",
+      "name": "Spelt",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        20,
+        13,
+        8,
         5,
+        3
+      ],
+      "buy": [
+        6,
         4,
         3,
         2,
@@ -139,8 +162,8 @@
       ]
     },
     {
-      "id": "grn_7",
-      "name": "Spelt",
+      "id": "grn_8",
+      "name": "Durum",
       "category": "Grain",
       "subcategory": "Grain",
       "track": "Grain",
@@ -162,29 +185,6 @@
       ]
     },
     {
-      "id": "grn_8",
-      "name": "Durum",
-      "category": "Grain",
-      "subcategory": "Grain",
-      "track": "Grain",
-      "blocks": 2,
-      "guards": 0,
-      "sell": [
-        20,
-        12,
-        7,
-        5,
-        3
-      ],
-      "buy": [
-        6,
-        4,
-        3,
-        2,
-        1
-      ]
-    },
-    {
       "id": "grn_9",
       "name": "Barley",
       "category": "Grain",
@@ -193,8 +193,8 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        9,
-        7,
+        11,
+        8,
         5,
         4,
         2
@@ -219,7 +219,7 @@
         12,
         7,
         5,
-        4,
+        3,
         2
       ],
       "buy": [
@@ -239,17 +239,17 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        9,
-        7,
-        5,
+        8,
+        6,
         4,
+        3,
         2
       ],
       "buy": [
-        5,
         4,
         3,
         2,
+        1,
         1
       ]
     },
@@ -262,9 +262,9 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        10,
-        7,
-        5,
+        14,
+        9,
+        6,
         4,
         2
       ],
@@ -301,7 +301,7 @@
     },
     {
       "id": "cw_2",
-      "name": "Ceretanum",
+      "name": "Caeretanum",
       "category": "Wine",
       "subcategory": "Cheap Wine",
       "track": "Wine",
@@ -347,7 +347,7 @@
     },
     {
       "id": "cw_4",
-      "name": "Massico",
+      "name": "Massicum",
       "category": "Wine",
       "subcategory": "Cheap Wine",
       "track": "Wine",
@@ -485,7 +485,7 @@
     },
     {
       "id": "fw_1",
-      "name": "Pompeiian",
+      "name": "Pompeian",
       "category": "Wine",
       "subcategory": "Fine Wine",
       "track": "Wine",
@@ -899,7 +899,7 @@
     },
     {
       "id": "ea_1",
-      "name": "Deer",
+      "name": "Ostrich",
       "category": "Animals",
       "subcategory": "Exotic Animals",
       "track": "Animals",
@@ -1511,7 +1511,7 @@
         12,
         7
       ],
-      "combatText": "No combat bonus (0 CP)",
+      "combatText": "0 CP (Crated Armor Cargo)",
       "combat": null
     },
     {
@@ -1523,11 +1523,11 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        66,
-        41,
-        26,
-        18,
-        9
+        76,
+        48,
+        30,
+        21,
+        11
       ],
       "buy": [
         22,
@@ -1546,11 +1546,11 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        83,
-        52,
-        33,
-        24,
-        12
+        96,
+        61,
+        39,
+        28,
+        14
       ],
       "buy": [
         28,
@@ -1569,11 +1569,11 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        72,
-        45,
-        28,
-        20,
-        10
+        83,
+        53,
+        33,
+        24,
+        12
       ],
       "buy": [
         24,
@@ -1592,11 +1592,11 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        88,
-        56,
-        35,
-        26,
-        13
+        102,
+        66,
+        41,
+        30,
+        15
       ],
       "buy": [
         30,
@@ -1608,18 +1608,18 @@
     },
     {
       "id": "mrb_5",
-      "name": "Proconesio",
+      "name": "Proconnesian",
       "category": "Marble",
       "subcategory": "Marble",
       "track": "Marble",
       "blocks": 2,
       "guards": 0,
       "sell": [
-        77,
-        49,
-        30,
-        22,
-        11
+        89,
+        57,
+        35,
+        26,
+        13
       ],
       "buy": [
         26,
@@ -1631,18 +1631,18 @@
     },
     {
       "id": "mrb_6",
-      "name": "Proconesio",
+      "name": "Proconnesian",
       "category": "Marble",
       "subcategory": "Marble",
       "track": "Marble",
       "blocks": 3,
       "guards": 0,
       "sell": [
-        91,
-        60,
-        37,
-        27,
-        14
+        106,
+        70,
+        44,
+        32,
+        16
       ],
       "buy": [
         32,
@@ -1661,11 +1661,11 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        83,
-        52,
-        33,
-        24,
-        12
+        95,
+        60,
+        38,
+        28,
+        14
       ],
       "buy": [
         28,
@@ -1684,11 +1684,11 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        93,
-        63,
-        40,
-        29,
-        14
+        108,
+        74,
+        47,
+        34,
+        17
       ],
       "buy": [
         34,
@@ -1707,11 +1707,11 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        88,
-        56,
-        35,
-        26,
-        13
+        101,
+        65,
+        41,
+        30,
+        15
       ],
       "buy": [
         30,
@@ -1730,11 +1730,11 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        96,
-        65,
-        42,
-        31,
-        16
+        112,
+        76,
+        49,
+        36,
+        19
       ],
       "buy": [
         36,
@@ -1753,11 +1753,11 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        91,
-        60,
-        37,
-        27,
-        14
+        105,
+        70,
+        44,
+        32,
+        16
       ],
       "buy": [
         32,
@@ -1776,11 +1776,11 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        100,
-        72,
-        46,
-        36,
-        22
+        118,
+        84,
+        54,
+        42,
+        25
       ],
       "buy": [
         40,
@@ -1842,7 +1842,7 @@
     },
     {
       "id": "grd_3",
-      "name": "Pliny",
+      "name": "Plinius",
       "category": "Guards",
       "subcategory": "Guard",
       "track": "Guards",
@@ -1982,7 +1982,7 @@
     },
     {
       "id": "grd_9",
-      "name": "Paolo",
+      "name": "Paullus",
       "category": "Guards",
       "subcategory": "Guard",
       "track": "Guards",
@@ -2005,7 +2005,7 @@
     },
     {
       "id": "grd_10",
-      "name": "Michele",
+      "name": "Maximus",
       "category": "Guards",
       "subcategory": "Guard",
       "track": "Guards",
@@ -2194,7 +2194,7 @@
     },
     {
       "id": "mis_7",
-      "name": "Notte Bianca",
+      "name": "Noctes Romanae",
       "kind": "expose",
       "exposeType": "patricii",
       "exposeCount": 4,
@@ -2230,7 +2230,7 @@
       "id": "mis_9",
       "name": "Uber Drinks",
       "kind": "delivery",
-      "item": "Ceretanum",
+      "item": "Caeretanum",
       "category": "Cheap Wine",
       "blocks": 1,
       "pickupCell": "A5",
@@ -2248,7 +2248,7 @@
         "amount": 12
       },
       "favor": [],
-      "text": "Pick up Ceretanum (Cheap Wine • 1■) in A5 (Horti Caesaris), Deliver to C1 (Mons Pincius). [Fenced Sell: 32/20/13/8/6]"
+      "text": "Pick up Caeretanum (Cheap Wine • 1■) in A5 (Horti Caesaris), Deliver to C1 (Mons Pincius). [Fenced Sell: 32/20/13/8/6]"
     },
     {
       "id": "mis_10",
@@ -2297,7 +2297,7 @@
       "favor": [
         "Aurelius"
       ],
-      "text": "Sell Meat Animals at + Scarcity in C2 (Septa Julia)."
+      "text": "Sell Meat Animals at + Scarcity in C2 (Saepta Julia)."
     },
     {
       "id": "mis_13",
@@ -2454,7 +2454,7 @@
         "count": 1
       },
       "favor": [],
-      "text": "Pick up Scuta (Weapons • 2■ • Ignore (R) Wounds) in B6 (Via Ostiensis), Deliver to C2 (Septa Julia). [Fenced Sell: 26/18/10/7/4]"
+      "text": "Pick up Scuta (Weapons • 2■ • Ignore (R) Wounds) in B6 (Via Ostiensis), Deliver to C2 (Saepta Julia). [Fenced Sell: 26/18/10/7/4]"
     },
     {
       "id": "mis_20",
@@ -2578,7 +2578,7 @@
         "-Geta",
         "Caracalla"
       ],
-      "text": "Pick up Imperial Porphyry (Marble • 2■) in F3 (Via Tiburtina), Deliver to B2 (Pantheum / Thermae Neronae). [Fenced Sell: 76/52/31/23/13]"
+      "text": "Pick up Imperial Porphyry (Marble • 2■) in F3 (Via Tiburtina), Deliver to B2 (Pantheum / Thermae Neronianae). [Fenced Sell: 76/52/31/23/13]"
     },
     {
       "id": "mis_25",
@@ -2797,7 +2797,7 @@
       "id": "mis_36",
       "name": "Hunting Games",
       "kind": "delivery",
-      "item": "Deer",
+      "item": "Ostrich",
       "category": "Exotic Animals",
       "blocks": 2,
       "pickupCell": "E6",
@@ -2815,7 +2815,7 @@
         "multiplier": 10
       },
       "favor": [],
-      "text": "Pick up Deer (Exotic Animals • 2■) in E6 (Caeliolus), Deliver to A2 (Circus Agonalis). [Fenced Sell: 16/12/8/6/3]"
+      "text": "Pick up Ostrich (Exotic Animals • 2■) in E6 (Caeliolus), Deliver to A2 (Circus Agonalis). [Fenced Sell: 16/12/8/6/3]"
     },
     {
       "id": "mis_37",
@@ -2858,7 +2858,7 @@
         "count": 1
       },
       "favor": [],
-      "text": "Pick up Cretan (Cheap Wine • 1■) in B2 (Pantheum / Thermae Neronae), Deliver to C5 (Circus Maximus). [Fenced Sell: 42/26/16/11/6]"
+      "text": "Pick up Cretan (Cheap Wine • 1■) in B2 (Pantheum / Thermae Neronianae), Deliver to C5 (Circus Maximus). [Fenced Sell: 42/26/16/11/6]"
     },
     {
       "id": "mis_39",
@@ -2957,7 +2957,7 @@
         "count": 1
       },
       "favor": [],
-      "text": "Pick up Lamb (Meat Animals • 2■) in F4 (Collis Esquilinus), Deliver to C2 (Septa Julia). [Fenced Sell: 32/20/13/9/5]"
+      "text": "Pick up Lamb (Meat Animals • 2■) in F4 (Collis Esquilinus), Deliver to C2 (Saepta Julia). [Fenced Sell: 32/20/13/9/5]"
     },
     {
       "id": "mis_44",
@@ -3086,7 +3086,7 @@
         "dice": 2
       },
       "favor": [],
-      "text": "Sell Fine Wine at -- Scarcity in B2 (Pantheum / Thermae Neronae)."
+      "text": "Sell Fine Wine at -- Scarcity in B2 (Pantheum / Thermae Neronianae)."
     },
     {
       "id": "mis_51",

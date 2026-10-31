@@ -2134,7 +2134,7 @@
   },
   "B2": {
     "coord": "B2",
-    "name": "Thermae Neronae",
+    "name": "Thermae Neronianae",
     "isGate": false,
     "isForum": false,
     "tiles": [
@@ -2473,7 +2473,7 @@
   },
   "C2": {
     "coord": "C2",
-    "name": "Septa Julia",
+    "name": "Saepta Julia",
     "isGate": false,
     "isForum": false,
     "tiles": [

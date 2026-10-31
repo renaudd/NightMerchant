@@ -48,7 +48,7 @@ python3 src/server.py
 | :--- | :--- |
 | `NIGHTMERCHANT_USE_FIREBASE` | Set to `1` to use Firebase Auth + Cloud Firestore |
 | `FIREBASE_PROJECT_ID` | Firebase / Google Cloud Project ID (`nightmerchant-f183d`) |
-| `FIREBASE_WEB_API_KEY` | Firebase Web API Key from `firebaseConfig.apiKey` (for password login verification) |
+| `FIREBASE_WEB_API_KEY` | Restricted Firebase Web API Key (supplied at runtime via `GET /api/auth/me` and used for password login verification; never commit `AIza...` keys to `public/config.js`) |
 | `NIGHTMERCHANT_PUBLIC_URL` | `https://dashiellrenaud.com/nightmerchant` |
 | `NIGHTMERCHANT_ALLOWED_ORIGINS` | Optional comma-separated extra CORS origins |
 | `EMAILJS_SERVICE_ID` | EmailJS Service ID for Invite-Only game emails |
@@ -61,15 +61,15 @@ Deploy the backend container to Cloud Run:
 ```bash
 gcloud run deploy nightmerchant-api \
   --source . \
-  --region us-central1 \
+  --region us-west2 \
   --allow-unauthenticated \
-  --set-env-vars="NIGHTMERCHANT_USE_FIREBASE=1,FIREBASE_PROJECT_ID=<PROJECT_ID>,NIGHTMERCHANT_PUBLIC_URL=https://dashiellrenaud.com/nightmerchant,EMAILJS_SERVICE_ID=<SERVICE_ID>,EMAILJS_TEMPLATE_ID=<TEMPLATE_ID>,EMAILJS_PUBLIC_KEY=<PUBLIC_KEY>,EMAILJS_PRIVATE_KEY=<PRIVATE_KEY>"
+  --set-env-vars="NIGHTMERCHANT_USE_FIREBASE=1,FIREBASE_PROJECT_ID=<PROJECT_ID>,FIREBASE_WEB_API_KEY=<RESTRICTED_WEB_API_KEY>,NIGHTMERCHANT_PUBLIC_URL=https://dashiellrenaud.com/nightmerchant,EMAILJS_SERVICE_ID=<SERVICE_ID>,EMAILJS_TEMPLATE_ID=<TEMPLATE_ID>,EMAILJS_PUBLIC_KEY=<PUBLIC_KEY>,EMAILJS_PRIVATE_KEY=<PRIVATE_KEY>"
 ```
 
 ### 2. Frontend Configuration & GitHub Pages Sync
 
-1. Populate `apiBaseUrl` (your Cloud Run URL) and `firebaseConfig` in `public/config.js`.
-2. Sync `public/` into `dashiellrenaud_site/nightmerchant`:
+1. Populate `apiBaseUrl` (your Cloud Run URL) and non-secret `firebaseConfig` project identifiers (`projectId`, `authDomain`, `appId` — **never** `apiKey`) in `public/config.js`.
+2. Sync `public/` into `dashiellrenaud_site/nightmerchant` (omit `--preserve-config` so `config.js` is updated):
    ```bash
    python3 scripts/sync_to_site.py
    ```

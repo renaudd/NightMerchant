@@ -19,6 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from typing import Any, Dict, List, Optional, Tuple
 
 import db as local_helpers
@@ -73,12 +74,11 @@ def init_db() -> None:
 
 
 def _admin_usernames() -> set:
-    env_admins = [
+    return {
         u.strip().lower()
         for u in os.environ.get("NIGHTMERCHANT_ADMINS", "").split(",")
         if u.strip()
-    ]
-    return set(["dash", "mercator_romanus", "admin"] + env_admins)
+    }
 
 
 def _format_firestore_user(doc_data: Dict[str, Any], csrf_token: Optional[str] = None) -> Dict[str, Any]:
@@ -90,7 +90,11 @@ def _format_firestore_user(doc_data: Dict[str, Any], csrf_token: Optional[str] =
         for k in DEFAULT_USER_SETTINGS:
             if k in settings_raw:
                 merged_settings[k] = settings_raw[k]
-    is_admin = bool(doc_data.get("isAdmin")) or (uname.lower() in _admin_usernames())
+    admin_set = _admin_usernames()
+    if uname.lower() == "mercator_romanus" and "mercator_romanus" not in admin_set:
+        is_admin = False
+    else:
+        is_admin = bool(doc_data.get("isAdmin")) or (uname.lower() in admin_set)
     out: Dict[str, Any] = {
         "id": int(doc_data["id"]),
         "username": uname,
@@ -175,7 +179,7 @@ def _allocate_and_store_user(
             "displayName": display_clean,
             "preferredColor": clean_color,
             "settings": dict(DEFAULT_USER_SETTINGS),
-            "isAdmin": is_admin or (next_id == 1),
+            "isAdmin": is_admin,
             "gamesPlayed": 0,
             "gamesWon": 0,
             "bestWealth": 0,
@@ -285,7 +289,10 @@ def authenticate_user(username: str, password: str) -> Tuple[Optional[Dict[str, 
             if u_snap.exists:
                 user_doc = u_snap.to_dict()
 
-    web_api_key = os.getenv("FIREBASE_WEB_API_KEY", "").strip()
+    web_api_key = (
+        os.getenv("FIREBASE_SERVER_API_KEY", "").strip()
+        or os.getenv("FIREBASE_WEB_API_KEY", "").strip()
+    )
     if not web_api_key:
         return None, "FIREBASE_WEB_API_KEY is required on the server for password verification."
 
@@ -301,11 +308,18 @@ def authenticate_user(username: str, password: str) -> Tuple[Optional[Dict[str, 
             "returnSecureToken": True,
         }
     ).encode("utf-8")
+    public_referer = (
+        os.getenv("NIGHTMERCHANT_PUBLIC_URL", "https://dashiellrenaud.com/nightmerchant/").strip()
+        or "https://dashiellrenaud.com/"
+    )
     req = urllib.request.Request(
         verify_url,
         data=req_body,
         method="POST",
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Referer": public_referer,
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=6.0) as resp:
@@ -861,6 +875,28 @@ def get_game_summary(game_id: str, viewer_user: Optional[Dict[str, Any]] = None)
     return _build_summary_from_game_doc(snap.to_dict(), viewer_user=viewer_user)
 
 
+def _serialize_game_state_zlib(state: Dict[str, Any]) -> bytes:
+    """Compress JSON game state so 3-snapshot states (~1.08 MB raw) stay ~90-125 KB in Firestore (<1 MiB limit)."""
+    raw = json.dumps(state, separators=(",", ":")).encode("utf-8")
+    comp = zlib.compress(raw, level=6)
+    if len(comp) > 900_000 and isinstance(state.get("turnSnapshotHistory"), list) and state["turnSnapshotHistory"]:
+        trimmed = dict(state)
+        trimmed["turnSnapshotHistory"] = list(state["turnSnapshotHistory"][-1:])
+        raw = json.dumps(trimmed, separators=(",", ":")).encode("utf-8")
+        comp = zlib.compress(raw, level=6)
+    return comp
+
+
+def _deserialize_game_state(g_data: Dict[str, Any]) -> Dict[str, Any]:
+    z_blob = g_data.get("stateZlib")
+    if isinstance(z_blob, (bytes, bytearray)) and len(z_blob) > 0:
+        return json.loads(zlib.decompress(bytes(z_blob)).decode("utf-8"))
+    raw_json = g_data.get("stateJson")
+    if isinstance(raw_json, str) and raw_json.strip():
+        return json.loads(raw_json)
+    return {}
+
+
 def get_game_full(
     game_id: str,
     viewer_user: Optional[Dict[str, Any]] = None,
@@ -871,7 +907,7 @@ def get_game_full(
         return None
     g_data = snap.to_dict()
     summary = _build_summary_from_game_doc(g_data, viewer_user=viewer_user)
-    state = json.loads(g_data.get("stateJson") or "{}")
+    state = _deserialize_game_state(g_data)
     return summary, state
 
 
@@ -1140,7 +1176,8 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
             "season": state.get("season", "Spring"),
             "phase": state.get("phase", "market"),
             "turn": int(state.get("turn", 1)),
-            "stateJson": json.dumps(state),
+            "stateZlib": _serialize_game_state_zlib(state),
+            "stateJson": "",
             "winnerName": winner,
             "seats": seats,
             "updatedAt": now,

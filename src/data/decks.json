@@ -210,7 +210,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Tutor of Cara. and Geta. Romans were in outcry when the soldiers sent to kill Cilo dragged him through the streets. Caracalla intervened, 'Insult not my father, strike not my tutor,' and had them put to death.",
+      "bio": "Tutor of Caracalla and Geta. Romans were in outcry when soldiers sent to kill Cilo dragged him from his bath through the streets; Caracalla intervened—'Insult not my father, strike not my tutor!'—and had the arresting officer put to death.",
       "combatFormula": "2(R)",
       "friendlyFavor": [
         "Geta",
@@ -456,11 +456,11 @@
     },
     {
       "id": "pat_14",
-      "name": "Annia Cornificia Faustina Minor",
+      "name": "Cornificia",
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Daughter of Marcus Aurelius. Caracalla ordered that she be killed for weeping over the death of Geta.",
+      "bio": "Surviving daughter of Marcus Aurelius. Ordered to take her own life by Caracalla after she wept openly with Julia Domna over the murder of Geta.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Aurelius",
@@ -793,11 +793,11 @@
     },
     {
       "id": "pat_22",
-      "name": "Lucius Septimius Bassianus (Caracalla)",
+      "name": "Marcus Aurelius Antoninus (Caracalla)",
       "deck": "Patricii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Senior Co-Emperor — Bassianus is the birth name of Emperor Caracalla (officially Marcus Aurelius Antoninus), nicknamed after the hooded Gallic tunic he popularized. Murdered his brother Geta in December 211.",
+      "bio": "Senior Co-Emperor — nicknamed Caracalla after the hooded Gallic tunic he popularized. Murdered his brother Geta in December 211.",
       "combatFormula": "4(R)",
       "friendlyFavor": [
         "Caracalla",
@@ -974,7 +974,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Husband of Julia Maesa. Prefect of the Italian orphanages under Caracalla. Loyal to Julia Domna.",
+      "bio": "Husband of Julia Maesa and prefect of Italy's imperial child-welfare endowments (praefectus alimentorum) under Caracalla. Loyal to Julia Domna.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Domna"
@@ -1289,11 +1289,11 @@
     },
     {
       "id": "leg_5",
-      "name": "Tiberius Claudius Pompeianus Quintianus",
+      "name": "Tiberius Claudius Aurelius Quintianus",
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Grandson of Marcus Aurelius. Led military campaigns for Caracalla. Murdered in a Robbery.",
+      "bio": "Great-grandson of Marcus Aurelius through Lucilla and Pompeianus; served as military tribune and young Aurelian senator under Caracalla before his consulship of 235.",
       "combatFormula": "X(R)+X",
       "friendlyFavor": [
         "Caracalla",
@@ -2008,11 +2008,11 @@
     },
     {
       "id": "leg_25",
-      "name": "Marcus Clodius Pupienus",
+      "name": "Marcus Clodius Pupienus Maximus",
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Served under Caracalla. Later emperor alongside Balbinus for 3 months in 238. Hacked to death in a bathhouse by disaffected Praetorians.",
+      "bio": "Veteran provincial commander under the Severans. Later co-emperor alongside Balbinus for three months in 238, before Praetorians dragged both from the palace and hacked them to death in the streets.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Caracalla",
@@ -2198,7 +2198,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Celebrated grammarian. Not to be confused with Herodian the historian. Would have been part of Julia Domna's learned circle",
+      "bio": "Celebrated Alexandrian grammarian in Rome (not to be confused with Herodian the historian), whose treatises on Greek accentuation were prized by Marcus Aurelius and Julia Domna's learned circle.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Domna"
@@ -2444,7 +2444,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "The 'Robin Hood' of Ancient Rome. Aligned with Plautilla. Dio suggests he had been captured by this period. Betrayed by his mistress and fed to wild animals.",
+      "bio": "Legendary 'Robin Hood' bandit captain of 600 brigands who mocked Imperial Prefect Papinian across Italy for two years (205–207 A.D.) before being betrayed by his mistress and thrown to wild beasts.",
       "combatFormula": "2X(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -2730,7 +2730,7 @@
     },
     {
       "id": "nef_18",
-      "name": "Suppositicus",
+      "name": "Suppositicius",
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
@@ -2813,7 +2813,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Egyptian confidant of Plautianus who turned coat to survive, rising under Caracalla as imperial secretary of petitions (a libellis) and the first Egyptian admitted to the Senate.",
+      "bio": "Egyptian equestrian confidant of Plautianus exiled to an island in 205 A.D.; maneuvering in the shadows until Caracalla recalled him in 212 as Rome's first Egyptian senator.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Caracalla",
@@ -2848,7 +2848,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Gladiator who rejected offers of freedom on four separate occasions. He was so famous his face was put on coins. Died sometime in the 2nd century, But Geta would have been a fan.",
+      "bio": "Legendary Syrian secutor recorded on his Sicilian tombstone (CIL X 7297): fought 34 bouts, won 21, refused the wooden rudis of freedom four times, and died in the arena at age 30 in the 2nd century—still idolized by Geta's arena-mad partisans.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Geta",
@@ -3083,7 +3083,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Riverfront smuggling gang operating along the Tiber warehouses below Monte Testaccio, fencing wine amphorae to fund Plautilla's underground network.",
+      "bio": "Riverfront smuggling gang operating along the Tiber warehouses below Mons Testaceus, fencing wine amphorae to fund Plautilla's underground network.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Plautilla"

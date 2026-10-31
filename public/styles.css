@@ -383,9 +383,9 @@ button, input, select {
 
 .good-card-art-frame {
   width: 100%;
-  flex: 1 1 16px;
-  min-height: 14px;
-  max-height: 36px;
+  flex: 1 1 28px;
+  min-height: 26px;
+  max-height: 48px;
   margin: 2px 0;
   border-radius: 3px;
   overflow: hidden;
@@ -502,7 +502,7 @@ button, input, select {
 
 @media (max-width: 1120px) {
   .portal-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -665,7 +665,7 @@ button, input, select {
 
 @media (max-width: 1360px) {
   .tabletop-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -773,7 +773,7 @@ button, input, select {
 .ostia-market-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: repeat(6, minmax(156px, auto));
+  grid-template-rows: repeat(6, minmax(174px, auto));
   min-width: 820px;
   background-image: url("./assets/icons/ostia_market_board_bg.jpg?v=7");
   background-size: 100% 100%;
@@ -864,7 +864,7 @@ button, input, select {
 /* Empty Warehouse Bay: lets the enormous empty warehouse floor show through */
 .market-slot-empty-bay {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 4.65;
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -887,7 +887,7 @@ button, input, select {
   text-shadow: 0 1px 2px rgba(24, 8, 4, 0.75);
 }
 
-/* Physical-style Goods & Guards Card with colored border edge — strictly 1:1 square */
+/* Physical-style Goods & Guards Card with colored border edge */
 .good-track-grain {
   --good-color: #2f3b28;
   --good-sub-color: #263120;
@@ -940,6 +940,10 @@ button, input, select {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.market-bay-cell .market-good-card {
+  aspect-ratio: 4 / 4.65;
 }
 
 .market-good-card-inner {
@@ -6177,6 +6181,164 @@ button, input, select {
   background: linear-gradient(180deg, #fffdf5 0%, #f6ebd4 100%) !important;
 }
 
+/* =========================================================================
+   LANDING PAGE HERO SHOWCASE, STICKY SCROLL MARGIN & MOBILE CONTAINMENT
+   ========================================================================= */
 
+#pending-encounter-panel,
+.senate-climate-board,
+.rulebook-section,
+.lobby-card,
+.panel[id] {
+  scroll-margin-top: 76px;
+}
 
+.landing-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.26fr) minmax(0, 0.94fr);
+  gap: 1.35rem;
+  align-items: start;
+  margin: 0.65rem 0 2rem;
+}
 
+.landing-showcase-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.landing-auth-card {
+  margin: 0;
+  max-width: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.landing-pajou-figure {
+  margin: 0;
+  padding: 0.55rem;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #27150e 0%, #190c08 100%);
+  border: 2px solid #b88b3c;
+  box-shadow:
+    inset 0 0 0 1px rgba(253, 230, 176, 0.32),
+    0 6px 18px rgba(24, 10, 5, 0.45);
+}
+
+.landing-pajou-img {
+  width: 100%;
+  max-height: 410px;
+  object-fit: cover;
+  object-position: center 34%;
+  display: block;
+  border-radius: 3px;
+  border: 1px solid rgba(222, 184, 108, 0.52);
+}
+
+.landing-pajou-caption {
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
+  color: #f6e7c8;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.landing-blurb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.landing-blurb-lead {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.52;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.landing-blurb-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.landing-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.landing-cta-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.portal-container,
+.tabletop-wrapper,
+.tabletop-main > *,
+.portal-grid > *,
+.rulebook-layout > *,
+.market-board,
+.senate-climate-board,
+.panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 980px) {
+  .landing-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    flex-wrap: wrap;
+    white-space: normal;
+    padding: 0.42rem 0.65rem;
+    gap: 0.45rem;
+  }
+
+  .brand {
+    flex: 1 1 100%;
+  }
+
+  .brand-title {
+    font-size: 0.84rem;
+  }
+
+  .nav-tabs {
+    flex-wrap: wrap;
+    gap: 0.32rem;
+  }
+
+  .user-strip {
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  .portal-container {
+    padding: 0 0.65rem;
+    margin: 0.85rem auto;
+  }
+
+  .tabletop-wrapper {
+    padding: 0.5rem 0.55rem 1.2rem;
+  }
+
+  .auth-card {
+    padding: 1.05rem 1rem;
+  }
+
+  .rulebook-content {
+    overflow-x: auto;
+  }
+}

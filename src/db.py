@@ -184,16 +184,27 @@ def _parse_user_settings(raw_json: Optional[str]) -> Dict[str, Any]:
     return merged
 
 
+def _admin_usernames() -> set:
+    return {
+        u.strip().lower()
+        for u in os.environ.get("NIGHTMERCHANT_ADMINS", "").split(",")
+        if u.strip()
+    }
+
+
 def _format_user_dict(row: sqlite3.Row, csrf_token: Optional[str] = None) -> Dict[str, Any]:
     keys = row.keys()
     email_val = row["email"] if "email" in keys and row["email"] else f"{row['username']}@roma.local"
     provider_val = row["auth_provider"] if "auth_provider" in keys and row["auth_provider"] else "local"
     settings_raw = row["settings_json"] if "settings_json" in keys else "{}"
-    is_admin_val = (
-        bool(row["is_admin"])
-        if "is_admin" in keys and row["is_admin"] is not None
-        else (row["id"] == 1 or row["username"] in ("mercator_romanus", "admin"))
-    )
+    uname_lower = str(row["username"]).lower()
+    admin_set = _admin_usernames()
+    if uname_lower == "mercator_romanus" and "mercator_romanus" not in admin_set:
+        is_admin_val = False
+    elif "is_admin" in keys and row["is_admin"] is not None:
+        is_admin_val = bool(row["is_admin"]) or (uname_lower in admin_set)
+    else:
+        is_admin_val = uname_lower in admin_set
     res: Dict[str, Any] = {
         "id": row["id"],
         "username": row["username"],
@@ -254,17 +265,15 @@ def init_db() -> None:
                 conn.execute("ALTER TABLE users ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
             if "is_admin" not in existing_cols:
                 conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
-            env_admins = [
-                u.strip().lower()
-                for u in os.environ.get("NIGHTMERCHANT_ADMINS", "").split(",")
-                if u.strip()
-            ]
-            admin_usernames = sorted(set(["dash", "mercator_romanus", "admin"] + env_admins))
-            placeholders = ",".join("?" for _ in admin_usernames)
-            conn.execute(
-                f"UPDATE users SET is_admin = 1 WHERE LOWER(username) IN ({placeholders})",
-                admin_usernames,
-            )
+            admin_usernames = sorted(_admin_usernames())
+            if "mercator_romanus" not in admin_usernames:
+                conn.execute("UPDATE users SET is_admin = 0 WHERE LOWER(username) = 'mercator_romanus'")
+            if admin_usernames:
+                placeholders = ",".join("?" for _ in admin_usernames)
+                conn.execute(
+                    f"UPDATE users SET is_admin = 1 WHERE LOWER(username) IN ({placeholders})",
+                    admin_usernames,
+                )
 
             # Backfill any existing users missing an email address
             rows_no_email = conn.execute("SELECT id, username FROM users WHERE email IS NULL OR email = ''").fetchall()
@@ -645,21 +654,78 @@ def create_user(
             if existing_e:
                 return None, "That email address is already tied to an account."
 
+            is_admin_flag = 1 if username_clean in _admin_usernames() else 0
             cur = conn.execute(
                 """
                 INSERT INTO users (
                     username, email, auth_provider, display_name,
-                    password_hash, password_salt, preferred_color, settings_json, created_at
+                    password_hash, password_salt, preferred_color, settings_json, is_admin, created_at
                 )
-                VALUES (?, ?, 'local', ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, 'local', ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (username_clean, email_clean, display_clean, pw_hash, salt_hex, clean_color, default_settings_json, now),
+                (
+                    username_clean,
+                    email_clean,
+                    display_clean,
+                    pw_hash,
+                    salt_hex,
+                    clean_color,
+                    default_settings_json,
+                    is_admin_flag,
+                    now,
+                ),
             )
             user_id = cur.lastrowid
             row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
             return _format_user_dict(row), None
     except sqlite3.IntegrityError:
         return None, "That username or email address is already registered."
+    finally:
+        conn.close()
+
+
+def get_or_create_local_demo_user() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """
+    Fetch or create the local-only non-admin sandbox account ('mercator_romanus')
+    using a random secret password hash (never hardcoded).
+    """
+    conn = get_connection()
+    try:
+        with conn:
+            row = conn.execute("SELECT * FROM users WHERE username = ?", ("mercator_romanus",)).fetchone()
+            if row:
+                if "mercator_romanus" not in _admin_usernames() and int(row["is_admin"] or 0) != 0:
+                    conn.execute("UPDATE users SET is_admin = 0 WHERE id = ?", (row["id"],))
+                    row = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+                return _format_user_dict(row), None
+
+            salt_hex = secrets.token_hex(16)
+            pw_hash = _hash_password(secrets.token_urlsafe(24), salt_hex)
+            now = int(time.time())
+            default_settings_json = json.dumps(DEFAULT_USER_SETTINGS)
+            cur = conn.execute(
+                """
+                INSERT INTO users (
+                    username, email, auth_provider, display_name,
+                    password_hash, password_salt, preferred_color, settings_json, is_admin, created_at
+                )
+                VALUES (?, ?, 'local', ?, ?, ?, 'Z3', ?, 0, ?)
+                """,
+                (
+                    "mercator_romanus",
+                    "mercator_romanus@roma.local",
+                    "Mercator Romanus",
+                    pw_hash,
+                    salt_hex,
+                    default_settings_json,
+                    now,
+                ),
+            )
+            user_id = cur.lastrowid
+            row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            return _format_user_dict(row), None
+    except Exception as exc:
+        return None, f"Failed to initialize local sandbox user ({type(exc).__name__})."
     finally:
         conn.close()
 

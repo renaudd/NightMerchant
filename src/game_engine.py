@@ -30,9 +30,9 @@ ALL_CELLS = [
 
 WEST_BANK_CELLS = {"A1", "A4", "B4", "A5"}
 TIBER_BRIDGE_NAMES = {
-    frozenset({"A1", "B1"}): "Pons Milvius",
-    frozenset({"A1", "A2"}): "Pons Aelius",
-    frozenset({"A3", "A4"}): "Pons Aurelius",
+    frozenset({"A1", "B1"}): "Pons Aelius",
+    frozenset({"A1", "A2"}): "Pons Neronianus",
+    frozenset({"A3", "A4"}): "Pons Agrippae",
     frozenset({"B4", "C4"}): "Pons Fabricius",
     frozenset({"B4", "B5"}): "Pons Aemilius",
 }
@@ -70,7 +70,7 @@ MAX_GAMBLE_WAGER = 20
 
 NEIGHBORHOOD_NAMES = {
     "A1": "Mausoleum Hadriani", "B1": "Via Flaminia", "C1": "Mons Pincius", "D1": "Horti Sallustiani", "E1": "Via Nomentana", "F1": "Castra Praetoria",
-    "A2": "Circus Agonalis", "B2": "Thermae Neronae", "C2": "Septa Julia", "D2": "Collis Quirinalis", "E2": "Subura", "F2": "Collis Viminalis",
+    "A2": "Circus Agonalis", "B2": "Thermae Neronianae", "C2": "Saepta Julia", "D2": "Collis Quirinalis", "E2": "Subura", "F2": "Collis Viminalis",
     "A3": "Theatrum Pompeii", "B3": "Circus Flaminius", "C3": "Forum Traiani", "D3": "Forum Augustum", "E3": "Thermae Traiani", "F3": "Via Tiburtina",
     "A4": "Via Aurelia", "B4": "Trans Tiberim", "C4": "Mons Capitolinus", "D4": "Forum Vespasiani", "E4": "Amphitheatrum Flavium", "F4": "Collis Esquilinus",
     "A5": "Horti Caesaris", "B5": "Aventinus Major", "C5": "Circus Maximus", "D5": "Mons Palatinus", "E5": "Sucusa", "F5": "Amphitheatrum Castrense",
@@ -1136,7 +1136,7 @@ def compute_sell_price(
         final_idx = base_idx
     else:
         delta = MODIFIER_DELTAS.get(modifier, 0)
-        # Check Guard rarity bonuses (Pliny: Cheap Wine, Gnaeus: Meat Animals)
+        # Check Guard rarity bonuses (Plinius: Cheap Wine, Gnaeus: Meat Animals)
         guard_bonus = 0
         for g in player["guards"]:
             rb = g.get("rarityBonus")
@@ -1152,6 +1152,27 @@ def compute_sell_price(
 
     sell_table = card.get("sell") or card.get("fencedSell") or [10, 7, 5, 4, 2]
     return int(sell_table[final_idx]), SCARCITY_SYMBOLS[final_idx]
+
+
+def _pop_distinct_by_name(deck: List[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
+    """Pop up to `count` cards from `deck`, preferring distinct card names within the dealt hand."""
+    hand: List[Dict[str, Any]] = []
+    deferred: List[Dict[str, Any]] = []
+    seen_names: set = set()
+    while deck and len(hand) < count:
+        c = deck.pop(0)
+        nm = str(c.get("name") or "").strip().lower()
+        if nm and nm in seen_names:
+            deferred.append(c)
+        else:
+            if nm:
+                seen_names.add(nm)
+            hand.append(c)
+    while deferred and len(hand) < count:
+        hand.append(deferred.pop(0))
+    if deferred:
+        deck.extend(deferred)
+    return hand
 
 
 def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1227,14 +1248,14 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
             card = state["decks"]["market"].pop(0)
             push_card_onto_market_track(state, card)
 
-    # Set up players with 12(d), 5 Missiones, 5 Influence
+    # Set up players with 12(d), 5 Missiones, 5 Influence (distinct names within each initial 5-card hand)
     for idx, pconf in enumerate(players_config):
-        dealt_missions = [state["decks"]["missiones"].pop(0) for _ in range(min(5, len(state["decks"]["missiones"])))]
+        dealt_missions = _pop_distinct_by_name(state["decks"]["missiones"], 5)
         for m in dealt_missions:
             m["source"] = "starting"
             m["pickedUp"] = False
             m["completed"] = False
-        dealt_influence = [state["decks"]["influence"].pop(0) for _ in range(min(5, len(state["decks"]["influence"])))]
+        dealt_influence = _pop_distinct_by_name(state["decks"]["influence"], 5)
 
         player_obj = {
             "index": idx,
@@ -1262,6 +1283,7 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
             "nightEnded": False,
             "eliminated": False,
             "eliminationReason": None,
+            "allowWinterPvpInfluence": True,
             "skipTurns": 0,
             "setupDiscarded": False,
             "cleanupDone": False,
@@ -1577,6 +1599,16 @@ def _advance_setup_climate(state: Dict[str, Any]) -> None:
     state["phase"] = "market"
     state["marketConsecutivePasses"] = 0
 
+    comp_notes: List[str] = []
+    if n >= 5:
+        p5 = players[(state["firstPlayerIndex"] + 4) % n]
+        p5["cash"] = int(p5.get("cash", 0)) + 1
+        comp_notes.append(f"{p5['name']} (5th in turn order) receives +1(d) ({p5['cash']}d)")
+    if n >= 6:
+        p6 = players[(state["firstPlayerIndex"] + 5) % n]
+        p6["cash"] = int(p6.get("cash", 0)) + 2
+        comp_notes.append(f"{p6['name']} (6th in turn order) receives +2(d) ({p6['cash']}d)")
+
     active_titles = [
         f"{POLITICAL_CLIMATE_OPTION_MAP[oid]['factorLabel']}: {POLITICAL_CLIMATE_OPTION_MAP[oid]['title']}"
         for oid in (pc.get("activeIds") or [])
@@ -1584,10 +1616,11 @@ def _advance_setup_climate(state: Dict[str, Any]) -> None:
     ]
     fp_name = players[state["firstPlayerIndex"]]["name"]
     fd_name = players[first_discarder]["name"] if 0 <= first_discarder < n else "Merchant"
+    comp_suffix = f" Turn-order compensation: {'; '.join(comp_notes)}." if comp_notes else ""
     add_log(
         state,
         f"{state['season']} Phase I: Ostia Market Phase begins! Active Political Climate: {'; '.join(active_titles)}. "
-        f"{fp_name} holds the First Player Token ({fd_name} acts last in turn order).",
+        f"{fp_name} holds the First Player Token ({fd_name} acts last in turn order).{comp_suffix}",
         "phase",
     )
 
@@ -4340,17 +4373,6 @@ def execute_combat(
                 "label": f"Influence #{idx_inf+1}",
                 "color": player["color"],
             })
-    elif extra_player_dice < 0:
-        for idx_inf in range(abs(extra_player_dice)):
-            r_inf = roll_rome_die()
-            player_rolls.append(-r_inf)
-            player_dice_objs.append({
-                "value": r_inf,
-                "roman": roman_die_str(r_inf),
-                "sign": -1,
-                "label": f"Distraction #{idx_inf+1} (-®)",
-                "color": player["color"],
-            })
 
     # Guards
     for g in player["guards"]:
@@ -4439,6 +4461,22 @@ def execute_combat(
                 w_fx_parts.append("consumed")
             if w_fx_parts:
                 equipment_notes.append(f"{item_label} ({', '.join(w_fx_parts)})")
+
+    if extra_player_dice < 0:
+        deducted_cnt = 0
+        for _ in range(abs(extra_player_dice)):
+            pos_indices = [idx_d for idx_d, dobj in enumerate(player_dice_objs) if int(dobj.get("sign", 0)) == 1]
+            if not pos_indices:
+                break
+            player_dice_objs.pop(pos_indices[-1])
+            deducted_cnt += 1
+        if deducted_cnt > 0:
+            player_rolls = [
+                int(dobj["value"]) * int(dobj["sign"])
+                for dobj in player_dice_objs
+                if int(dobj.get("sign", 0)) != 0
+            ]
+            equipment_notes.append(f"Distraction (-{deducted_cnt}® deducted before roll)")
 
     # Pre-roll Armor wound-blocking dice and record flat wound-blocking items (Manicae, Galeae, Decimus, Scuta)
     ignore_wounds_flat = 0
@@ -6958,15 +6996,18 @@ def _resolve_pvp_combat_tiebreaker(
 ) -> Dict[str, Any]:
     """
     Resolves Combat between tied Players using Drivers (1®), Guards, Weapons, mandatory Exotic Animals,
-    Army Pay Hike Rubies (if active), and combat Influence cards. Repeats Combat on a draw (keeping Round-1
-    Influence & consumable Weapons exhausted) until one Merchant wins by at least 1 CP.
+    Army Pay Hike Rubies (if active), and Combat Influence cards (when authorized via allowWinterPvpInfluence).
+    Pre-roll cards (Mercenary Ambush +2®, Distraction -1® deducted from rival's positive dice pool) resolve
+    before dice are rolled; post-roll cards (Flying Chamber Pot +1 CP, Gladiator's Intervention +1® CP,
+    Twist Of Fate re-roll) resolve reactively only when trailing or tied and mathematically able to tie/lead.
+    Repeats Combat on a draw (keeping Round-1 Influence & consumable Weapons exhausted) until one wins by ≥ 1 CP.
     """
     gear_map = gear_map if gear_map is not None else {}
     p1_gear = list(gear_map.get(p1["index"], p1.get("cart", [])))
     p2_gear = list(gear_map.get(p2["index"], p2.get("cart", [])))
-    used_inf_ids: set = set()
     consumed_gear_ids: set = set()
     army_hike = has_climate_modifier(state, "caracalla_3")
+    is_final_tiebreak = "Final Wealth" in context_label
 
     round_num = 0
     while True:
@@ -6974,16 +7015,12 @@ def _resolve_pvp_combat_tiebreaker(
         _inc_player_stat(p1, "combats", 1)
         _inc_player_stat(p2, "combats", 1)
 
-        def _build_side_roll(
+        def _assemble_side_pool(
             fighter: Dict[str, Any],
-            rival: Dict[str, Any],
             gear_list: List[Dict[str, Any]],
-            opp_distract_dice: int,
-        ) -> Tuple[int, List[Dict[str, Any]], int, List[Dict[str, Any]]]:
-            d_drv = roll_rome_die()
-            dice_objs: List[Dict[str, Any]] = [
-                {"value": d_drv, "roman": roman_die_str(d_drv), "sign": 1, "label": "Driver ®", "color": fighter["color"]}
-            ]
+        ) -> Tuple[List[str], List[str], int, List[Dict[str, Any]]]:
+            pos_specs: List[str] = ["Driver ®"]
+            neg_specs: List[str] = []
             flat_total = 0
             flat_mods: List[Dict[str, Any]] = []
 
@@ -6993,19 +7030,16 @@ def _resolve_pvp_combat_tiebreaker(
                     flat_total += pos_rubies
                     flat_mods.append({"label": f"Army Pay Hike (+{pos_rubies} Ruby)", "value": pos_rubies})
 
-            # Guards
             for g in fighter.get("guards", []):
                 cinfo = g.get("combat") or {}
                 g_name = g.get("name", "Guard")
                 for _ in range(int(cinfo.get("dice", 0))):
-                    rg = roll_rome_die()
-                    dice_objs.append({"value": rg, "roman": roman_die_str(rg), "sign": 1, "label": f"Guard: {g_name}", "color": fighter["color"]})
+                    pos_specs.append(f"Guard: {g_name}")
                 gf = int(cinfo.get("flat", 0))
                 if gf != 0:
                     flat_total += gf
                     flat_mods.append({"label": f"Guard: {g_name}", "value": gf})
 
-            # Weapons & mandatory Exotic Animals
             for item in gear_list:
                 cinfo = item.get("combat")
                 if not cinfo:
@@ -7020,91 +7054,202 @@ def _resolve_pvp_combat_tiebreaker(
                 iflat = int(cinfo.get("flat", 0))
                 if is_animal or int(cinfo.get("dice", 0)) > 0 or iflat != 0 or int(cinfo.get("negDice", 0)) > 0:
                     for _ in range(int(cinfo.get("dice", 0))):
-                        rw = roll_rome_die()
-                        dice_objs.append({"value": rw, "roman": roman_die_str(rw), "sign": 1, "label": item_lbl, "color": fighter["color"]})
+                        pos_specs.append(item_lbl)
                     for _ in range(int(cinfo.get("negDice", 0))):
-                        rn = roll_rome_die()
-                        dice_objs.append({"value": rn, "roman": roman_die_str(rn), "sign": -1, "label": f"{item_lbl} (-®)", "color": fighter["color"]})
+                        neg_specs.append(f"{item_lbl} (-®)")
                     if iflat != 0:
                         flat_total += iflat
                         flat_mods.append({"label": item_lbl, "value": iflat})
 
-            # Round-1 one-shot Combat Influence cards (exhausted on subsequent draw rounds)
-            if round_num == 1:
-                for inf_c in list(fighter.get("influence", [])):
-                    cid = str(inf_c.get("id", ""))
-                    if cid in used_inf_ids:
-                        continue
-                    nm = str(inf_c.get("name", ""))
-                    if "Mercenary" in nm or "Gladiator" in nm:
-                        used_inf_ids.add(cid)
-                        fighter["influence"].remove(inf_c)
-                        state["decks"]["influence"].append(inf_c)
-                        _inc_player_stat(fighter, "influencePlayed", 1)
-                        cnt_d = 2 if "Mercenary" in nm else 1
-                        for k_i in range(cnt_d):
-                            ri = roll_rome_die()
-                            dice_objs.append({"value": ri, "roman": roman_die_str(ri), "sign": 1, "label": f"{nm} #{k_i + 1}", "color": fighter["color"]})
-                    elif "Flying Chamber Pot" in nm:
-                        used_inf_ids.add(cid)
-                        fighter["influence"].remove(inf_c)
-                        state["decks"]["influence"].append(inf_c)
-                        _inc_player_stat(fighter, "influencePlayed", 1)
-                        flat_total += 1
-                        flat_mods.append({"label": nm, "value": 1})
+            return pos_specs, neg_specs, flat_total, flat_mods
 
-            for idx_d in range(opp_distract_dice):
-                rd = roll_rome_die()
-                dice_objs.append({"value": rd, "roman": roman_die_str(rd), "sign": -1, "label": f"Distraction (-®)", "color": fighter["color"]})
+        pos1, neg1, flat1, fmods1 = _assemble_side_pool(p1, p1_gear)
+        pos2, neg2, flat2, fmods2 = _assemble_side_pool(p2, p2_gear)
+        inf_notes: List[str] = []
 
-            dice_sum = sum(int(d["value"]) * int(d["sign"]) for d in dice_objs)
-            return max(0, dice_sum + flat_total), dice_objs, flat_total, flat_mods
-
-        p1_distracts = 0
-        p2_distracts = 0
+        # Step 1 (Round 1 only): Pre-Roll Combat Influence (Mercenary Ambush +2® & Distraction -1® deducted before roll)
         if round_num == 1:
-            for inf_c in list(p1.get("influence", [])):
-                if "Distraction" in str(inf_c.get("name", "")):
-                    used_inf_ids.add(str(inf_c.get("id", "")))
-                    p1["influence"].remove(inf_c)
-                    state["decks"]["influence"].append(inf_c)
-                    _inc_player_stat(p1, "influencePlayed", 1)
-                    p2_distracts += 1
-            for inf_c in list(p2.get("influence", [])):
-                if "Distraction" in str(inf_c.get("name", "")):
-                    used_inf_ids.add(str(inf_c.get("id", "")))
-                    p2["influence"].remove(inf_c)
-                    state["decks"]["influence"].append(inf_c)
-                    _inc_player_stat(p2, "influencePlayed", 1)
-                    p1_distracts += 1
+            for fighter, rival, my_pos, my_neg, my_flat_v, opp_pos, opp_neg, opp_flat_v in (
+                (p1, p2, pos1, neg1, flat1, pos2, neg2, flat2),
+                (p2, p1, pos2, neg2, flat2, pos1, neg1, flat1),
+            ):
+                if not bool(fighter.get("allowWinterPvpInfluence", True)):
+                    continue
+                for inf_c in list(fighter.get("influence", [])):
+                    nm = str(inf_c.get("name", ""))
+                    exp_my = 1.17 * (len(my_pos) - len(my_neg)) + my_flat_v
+                    exp_opp = 1.17 * (len(opp_pos) - len(opp_neg)) + opp_flat_v
+                    if not is_final_tiebreak and (exp_my - exp_opp) >= 2.75:
+                        break
+                    if "Mercenary" in nm:
+                        fighter["influence"].remove(inf_c)
+                        state["decks"]["influence"].append(inf_c)
+                        _inc_player_stat(fighter, "influencePlayed", 1)
+                        my_pos.append(f"{nm} #1")
+                        my_pos.append(f"{nm} #2")
+                        inf_notes.append(f"{fighter['name']} played '{nm}' (+2® before roll)")
+                    elif "Distraction" in nm and len(opp_pos) > 0:
+                        fighter["influence"].remove(inf_c)
+                        state["decks"]["influence"].append(inf_c)
+                        _inc_player_stat(fighter, "influencePlayed", 1)
+                        removed_lbl = opp_pos.pop()
+                        inf_notes.append(f"{fighter['name']} played 'Distraction' (-1® deducted from {rival['name']}: {removed_lbl})")
 
-        cp1, dice1, flat1, fmods1 = _build_side_roll(p1, p2, p1_gear, p1_distracts)
-        cp2, dice2, flat2, fmods2 = _build_side_roll(p2, p1, p2_gear, p2_distracts)
+        # Step 2: Roll both sides simultaneously
+        def _roll_side(fighter: Dict[str, Any], pos_specs: List[str], neg_specs: List[str]) -> List[Dict[str, Any]]:
+            out_dice: List[Dict[str, Any]] = []
+            for lbl in pos_specs:
+                rv = roll_rome_die()
+                out_dice.append({"value": rv, "roman": roman_die_str(rv), "sign": 1, "label": lbl, "color": fighter["color"]})
+            for lbl in neg_specs:
+                rv = roll_rome_die()
+                out_dice.append({"value": rv, "roman": roman_die_str(rv), "sign": -1, "label": lbl, "color": fighter["color"]})
+            return out_dice
 
-        # Allow trailing player to spend Twist Of Fate in Round 1
-        for trailing, leading, t_dice, l_dice, t_flat, l_flat, is_p1 in (
-            (p1, p2, dice1, dice2, flat1, flat2, True),
-            (p2, p1, dice2, dice1, flat2, flat1, False),
-        ):
-            cur_t = max(0, sum(int(d["value"]) * int(d["sign"]) for d in t_dice) + t_flat)
-            cur_l = max(0, sum(int(d["value"]) * int(d["sign"]) for d in l_dice) + l_flat)
-            if cur_t <= cur_l:
-                tof = next((c for c in trailing.get("influence", []) if "Twist Of Fate" in str(c.get("name", ""))), None)
-                if tof:
-                    opp_hi = next((d for d in l_dice if int(d.get("sign", 1)) > 0 and int(d.get("value", 0)) >= 2), None)
-                    own_lo = next((d for d in t_dice if int(d.get("sign", 1)) > 0 and int(d.get("value", 0)) == 0), None)
-                    target_d = opp_hi or own_lo
-                    if target_d is not None:
-                        trailing["influence"].remove(tof)
-                        state["decks"]["influence"].append(tof)
-                        _inc_player_stat(trailing, "influencePlayed", 1)
-                        nr = roll_rome_die()
-                        target_d["value"] = nr
-                        target_d["roman"] = roman_die_str(nr)
-                        target_d["label"] = f"{target_d['label']} (Re-rolled)"
+        dice1 = _roll_side(p1, pos1, neg1)
+        dice2 = _roll_side(p2, pos2, neg2)
 
-        cp1 = max(0, sum(int(d["value"]) * int(d["sign"]) for d in dice1) + flat1)
-        cp2 = max(0, sum(int(d["value"]) * int(d["sign"]) for d in dice2) + flat2)
+        def _calc_cp(d_list: List[Dict[str, Any]], f_val: int) -> int:
+            return max(0, sum(int(d["value"]) * int(d["sign"]) for d in d_list) + int(f_val))
+
+        # Step 3 (Round 1 only): Reactive Post-Roll Combat Influence (Flying Chamber Pot, Twist Of Fate, Gladiator's Intervention)
+        if round_num == 1:
+            post_guard = 0
+            while post_guard < 16:
+                post_guard += 1
+                acted = False
+                for is_p1_turn in (True, False):
+                    fighter = p1 if is_p1_turn else p2
+                    rival = p2 if is_p1_turn else p1
+                    if not bool(fighter.get("allowWinterPvpInfluence", True)):
+                        continue
+                    my_dice = dice1 if is_p1_turn else dice2
+                    opp_dice = dice2 if is_p1_turn else dice1
+                    my_flat_cur = flat1 if is_p1_turn else flat2
+                    opp_flat_cur = flat2 if is_p1_turn else flat1
+                    my_fmods = fmods1 if is_p1_turn else fmods2
+
+                    my_cp_cur = _calc_cp(my_dice, my_flat_cur)
+                    opp_cp_cur = _calc_cp(opp_dice, opp_flat_cur)
+                    if my_cp_cur > opp_cp_cur:
+                        continue  # Already winning; never burn post-roll Influence!
+
+                    deficit = opp_cp_cur - my_cp_cur
+                    hand_inf = list(fighter.get("influence", []))
+                    pots = [c for c in hand_inf if "Flying Chamber Pot" in str(c.get("name", ""))]
+                    glads = [c for c in hand_inf if "Gladiator" in str(c.get("name", ""))]
+                    tofs = [c for c in hand_inf if "Twist Of Fate" in str(c.get("name", ""))]
+                    if not (pots or glads or tofs):
+                        continue
+
+                    die_swings = (
+                        [int(d["value"]) for d in opp_dice if int(d.get("sign", 1)) > 0 and int(d["value"]) > 0]
+                        + [int(d["value"]) for d in my_dice if int(d.get("sign", 1)) < 0 and int(d["value"]) > 0]
+                        + [3 - int(d["value"]) for d in my_dice if int(d.get("sign", 1)) > 0 and int(d["value"]) < 3]
+                    )
+                    die_swings.sort(reverse=True)
+                    max_tof_swing = sum(die_swings[: len(tofs)]) if tofs else 0
+                    max_possible_swing = len(pots) * 1 + len(glads) * 3 + max_tof_swing
+                    if max_possible_swing < deficit:
+                        continue  # Mathematically unable even to tie; preserve post-roll cards!
+
+                    # Priority 1: Deterministic +1 CP if tied (0) or down by 1 CP
+                    if deficit <= 1 and pots:
+                        card_used = pots[0]
+                        fighter["influence"].remove(card_used)
+                        state["decks"]["influence"].append(card_used)
+                        _inc_player_stat(fighter, "influencePlayed", 1)
+                        if is_p1_turn:
+                            flat1 += 1
+                        else:
+                            flat2 += 1
+                        my_fmods.append({"label": card_used["name"], "value": 1})
+                        inf_notes.append(f"{fighter['name']} played '{card_used['name']}' (+1 CP after roll)")
+                        acted = True
+                        break
+
+                    # Priority 2: Twist Of Fate on highest expected-gain die (rival +II/+III, own Exotic Animal -II/-III, or own 0/+I)
+                    if tofs:
+                        best_die = None
+                        best_gain = 0.0
+                        best_owner = ""
+                        for d_cand in opp_dice:
+                            if int(d_cand.get("sign", 1)) > 0:
+                                exp_gain = float(d_cand["value"]) - 1.17
+                                if exp_gain > best_gain:
+                                    best_gain = exp_gain
+                                    best_die = d_cand
+                                    best_owner = rival["name"]
+                        for d_cand in my_dice:
+                            sgn = int(d_cand.get("sign", 1))
+                            if sgn < 0:
+                                exp_gain = float(d_cand["value"]) - 1.17
+                                if exp_gain > best_gain:
+                                    best_gain = exp_gain
+                                    best_die = d_cand
+                                    best_owner = fighter["name"]
+                            elif sgn > 0:
+                                exp_gain = 1.17 - float(d_cand["value"])
+                                if exp_gain > best_gain:
+                                    best_gain = exp_gain
+                                    best_die = d_cand
+                                    best_owner = fighter["name"]
+                        if best_die is not None and best_gain > 0.1:
+                            card_used = tofs[0]
+                            fighter["influence"].remove(card_used)
+                            state["decks"]["influence"].append(card_used)
+                            _inc_player_stat(fighter, "influencePlayed", 1)
+                            old_rom = best_die.get("roman", "0")
+                            nr = roll_rome_die()
+                            new_rom = roman_die_str(nr)
+                            best_die["value"] = nr
+                            best_die["roman"] = new_rom
+                            if "(Re-rolled)" not in str(best_die.get("label", "")):
+                                best_die["label"] = f"{best_die['label']} (Re-rolled)"
+                            inf_notes.append(
+                                f"{fighter['name']} played 'Twist Of Fate' on {best_owner}'s {best_die['label']} ({old_rom} → {new_rom})"
+                            )
+                            acted = True
+                            break
+
+                    # Priority 3: Gladiator's Intervention (+1® CP after roll)
+                    if glads:
+                        card_used = glads[0]
+                        fighter["influence"].remove(card_used)
+                        state["decks"]["influence"].append(card_used)
+                        _inc_player_stat(fighter, "influencePlayed", 1)
+                        rg = roll_rome_die()
+                        rg_rom = roman_die_str(rg)
+                        my_dice.append({
+                            "value": rg,
+                            "roman": rg_rom,
+                            "sign": 1,
+                            "label": f"{card_used['name']} ®",
+                            "color": fighter["color"],
+                        })
+                        inf_notes.append(f"{fighter['name']} played '{card_used['name']}' (+{rg_rom} CP after roll)")
+                        acted = True
+                        break
+
+                    # Priority 4: Flying Chamber Pot (+1 CP bridge before remaining post-roll cards)
+                    if pots:
+                        card_used = pots[0]
+                        fighter["influence"].remove(card_used)
+                        state["decks"]["influence"].append(card_used)
+                        _inc_player_stat(fighter, "influencePlayed", 1)
+                        if is_p1_turn:
+                            flat1 += 1
+                        else:
+                            flat2 += 1
+                        my_fmods.append({"label": card_used["name"], "value": 1})
+                        inf_notes.append(f"{fighter['name']} played '{card_used['name']}' (+1 CP after roll)")
+                        acted = True
+                        break
+                if not acted:
+                    break
+
+        cp1 = _calc_cp(dice1, flat1)
+        cp2 = _calc_cp(dice2, flat2)
 
         # Safety against astronomical infinite tie loops
         if round_num >= 25 and cp1 == cp2:
@@ -7112,13 +7257,17 @@ def _resolve_pvp_combat_tiebreaker(
             if cp1 == cp2:
                 cp2 += 1
 
+        for note_i in inf_notes:
+            add_log(state, f"⚔️ {context_label}: {note_i}.", "combat")
+
         is_draw = cp1 == cp2
         round_winner = None if is_draw else (p1 if cp1 > cp2 else p2)
         out_title = f"ROUND {round_num} DRAW ({cp1}–{cp2} CP) — REPEATING!" if is_draw else f"{round_winner['name']} TRIUMPHS ({cp1}–{cp2} CP)!"
+        inf_summary = f" [{' • '.join(inf_notes)}]" if inf_notes else ""
         out_msg = (
-            f"{context_label} — Combat Round {round_num} ended in a {cp1}–{cp2} CP draw! Repeating Combat..."
+            f"{context_label} — Combat Round {round_num} ended in a {cp1}–{cp2} CP draw!{inf_summary} Repeating Combat..."
             if is_draw
-            else f"{context_label}: {round_winner['name']} defeated {(p2 if round_winner is p1 else p1)['name']} ({cp1} CP vs. {cp2} CP) in Round {round_num}!"
+            else f"{context_label}: {round_winner['name']} defeated {(p2 if round_winner is p1 else p1)['name']} ({cp1} CP vs. {cp2} CP) in Round {round_num}!{inf_summary}"
         )
         add_dice_event(
             state,
@@ -7353,19 +7502,51 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
         # Step 4: Allow bots to convert remaining positive Diamonds if Empress Mediator (domna_3) is active
         _bot_optimize_domna_diamonds_for_winter(state)
 
-        # Step 5: Apply flat Political Climate valuations & flat Most/Least awards
-        # 5a. Caracalla Option 2: -10d per positive Ruby, +5d per negative Ruby
+        # Step 5: Caracalla Option 1 (Imperial Proscription) FIRST per Rulebook — Least Caracalla favor is ELIMINATED!
+        # An eliminated player cannot win or lose any subsequent Most/Least awards or steal Denarii.
+        if has_climate_modifier(state, "caracalla_1") and len(players) >= 2:
+            min_car = min(int((p.get("favor") or {}).get("Caracalla", 0)) for p in players)
+            tied_least_car = [p for p in players if int((p.get("favor") or {}).get("Caracalla", 0)) == min_car]
+            if len(tied_least_car) > 1:
+                add_log(
+                    state,
+                    f"⚔️ Tie for Least Caracalla Favor ({min_car:+d}) between {', '.join(x['name'] for x in tied_least_car)} — PvP Combat to survive Caracalla's Purge!",
+                    "combat",
+                )
+                elim_p = _resolve_multiway_pvp_loser(
+                    state, tied_least_car, pvp_gear_snapshot, f"Survive Caracalla's Purge (Least Favor {min_car:+d})"
+                )
+                elim_reason = f"Eliminated after losing PvP Tie-Break for Least Caracalla Favor ({min_car:+d})"
+            else:
+                elim_p = tied_least_car[0]
+                elim_reason = f"Eliminated for holding Least Caracalla Favor ({min_car:+d})"
+            elim_p["eliminated"] = True
+            elim_p["eliminationReason"] = elim_reason
+            climate_breakdown_map[elim_p["index"]].append({
+                "id": "caracalla_1",
+                "factor": "Caracalla",
+                "title": "Imperial Proscription",
+                "delta": 0,
+                "eliminated": True,
+                "detail": elim_reason,
+            })
+            add_log(state, f"☠️ IMPERIAL PROSCRIPTION! {elim_p['name']} is purged by Caracalla ({elim_reason}) and excluded from all remaining Winter Reckoning awards!", "penalty")
+
+        eligible_players = [p for p in players if not p.get("eliminated")]
+
+        # Step 6: Apply flat Political Climate valuations & flat Most/Least awards (among surviving eligible_players)
+        # 6a. Caracalla Option 2: -10d per positive Ruby, +5d per negative Ruby
         if has_climate_modifier(state, "caracalla_2"):
-            for p in players:
+            for p in eligible_players:
                 car_v = int((p.get("favor") or {}).get("Caracalla", 0))
                 delta = (car_v * -10) if car_v > 0 else (abs(car_v) * 5)
                 det = f"Caracalla {car_v:+d} ({'-10d/+' if car_v > 0 else '+5d/-'} Ruby)" if car_v != 0 else "Caracalla 0 (0d)"
                 _record_climate_delta(p, "caracalla_2", "Caracalla", "Praetorian Backlash", delta, det)
 
-        # 5b. Geta Option 1: Least Geta favor loses -25(d) (ties resolved by PvP Combat; loser pays -25d)
-        if has_climate_modifier(state, "geta_1") and players:
-            min_get = min(int((p.get("favor") or {}).get("Geta", 0)) for p in players)
-            tied_least_get = [p for p in players if int((p.get("favor") or {}).get("Geta", 0)) == min_get]
+        # 6b. Geta Option 1: Least Geta favor loses -25(d) (ties resolved by PvP Combat; loser pays -25d)
+        if has_climate_modifier(state, "geta_1") and eligible_players:
+            min_get = min(int((p.get("favor") or {}).get("Geta", 0)) for p in eligible_players)
+            tied_least_get = [p for p in eligible_players if int((p.get("favor") or {}).get("Geta", 0)) == min_get]
             if len(tied_least_get) > 1:
                 add_log(
                     state,
@@ -7382,9 +7563,9 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
             _record_climate_delta(loser_get, "geta_1", "Geta", "Brother's Grudge", -25, det_g1)
             add_log(state, f"Brother's Grudge: {loser_get['name']} suffers -25(d) ({det_g1}).", "penalty")
 
-        # 5c. Geta Option 2 (Jealous Brothers): +15d/Emerald if Caracalla <= 0, -10d/Emerald if Caracalla >= +1; -5d per negative Emerald
+        # 6c. Geta Option 2 (Jealous Brothers): +15d/Emerald if Caracalla <= 0, -10d/Emerald if Caracalla >= +1; -5d per negative Emerald
         if has_climate_modifier(state, "geta_2"):
-            for p in players:
+            for p in eligible_players:
                 fav = p.get("favor") or {}
                 get_v = int(fav.get("Geta", 0))
                 car_v = int(fav.get("Caracalla", 0))
@@ -7400,27 +7581,27 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
                     det = "Geta 0 (0d)"
                 _record_climate_delta(p, "geta_2", "Geta", "Jealous Brothers", delta, det)
 
-        # 5d. Domna Option 2 (Court Neutrality): -15d per positive Diamond AND -15d per negative Diamond
+        # 6d. Domna Option 2 (Court Neutrality): -15d per positive Diamond AND -15d per negative Diamond
         if has_climate_modifier(state, "domna_2"):
-            for p in players:
+            for p in eligible_players:
                 dom_v = int((p.get("favor") or {}).get("Domna", 0))
                 delta = -15 * abs(dom_v)
                 det = f"Domna {dom_v:+d} ({abs(dom_v)} × -15d)" if dom_v != 0 else "Domna 0 (0d — Neutrality Kept!)"
                 _record_climate_delta(p, "domna_2", "Domna", "Court Neutrality", delta, det)
 
-        # 5e. Plautilla Option 2 (Smuggled Dowry): +10d per completed Plautilla-linked mission
+        # 6e. Plautilla Option 2 (Smuggled Dowry): +10d per completed Plautilla-linked mission
         if has_climate_modifier(state, "plautilla_2"):
-            for p in players:
+            for p in eligible_players:
                 st_p = _ensure_player_stats(p)
                 pla_m = int(st_p.get("plautillaMissionsCompleted", 0) or 0)
                 delta = 10 * pla_m
                 det = f"{pla_m} Plautilla Mission{'s' if pla_m != 1 else ''} × +10d"
                 _record_climate_delta(p, "plautilla_2", "Plautilla", "Smuggled Dowry", delta, det)
 
-        # 5f. Aurelius Option 1 (Old Senate Purse): Most Aurelian favor gains +25(d) (ties -> PvP Combat)
-        if has_climate_modifier(state, "aurelius_1") and players:
-            max_aur = max(int((p.get("favor") or {}).get("Aurelius", 0)) for p in players)
-            tied_aur = [p for p in players if int((p.get("favor") or {}).get("Aurelius", 0)) == max_aur]
+        # 6f. Aurelius Option 1 (Old Senate Purse): Most Aurelian favor gains +25(d) (ties -> PvP Combat)
+        if has_climate_modifier(state, "aurelius_1") and eligible_players:
+            max_aur = max(int((p.get("favor") or {}).get("Aurelius", 0)) for p in eligible_players)
+            tied_aur = [p for p in eligible_players if int((p.get("favor") or {}).get("Aurelius", 0)) == max_aur]
             if len(tied_aur) > 1:
                 add_log(
                     state,
@@ -7437,18 +7618,18 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
             _record_climate_delta(win_aur, "aurelius_1", "Aurelius", "Old Senate Purse", 25, det_a1)
             add_log(state, f"Old Senate Purse: {win_aur['name']} claims +25(d) ({det_a1})!", "phase")
 
-        # 5g. Aurelius Option 2 (Choose a Side): +10d per positive Amethyst AND +10d per negative Amethyst
+        # 6g. Aurelius Option 2 (Choose a Side): +10d per positive Amethyst AND +10d per negative Amethyst
         if has_climate_modifier(state, "aurelius_2"):
-            for p in players:
+            for p in eligible_players:
                 aur_v = int((p.get("favor") or {}).get("Aurelius", 0))
                 delta = 10 * abs(aur_v)
                 det = f"Aurelius {aur_v:+d} ({abs(aur_v)} × +10d)" if aur_v != 0 else "Aurelius 0 (0d)"
                 _record_climate_delta(p, "aurelius_2", "Aurelius", "Choose a Side", delta, det)
 
-        # 5h. Missions Option 1 (Master Purveyor): Most completed missions gains +30(d) (ties -> PvP Combat)
-        if has_climate_modifier(state, "missions_1") and players:
-            max_comp = max(int(_ensure_player_stats(p).get("missionsCompleted", 0) or 0) for p in players)
-            tied_m1 = [p for p in players if int(_ensure_player_stats(p).get("missionsCompleted", 0) or 0) == max_comp]
+        # 6h. Missions Option 1 (Master Purveyor): Most completed missions gains +30(d) (ties -> PvP Combat)
+        if has_climate_modifier(state, "missions_1") and eligible_players:
+            max_comp = max(int(_ensure_player_stats(p).get("missionsCompleted", 0) or 0) for p in eligible_players)
+            tied_m1 = [p for p in eligible_players if int(_ensure_player_stats(p).get("missionsCompleted", 0) or 0) == max_comp]
             if len(tied_m1) > 1:
                 add_log(
                     state,
@@ -7465,9 +7646,9 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
             _record_climate_delta(win_m1, "missions_1", "Missions", "Master Purveyor", 30, det_m1)
             add_log(state, f"Master Purveyor: {win_m1['name']} claims +30(d) ({det_m1})!", "phase")
 
-        # 5i. Missions Option 2 (Guild Ledger): +10d per completed mission and -10d per failed/unfulfilled mission (net negative allowed)
+        # 6i. Missions Option 2 (Guild Ledger): +10d per completed mission and -10d per failed/unfulfilled mission (net negative allowed)
         if has_climate_modifier(state, "missions_2"):
-            for p in players:
+            for p in eligible_players:
                 st_p = _ensure_player_stats(p)
                 comp_c = int(st_p.get("missionsCompleted", 0) or 0)
                 fail_c = int(st_p.get("missionsFailed", 0) or 0)
@@ -7476,10 +7657,10 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
                 det = f"{comp_c} Completed (+{comp_c * 10}d), {fail_c} Failed (-{fail_c * 10}d)"
                 _record_climate_delta(p, "missions_2", "Missions", "Guild Ledger", delta, det)
 
-        # Step 6: Plautilla Option 1 (Exile's Informants) — Most Plautilla favor steals 15(d) from the wealthiest rival
-        if has_climate_modifier(state, "plautilla_1") and len(players) >= 2:
-            max_pla = max(int((p.get("favor") or {}).get("Plautilla", 0)) for p in players)
-            tied_pla = [p for p in players if int((p.get("favor") or {}).get("Plautilla", 0)) == max_pla]
+        # Step 7: Plautilla Option 1 (Exile's Informants) — Most Plautilla favor steals 15(d) from the wealthiest surviving rival
+        if has_climate_modifier(state, "plautilla_1") and len(eligible_players) >= 2:
+            max_pla = max(int((p.get("favor") or {}).get("Plautilla", 0)) for p in eligible_players)
+            tied_pla = [p for p in eligible_players if int((p.get("favor") or {}).get("Plautilla", 0)) == max_pla]
             if len(tied_pla) > 1:
                 add_log(
                     state,
@@ -7492,7 +7673,7 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
             else:
                 thief_p = tied_pla[0]
 
-            rivals = [r for r in players if r["index"] != thief_p["index"]]
+            rivals = [r for r in eligible_players if r["index"] != thief_p["index"]]
             top_rival_cash = max(int(r.get("cash", 0)) for r in rivals)
             tied_victims = [r for r in rivals if int(r.get("cash", 0)) == top_rival_cash]
             if len(tied_victims) > 1:
@@ -7529,10 +7710,10 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
                 "phase",
             )
 
-        # Step 7: Domna Option 1 (Imperial Patronage) — Most Domna favor gains +20% of final wealth (after flat modifiers & steals)
-        if has_climate_modifier(state, "domna_1") and players:
-            max_dom = max(int((p.get("favor") or {}).get("Domna", 0)) for p in players)
-            tied_dom = [p for p in players if int((p.get("favor") or {}).get("Domna", 0)) == max_dom]
+        # Step 8: Domna Option 1 (Imperial Patronage) — Most Domna favor gains +20% of final wealth (after flat modifiers & steals)
+        if has_climate_modifier(state, "domna_1") and eligible_players:
+            max_dom = max(int((p.get("favor") or {}).get("Domna", 0)) for p in eligible_players)
+            tied_dom = [p for p in eligible_players if int((p.get("favor") or {}).get("Domna", 0)) == max_dom]
             if len(tied_dom) > 1:
                 add_log(
                     state,
@@ -7561,35 +7742,6 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
                 f"Imperial Patronage: {win_dom['name']} gains +{dom_bonus}(d) (+20% of {base_wealth}d)!",
                 "phase",
             )
-
-        # Step 8: Caracalla Option 1 (Imperial Proscription) — Least Caracalla favor is ELIMINATED!
-        if has_climate_modifier(state, "caracalla_1") and len(players) >= 2:
-            min_car = min(int((p.get("favor") or {}).get("Caracalla", 0)) for p in players)
-            tied_least_car = [p for p in players if int((p.get("favor") or {}).get("Caracalla", 0)) == min_car]
-            if len(tied_least_car) > 1:
-                add_log(
-                    state,
-                    f"⚔️ Tie for Least Caracalla Favor ({min_car:+d}) between {', '.join(x['name'] for x in tied_least_car)} — PvP Combat to survive Caracalla's Purge!",
-                    "combat",
-                )
-                elim_p = _resolve_multiway_pvp_loser(
-                    state, tied_least_car, pvp_gear_snapshot, f"Survive Caracalla's Purge (Least Favor {min_car:+d})"
-                )
-                elim_reason = f"Eliminated after losing PvP Tie-Break for Least Caracalla Favor ({min_car:+d})"
-            else:
-                elim_p = tied_least_car[0]
-                elim_reason = f"Eliminated for holding Least Caracalla Favor ({min_car:+d})"
-            elim_p["eliminated"] = True
-            elim_p["eliminationReason"] = elim_reason
-            climate_breakdown_map[elim_p["index"]].append({
-                "id": "caracalla_1",
-                "factor": "Caracalla",
-                "title": "Imperial Proscription",
-                "delta": 0,
-                "eliminated": True,
-                "detail": elim_reason,
-            })
-            add_log(state, f"☠️ IMPERIAL PROSCRIPTION! {elim_p['name']} is purged by Caracalla ({elim_reason})!", "penalty")
 
         # Step 9: Finalize winterReckoning summaries & rank surviving Merchants (breaking 1st-place ties via PvP Combat!)
         for p in players:
@@ -8309,6 +8461,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return False, "Cannot repay that loan right now."
 
         if act_type == "cleanup_finish":
+            if "allowWinterPvpInfluence" in action:
+                player["allowWinterPvpInfluence"] = bool(action.get("allowWinterPvpInfluence"))
             keep_guard_ids = set(action.get("keepGuardIds", [g["id"] for g in player["guards"]]))
             kept, released = [], []
             for g in player["guards"]:
@@ -8721,7 +8875,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             if is_tiber_crossing_blocked(curr_cell, target_cell):
                 return (
                     False,
-                    "Cannot cross the Tiber River here — carts may only cross orthogonally via Rome's four stone bridges (A1↔A2, A3↔A4, B4↔C4, B4↔B5).",
+                    "Cannot cross the Tiber River here — carts may only cross orthogonally via Rome's five stone bridges (A1↔B1 Pons Aelius, A1↔A2 Pons Neronianus, A3↔A4 Pons Agrippae, B4↔C4 Pons Fabricius, B4↔B5 Pons Aemilius).",
                 )
 
             rev_tile = state["romeBoard"][curr_cell].get("revealed")
@@ -8836,8 +8990,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             category = action.get("category", "")
             req_mission_id = str(action.get("missionId") or "").strip()
             raw_card_ids = [str(cid) for cid in (action.get("cardIds") or []) if cid]
-            if len(raw_card_ids) > 1:
-                return False, "You may only sell 1 Good per hour."
+            bulk_grain_flag = bool(action.get("bulkGrain"))
             card_ids = set(raw_card_ids)
 
             try:
@@ -8885,51 +9038,75 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             if chosen_mod is None:
                 return False, f"Cannot sell {category} at {curr_cell}."
 
+            is_bulk_request = bulk_grain_flag or len(raw_card_ids) > 1
+            if is_bulk_request and category != "Grain":
+                return False, "Only non-fenced Grain may be sold in bulk; all other Goods are limited to 1 card per hour."
+
             to_sell = [
                 c
                 for c in player["cart"]
-                if (not card_ids or c["id"] in card_ids)
+                if (not card_ids or str(c.get("id")) in card_ids)
                 and matches_category(c, category)
                 and (
                     (not c.get("isMissionCargo"))
-                    if req_mission_id
+                    if (req_mission_id or is_bulk_request)
                     else (not c.get("isMissionCargo") or (c.get("missionSource") == "encounter" and bool(c.get("sell"))))
                 )
             ]
             if not to_sell:
                 return False, f"You have no matching {category} on your Cart that can be sold."
+            if len(raw_card_ids) > 1 and len(to_sell) != len(card_ids):
+                return False, "Only non-fenced Grain cards in your Cart may be bulk-sold together."
 
-            # Strictly 1 Good card sold per hour
-            item = to_sell[0]
-            _, base_sym = compute_sell_price(state, player, item, chosen_mod, spend_amethysts=0)
+            items_to_sell = to_sell if (category == "Grain" and is_bulk_request) else [to_sell[0]]
+            lead_item = items_to_sell[0]
+            _, base_sym = compute_sell_price(state, player, lead_item, chosen_mod, spend_amethysts=0)
             base_sym_idx = SCARCITY_SYMBOLS.index(base_sym) if base_sym in SCARCITY_SYMBOLS else 2
             eff_spend_am = min(spend_amethysts, base_sym_idx)
-            price, sym = compute_sell_price(state, player, item, chosen_mod, spend_amethysts=eff_spend_am)
+
+            total_price = 0
+            sold_parts: List[str] = []
+            sym = base_sym
+            for it_sell in items_to_sell:
+                pr_i, sym = compute_sell_price(state, player, it_sell, chosen_mod, spend_amethysts=eff_spend_am)
+                total_price += pr_i
+                sold_parts.append(f"{it_sell['name']} ({pr_i}d)")
 
             am_log_note = ""
             if eff_spend_am > 0:
+                sale_desc = f"{len(items_to_sell)} Grain cards" if len(items_to_sell) > 1 else lead_item["name"]
                 player["favor"]["Aurelius"] = int(player["favor"].get("Aurelius", 0)) - eff_spend_am
                 player.setdefault("favorHistory", {f: [] for f in FACTIONS}).setdefault("Aurelius", []).append({
                     "delta": -eff_spend_am,
-                    "reason": f"Senatorial Privilege sale of {item['name']} in {curr_cell} ({base_sym} -> {sym})",
+                    "reason": f"Senatorial Privilege sale of {sale_desc} in {curr_cell} ({base_sym} -> {sym})",
                     "newTotal": player["favor"]["Aurelius"],
                 })
                 am_log_note = f" [spent {eff_spend_am} Amethyst -> {sym}]"
 
-            was_fenced = bool(item.get("isMissionCargo"))
-            sold_label = f"{item['name']} ({price}d @ {sym}){am_log_note}"
-            _remove_cart_item(
-                state,
-                player,
-                item,
-                reason=f"{'fenced' if was_fenced else 'sold'} in {curr_cell} for {price}(d)",
-                is_fenced=was_fenced,
-            )
+            was_fenced = bool(lead_item.get("isMissionCargo")) and len(items_to_sell) == 1
+            for it_sell in items_to_sell:
+                pr_i, _ = compute_sell_price(state, player, it_sell, chosen_mod, spend_amethysts=eff_spend_am)
+                _remove_cart_item(
+                    state,
+                    player,
+                    it_sell,
+                    reason=f"{'fenced' if was_fenced else 'sold'} in {curr_cell} for {pr_i}(d)",
+                    is_fenced=was_fenced,
+                )
 
-            player["cash"] += price
+            if len(items_to_sell) > 1:
+                sold_label = f"bulk Grain ({', '.join(sold_parts)} @ {sym}){am_log_note}"
+            else:
+                sold_label = f"{lead_item['name']} ({total_price}d @ {sym}){am_log_note}"
+
+            player["cash"] += total_price
             player["transactedThisTurn"] = True
-            _inc_player_stat(player, "itemsSold", 1)
-            add_log(state, f"{player['name']} {'fenced' if was_fenced else 'sold'} {sold_label} in {curr_cell} for {price}(d)!", "action")
+            _inc_player_stat(player, "itemsSold", len(items_to_sell))
+            add_log(
+                state,
+                f"{player['name']} {'fenced' if was_fenced else 'sold'} {sold_label} in {curr_cell} for {total_price}(d)!",
+                "action",
+            )
 
             # Complete any matching Sell Mission at this cell (fenced cargo never fulfills a separate Sell Mission)
             if not was_fenced and matched_mission and matched_mission in player["missions"]:
@@ -8959,7 +9136,9 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                 _recycle_mission_cards(state, matched_mission)
                 add_log(state, f"{player['name']} fulfilled Sell Mission '{matched_mission['name']}' in {curr_cell}! {' '.join(r_notes + f_notes)}", "mission")
 
-            return True, f"Sold {item['name']} for {price}(d)."
+            if len(items_to_sell) > 1:
+                return True, f"Bulk-sold {len(items_to_sell)} Grain cards for {total_price}(d)."
+            return True, f"Sold {lead_item['name']} for {total_price}(d)."
 
         if act_type == "delivery_forum_buy":
             if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
@@ -10106,6 +10285,9 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     def _find_best_market_good(reserve_amt: int) -> Optional[Tuple[str, int, int, float]]:
         best_c = None
         best_sc = -999.0
+        existing_grain_cnt = sum(
+            1 for c in bot.get("cart", []) if not c.get("isMissionCargo") and matches_category(c, "Grain")
+        )
         for track_name in ("Marble", "Wine", "Animals", "Weapons", "Grain"):
             track = state["marketBoard"].get(track_name, [])
             for col_idx, card in enumerate(track):
@@ -10120,6 +10302,9 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 bonus = 0.0
                 if any(matches_category(card, mc) for mc in mission_cats):
                     bonus += 13.0 if strategy == "missions" else 9.0
+                if track_name == "Grain" and existing_grain_cnt >= 1 and profit >= 2:
+                    # Bulk Grain Sale synergy: additional Grain cards sell in the same single hourly Transaction!
+                    bonus += 3.0
                 if strategy == "luxury" and (track_name == "Marble" or card.get("subcategory") == "Fine Wine"):
                     bonus += 4.5
                 elif strategy == "aggressive" and (track_name == "Weapons" or card.get("subcategory") == "Exotic Animals"):
@@ -10209,10 +10394,16 @@ def _compute_bot_goal_cells(state: Dict[str, Any], bot: Dict[str, Any]) -> List[
             for ts in rev.get("sells", []):
                 matching = [c for c in sellable_items if matches_category(c, ts["category"])]
                 if matching:
-                    best_pr = max(compute_sell_price(state, bot, c, ts["modifier"])[0] for c in matching)
-                    cost_b = int(matching[0].get("purchasePrice", 0) or 0)
-                    if best_pr >= cost_b or turn_num >= 6:
-                        goals.append((coord, 40 + max(0, best_pr - cost_b) * 3))
+                    if ts["category"] == "Grain" and len(matching) > 1:
+                        total_pr = sum(compute_sell_price(state, bot, c, ts["modifier"])[0] for c in matching)
+                        total_cost = sum(int(c.get("purchasePrice", 0) or 0) for c in matching)
+                        if total_pr >= total_cost or turn_num >= 6:
+                            goals.append((coord, 40 + max(0, total_pr - total_cost) * 3))
+                    else:
+                        best_pr = max(compute_sell_price(state, bot, c, ts["modifier"])[0] for c in matching)
+                        cost_b = int(matching[0].get("purchasePrice", 0) or 0)
+                        if best_pr >= cost_b or turn_num >= 6:
+                            goals.append((coord, 40 + max(0, best_pr - cost_b) * 3))
         # If no revealed buyers exist yet, explore central unrevealed neighborhoods to uncover buyers
         if not any(w >= 40 for _, w in goals):
             for hub in ("C3", "D3", "C4", "D4", "B3", "C2", "D5", "E4"):
@@ -10566,28 +10757,41 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     ]
     sellable_cart = [c for c in bot["cart"] if not c.get("isMissionCargo")]
 
-    # 1. Complete a Sell Mission at this cell if possible (1 Good sold per hour)
+    # 1. Complete a Sell Mission at this cell if possible (bulk-selling extra Grain if category is Grain)
     for m in mission_sells:
         matching = [c for c in sellable_cart if matches_category(c, m["category"])]
         if matching:
             puff = next((inf for inf in bot.get("influence", []) if "Puffery" in str(inf.get("name", ""))), None)
             if puff and not bot.get("turnEffects", {}).get("puffery"):
                 _execute_influence_card(state, bot, puff, {})
-            item = max(matching, key=lambda c: compute_sell_price(state, bot, c, m["modifier"])[0])
-            spend_am, p, sym = _bot_pick_amethyst_boost(state, bot, item, m["modifier"])
+            if m["category"] == "Grain" and len(matching) > 1:
+                other_grain_m = sum(
+                    1
+                    for om in bot.get("missions", [])
+                    if om is not m and not om.get("completed") and om.get("kind") == "sell" and om.get("category") == "Grain" and int(state.get("turn", 1)) <= 7
+                )
+                ordered_g = sorted(matching, key=lambda c: compute_sell_price(state, bot, c, m["modifier"])[0], reverse=True)
+                keep_cnt = min(other_grain_m, len(ordered_g) - 1)
+                items_sold = ordered_g[: len(ordered_g) - keep_cnt]
+            else:
+                items_sold = [max(matching, key=lambda c: compute_sell_price(state, bot, c, m["modifier"])[0])]
+            lead_item = items_sold[0]
+            spend_am, _, sym = _bot_pick_amethyst_boost(state, bot, lead_item, m["modifier"])
+            total_p = sum(compute_sell_price(state, bot, it_s, m["modifier"], spend_amethysts=spend_am)[0] for it_s in items_sold)
             am_note = ""
             if spend_am > 0:
                 bot["favor"]["Aurelius"] = int(bot["favor"].get("Aurelius", 0)) - spend_am
                 bot.setdefault("favorHistory", {f: [] for f in FACTIONS}).setdefault("Aurelius", []).append({
                     "delta": -spend_am,
-                    "reason": f"Senatorial Privilege sale of {item['name']} in {curr_cell}",
+                    "reason": f"Senatorial Privilege sale of {lead_item['name']} in {curr_cell}",
                     "newTotal": bot["favor"]["Aurelius"],
                 })
                 am_note = f" [spent {spend_am} Amethyst -> {sym}]"
-            _remove_cart_item(state, bot, item, reason=f"sold in {curr_cell} for Mission '{m['name']}'")
-            bot["cash"] += p
+            for it_s in items_sold:
+                _remove_cart_item(state, bot, it_s, reason=f"sold in {curr_cell} for Mission '{m['name']}'")
+            bot["cash"] += total_p
             bot["transactedThisTurn"] = True
-            _inc_player_stat(bot, "itemsSold", 1)
+            _inc_player_stat(bot, "itemsSold", len(items_sold))
             m["completed"] = True
             if m in bot["missions"]:
                 bot["missions"].remove(m)
@@ -10598,11 +10802,12 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 under = m.pop("underInfluence", [])
                 bot["influence"].extend(under)
                 r_notes.append(f"+{len(under)} Soothsayer Influence Card(s)")
+            sold_desc = f"{len(items_sold)} Grain ({', '.join(x['name'] for x in items_sold)})" if len(items_sold) > 1 else lead_item["name"]
             patron_lbl = f" for {m['patronName']}" if m.get("patronName") else ""
             f_notes = apply_favor_list(
                 bot,
                 m.get("favor", []),
-                reason=f"completing mission '{m['name']}'{patron_lbl} (sold {item['name']} in {curr_cell})",
+                reason=f"completing mission '{m['name']}'{patron_lbl} (sold {sold_desc} in {curr_cell})",
             )
             _record_mission_completion_event(
                 state,
@@ -10610,28 +10815,28 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 m,
                 r_notes,
                 f_notes,
-                context_detail=f"Sold {item['name']} in {curr_cell} ({NEIGHBORHOOD_NAMES.get(curr_cell, curr_cell)})",
+                context_detail=f"Sold {sold_desc} in {curr_cell} ({NEIGHBORHOOD_NAMES.get(curr_cell, curr_cell)})",
             )
             _recycle_mission_cards(state, m)
-            add_log(state, f"{bot['name']} sold {item['name']} ({p}d @ {sym}){am_note} in {curr_cell} and completed Mission '{m['name']}'! {' '.join(r_notes + f_notes)}", "mission")
+            add_log(state, f"{bot['name']} sold {sold_desc} ({total_p}d @ {sym}){am_note} in {curr_cell} and completed Mission '{m['name']}'! {' '.join(r_notes + f_notes)}", "mission")
             add_npc_event(
                 state,
                 bot,
                 "sell",
-                f"Sold {item['name']} & completed '{m['name']}' in {curr_cell} (+{p}d)",
+                f"Sold {sold_desc} & completed '{m['name']}' in {curr_cell} (+{total_p}d)",
                 cell=curr_cell,
                 visual={
                     "kind": "sell",
-                    "item": _public_item_visual(item),
-                    "price": p,
+                    "item": _public_item_visual(lead_item),
+                    "price": total_p,
                     "scarcitySymbol": sym,
                     "missionName": m["name"],
-                    "outcomeLabel": f"💰 +{p}d • 📜 {m['name']}",
+                    "outcomeLabel": f"💰 +{total_p}d • 📜 {m['name']}",
                 },
             )
             return
 
-    # 2. Sell 1 non-mission good on tile (1 Good sold per hour)
+    # 2. Sell non-mission good on tile (bulk-selling all eligible Grain in 1 hour; 1 Good per hour for other categories)
     reserved_mission_cats = [
         m.get("category", "")
         for m in bot.get("missions", [])
@@ -10653,37 +10858,51 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
             puff = next((inf for inf in bot.get("influence", []) if "Puffery" in str(inf.get("name", ""))), None)
             if puff and not bot.get("turnEffects", {}).get("puffery"):
                 _execute_influence_card(state, bot, puff, {})
-            item = max(
-                matching,
-                key=lambda c: compute_sell_price(state, bot, c, s["modifier"])[0] - int(c.get("purchasePrice", 0) or 0),
-            )
-            spend_am, p, sym = _bot_pick_amethyst_boost(state, bot, item, s["modifier"])
+            if s["category"] == "Grain" and len(matching) > 1:
+                items_sold = sorted(
+                    matching,
+                    key=lambda c: compute_sell_price(state, bot, c, s["modifier"])[0] - int(c.get("purchasePrice", 0) or 0),
+                    reverse=True,
+                )
+            else:
+                items_sold = [
+                    max(
+                        matching,
+                        key=lambda c: compute_sell_price(state, bot, c, s["modifier"])[0] - int(c.get("purchasePrice", 0) or 0),
+                    )
+                ]
+            lead_item = items_sold[0]
+            spend_am, _, sym = _bot_pick_amethyst_boost(state, bot, lead_item, s["modifier"])
+            total_p = sum(compute_sell_price(state, bot, it_s, s["modifier"], spend_amethysts=spend_am)[0] for it_s in items_sold)
             am_note = ""
             if spend_am > 0:
                 bot["favor"]["Aurelius"] = int(bot["favor"].get("Aurelius", 0)) - spend_am
                 bot.setdefault("favorHistory", {f: [] for f in FACTIONS}).setdefault("Aurelius", []).append({
                     "delta": -spend_am,
-                    "reason": f"Senatorial Privilege sale of {item['name']} in {curr_cell}",
+                    "reason": f"Senatorial Privilege sale of {lead_item['name']} in {curr_cell}",
                     "newTotal": bot["favor"]["Aurelius"],
                 })
                 am_note = f" [spent {spend_am} Amethyst -> {sym}]"
-            _remove_cart_item(state, bot, item, reason=f"sold in {curr_cell} for {p}(d)")
-            bot["cash"] += p
+            for it_s in items_sold:
+                pr_s, _ = compute_sell_price(state, bot, it_s, s["modifier"], spend_amethysts=spend_am)
+                _remove_cart_item(state, bot, it_s, reason=f"sold in {curr_cell} for {pr_s}(d)")
+            bot["cash"] += total_p
             bot["transactedThisTurn"] = True
-            _inc_player_stat(bot, "itemsSold", 1)
-            add_log(state, f"{bot['name']} sold {item['name']} ({p}d @ {sym}){am_note} in {curr_cell}.", "action")
+            _inc_player_stat(bot, "itemsSold", len(items_sold))
+            sold_desc = f"bulk Grain ({', '.join(x['name'] for x in items_sold)})" if len(items_sold) > 1 else lead_item["name"]
+            add_log(state, f"{bot['name']} sold {sold_desc} ({total_p}d @ {sym}){am_note} in {curr_cell}.", "action")
             add_npc_event(
                 state,
                 bot,
                 "sell",
-                f"Sold {item['name']} in {curr_cell} (+{p}d)",
+                f"Sold {sold_desc} in {curr_cell} (+{total_p}d)",
                 cell=curr_cell,
                 visual={
                     "kind": "sell",
-                    "item": _public_item_visual(item),
-                    "price": p,
+                    "item": _public_item_visual(lead_item),
+                    "price": total_p,
                     "scarcitySymbol": sym,
-                    "outcomeLabel": f"💰 Sold +{p}d",
+                    "outcomeLabel": f"💰 Sold +{total_p}d",
                 },
             )
             return
@@ -11054,13 +11273,17 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             if not m.get("completed") and m.get("kind") == "sell" and normalize_cell_id(m.get("cell")) == curr_cell
         ]
 
+        non_fenced_grain = [
+            c for c in p.get("cart", []) if not c.get("isMissionCargo") and matches_category(c, "Grain")
+        ]
+
         for item in p_copy["cart"]:
             if not is_owner and item.get("isMissionCargo") and item.get("missionSource") != "encounter":
                 item.pop("missionId", None)
                 item.pop("missionName", None)
                 item.pop("deliverCell", None)
             if item.get("track") == "Weapons" and not item.get("combatText"):
-                item["combatText"] = "No combat bonus (0 CP)"
+                item["combatText"] = "0 CP (Crated Armor Cargo)"
             cost_basis = item.get("purchasePrice")
             sell_opts = []
             can_sell_this = (not item.get("isMissionCargo")) or (
@@ -11070,7 +11293,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
                 for ms in mission_sells:
                     if matches_category(item, ms["category"]):
                         pr, sym = compute_sell_price(state, p, item, ms["modifier"])
-                        sell_opts.append({
+                        opt_obj: Dict[str, Any] = {
                             "category": ms["category"],
                             "modifier": normalize_scarcity_modifier(str(ms["modifier"])),
                             "price": pr,
@@ -11078,15 +11301,25 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
                             "netProfit": (pr - int(cost_basis)) if cost_basis is not None else None,
                             "scarcitySymbol": sym,
                             "isMission": True,
+                            "missionId": ms.get("id"),
                             "missionName": ms["name"],
                             "isFencedCargo": bool(item.get("isMissionCargo")),
                             "missionSource": item.get("missionSource"),
                             "amethystBoostOptions": _build_amethyst_boosts(item, ms["modifier"], pr, sym),
-                        })
+                        }
+                        if ms["category"] == "Grain" and not item.get("isMissionCargo") and len(non_fenced_grain) >= 2:
+                            opt_obj["bulkGrainCardIds"] = [str(gc["id"]) for gc in non_fenced_grain]
+                            opt_obj["bulkGrainCount"] = len(non_fenced_grain)
+                            opt_obj["bulkGrainTotalPrice"] = sum(
+                                compute_sell_price(state, p, gc, ms["modifier"])[0] for gc in non_fenced_grain
+                            )
+                            opt_obj["bulkGrainPurchasePrice"] = sum(int(gc.get("purchasePrice") or 0) for gc in non_fenced_grain)
+                        sell_opts.append(opt_obj)
                 for ts in tile_sells:
                     if matches_category(item, ts["category"]):
+                        raw_ts_mod = ts["category_mod"] if "category_mod" in ts else ts["modifier"]
                         pr, sym = compute_sell_price(state, p, item, ts["modifier"])
-                        sell_opts.append({
+                        opt_obj = {
                             "category": ts["category"],
                             "modifier": normalize_scarcity_modifier(str(ts["modifier"])),
                             "price": pr,
@@ -11096,8 +11329,16 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
                             "isMission": False,
                             "isFencedCargo": bool(item.get("isMissionCargo")),
                             "missionSource": item.get("missionSource"),
-                            "amethystBoostOptions": _build_amethyst_boosts(item, ts["category_mod"] if "category_mod" in ts else ts["modifier"], pr, sym),
-                        })
+                            "amethystBoostOptions": _build_amethyst_boosts(item, raw_ts_mod, pr, sym),
+                        }
+                        if ts["category"] == "Grain" and not item.get("isMissionCargo") and len(non_fenced_grain) >= 2:
+                            opt_obj["bulkGrainCardIds"] = [str(gc["id"]) for gc in non_fenced_grain]
+                            opt_obj["bulkGrainCount"] = len(non_fenced_grain)
+                            opt_obj["bulkGrainTotalPrice"] = sum(
+                                compute_sell_price(state, p, gc, ts["modifier"])[0] for gc in non_fenced_grain
+                            )
+                            opt_obj["bulkGrainPurchasePrice"] = sum(int(gc.get("purchasePrice") or 0) for gc in non_fenced_grain)
+                        sell_opts.append(opt_obj)
             item["availableSells"] = sell_opts
 
         for g in p_copy["guards"]:

@@ -46,12 +46,24 @@ let _fbAuthModule = null;
 let _fbAuthInstance = null;
 let _fbInitPromise = null;
 
+function getEffectiveFirebaseConfig() {
+  const cfg = getNightMerchantRuntimeConfig();
+  const baseFb = cfg && cfg.firebaseConfig && typeof cfg.firebaseConfig === "object" ? cfg.firebaseConfig : {};
+  const runtimeFb =
+    typeof appState !== "undefined" &&
+    appState &&
+    appState.runtimeFirebaseConfig &&
+    typeof appState.runtimeFirebaseConfig === "object"
+      ? appState.runtimeFirebaseConfig
+      : {};
+  return { ...baseFb, ...runtimeFb };
+}
+
 function isFirebaseClientConfigured() {
   if (typeof appState !== "undefined" && appState && appState.serverFirebaseEnabled === false && !getNightMerchantApiBaseUrl()) {
     return false;
   }
-  const cfg = getNightMerchantRuntimeConfig();
-  const fb = cfg && cfg.firebaseConfig && typeof cfg.firebaseConfig === "object" ? cfg.firebaseConfig : null;
+  const fb = getEffectiveFirebaseConfig();
   return Boolean(fb && typeof fb.apiKey === "string" && fb.apiKey.trim() && typeof fb.projectId === "string" && fb.projectId.trim());
 }
 
@@ -62,13 +74,13 @@ async function initFirebaseClientIfConfigured() {
 
   _fbInitPromise = (async () => {
     try {
-      const cfg = getNightMerchantRuntimeConfig();
+      const fbCfg = getEffectiveFirebaseConfig();
       const [appMod, authMod] = await Promise.all([
         import("https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js"),
         import("https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js"),
       ]);
       const existingApps = typeof appMod.getApps === "function" ? appMod.getApps() : [];
-      const fbApp = existingApps.length > 0 ? existingApps[0] : appMod.initializeApp(cfg.firebaseConfig);
+      const fbApp = existingApps.length > 0 ? existingApps[0] : appMod.initializeApp(fbCfg);
       const auth = authMod.getAuth(fbApp);
       if (typeof authMod.indexedDBLocalPersistence !== "undefined" && typeof authMod.setPersistence === "function") {
         try {
@@ -129,7 +141,7 @@ async function signInWithFirebaseEmailPassword(email, password) {
 async function signInWithFirebaseGooglePopup() {
   const auth = await initFirebaseClientIfConfigured();
   if (!auth || !_fbAuthModule) {
-    throw new Error("Firebase Google Sign-In is not configured yet in config.js.");
+    throw new Error("Firebase Google Sign-In is not configured on the server yet.");
   }
   const provider = new _fbAuthModule.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
@@ -169,7 +181,7 @@ const ROME_LANDMARKS = {
   E1: { icon: "⛩️", sub: "Via Nomentana (NE Entrance)" },
   F1: { icon: "🏰", sub: "Praetorian Fortress Camp" },
   A2: { icon: "🏟️", sub: "Stadium of Domitian" },
-  B2: { icon: "🏛️", sub: "Pantheum & Baths of Nero" },
+  B2: { icon: "🏛️", sub: "Pantheum & Thermae Neronianae" },
   C2: { icon: "🏛️", sub: "Portico of Saepta Julia" },
   D2: { icon: "⛰️", sub: "Quirinal Hill" },
   E2: { icon: "🏘️", sub: "Subura Tenement Valley" },
@@ -192,10 +204,10 @@ const ROME_LANDMARKS = {
   D5: { icon: "👑", sub: "Palatine Hill & Palaces" },
   E5: { icon: "🏘️", sub: "Caelian Subura Slope" },
   F5: { icon: "🏟️", sub: "Severan Amphitheater" },
-  A6: { icon: "🏺", sub: "Monte Testaccio Amphora Hill" },
+  A6: { icon: "🏺", sub: "Mons Testaceus Amphora Hill" },
   B6: { icon: "⛩️", sub: "Via Ostiensis & Pyramid" },
   C6: { icon: "⛰️", sub: "Lesser Aventine (Remuria)" },
-  D6: { icon: "♨️", sub: "Baths of Caracalla (211 AD)" },
+  D6: { icon: "♨️", sub: "Baths of Caracalla (Under Construction, 211 A.D.)" },
   E6: { icon: "⛰️", sub: "Caelian Hill" },
   F6: { icon: "⛩️", sub: "Via Tusculana (SE Entrance)" },
 };
@@ -212,7 +224,7 @@ const FACTION_META = [
     alignedWith: ["Domna"],
     hostileTo: ["Geta", "Plautilla", "Aurelius (passively hostile)"],
     alignmentNote: "Caracalla is hostile to Geta and Plautilla, allied with Domna, and passively hostile to the Aurelians.",
-    defaultDeckCounts: { patricii: 2, legiones: 9, nefarii: 3, total: 14 },
+    defaultDeckCounts: { patricii: 2, legiones: 9, nefarii: 5, total: 16 },
   },
   {
     key: "Geta",
@@ -225,7 +237,7 @@ const FACTION_META = [
     alignedWith: ["Domna"],
     hostileTo: ["Caracalla", "Plautilla (less so)", "Aurelius (less so)"],
     alignmentNote: "Geta is hostile to Caracalla, and less so to Plautilla and the Aurelians, and is aligned with Domna.",
-    defaultDeckCounts: { patricii: 4, legiones: 4, nefarii: 5, total: 13 },
+    defaultDeckCounts: { patricii: 5, legiones: 5, nefarii: 5, total: 15 },
   },
   {
     key: "Domna",
@@ -238,7 +250,7 @@ const FACTION_META = [
     alignedWith: ["Caracalla", "Geta"],
     hostileTo: ["Plautilla", "Aurelius"],
     alignmentNote: "Domna is hostile to Plautilla and the Aurelians, and allied with Caracalla and Geta.",
-    defaultDeckCounts: { patricii: 6, legiones: 3, nefarii: 5, total: 14 },
+    defaultDeckCounts: { patricii: 8, legiones: 3, nefarii: 5, total: 16 },
   },
   {
     key: "Plautilla",
@@ -251,7 +263,7 @@ const FACTION_META = [
     alignedWith: ["Aurelius"],
     hostileTo: ["Caracalla (most hostile)", "Geta", "Domna"],
     alignmentNote: "Plautilla is most hostile to Caracalla, but also to Geta and Domna, and is allied with the Aurelians.",
-    defaultDeckCounts: { patricii: 6, legiones: 7, nefarii: 7, total: 20 },
+    defaultDeckCounts: { patricii: 3, legiones: 8, nefarii: 8, total: 19 },
   },
   {
     key: "Aurelius",
@@ -264,7 +276,7 @@ const FACTION_META = [
     alignedWith: ["Plautilla"],
     hostileTo: ["Caracalla", "Geta", "Domna (less so)"],
     alignmentNote: "Hostile to Caracalla and Geta, less so to Domna, and allied with Plautilla.",
-    defaultDeckCounts: { patricii: 8, legiones: 5, nefarii: 5, total: 18 },
+    defaultDeckCounts: { patricii: 8, legiones: 3, nefarii: 3, total: 14 },
   },
 ];
 
@@ -521,12 +533,12 @@ function formatEdgeLabel(edgeVal) {
 const WEST_BANK_CELLS = new Set(["A1", "A4", "B4", "A5"]);
 
 const TIBER_BRIDGES = {
-  "A1|B1": "Pons Milvius",
-  "B1|A1": "Pons Milvius",
-  "A1|A2": "Pons Aelius",
-  "A2|A1": "Pons Aelius",
-  "A3|A4": "Pons Aurelius",
-  "A4|A3": "Pons Aurelius",
+  "A1|B1": "Pons Aelius",
+  "B1|A1": "Pons Aelius",
+  "A1|A2": "Pons Neronianus",
+  "A2|A1": "Pons Neronianus",
+  "A3|A4": "Pons Agrippae",
+  "A4|A3": "Pons Agrippae",
   "B4|C4": "Pons Fabricius",
   "C4|B4": "Pons Fabricius",
   "B4|B5": "Pons Aemilius",
@@ -1149,9 +1161,9 @@ function renderDynamicTileCardNode(tile, coord, mode = "board") {
         ...sells.map((s) => {
           const shortCat =
             s.category === "Exotic Animals"
-              ? "Exotic A"
+              ? "Exotic"
               : s.category === "Meat Animals"
-              ? "Meat A"
+              ? "Meat"
               : s.category;
           const modText = formatTileModifier(s.modifier);
           return el(
@@ -1567,6 +1579,37 @@ function renderPhysicalMissionCardNode(m, opts = {}) {
     );
   }
   if (Array.isArray(m.completableSells) && m.completableSells.length > 0) {
+    const bulkGrainSells = m.completableSells.filter((s) => s.category === "Grain");
+    if (bulkGrainSells.length >= 2) {
+      const relMod = formatTileModifier(bulkGrainSells[0].modifier || m.modifier || "=");
+      const totalBulkPrice = bulkGrainSells.reduce((acc, s) => acc + (Number(s.price) || 0), 0);
+      externalActions.push(
+        el(
+          "button",
+          {
+            type: "button",
+            className: "mission-sell-complete-btn",
+            title: `Bulk Grain Sale: Sell all ${bulkGrainSells.length} Grain cards in ${
+              m.cell || "this neighborhood"
+            } at ${relMod} (${totalBulkPrice} Denarii total) and complete Mission "${m.name}"`,
+            onClick: (e) => {
+              e.stopPropagation();
+              closeModal();
+              sendGameAction({
+                type: "delivery_sell",
+                category: "Grain",
+                bulkGrain: true,
+                cardIds: bulkGrainSells.map((s) => s.cardId),
+                missionId: m.id,
+              });
+            },
+          },
+          replaceDenariiTokens(
+            `🌾 Bulk Sell All ${bulkGrainSells.length} Grain (${totalBulkPrice}d @ ${relMod}) — Complete!`
+          )
+        )
+      );
+    }
     for (const s of m.completableSells) {
       const relMod = formatTileModifier(s.modifier || m.modifier || "=");
       externalActions.push(
@@ -1903,7 +1946,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
   const rawArtId = c.id && c.id.startsWith("inf_") ? String(c.id) : "inf_1";
   const artId = rawArtId.replace(/([0-9]+)[a-z]+$/i, "$1");
   const numId = Number(String(artId).replace("inf_", "")) || 1;
-  const effectiveArtId = numId > 57 ? "pat_29" : artId;
+  const effectiveArtId = numId > 60 ? "pat_29" : artId;
 
   const footerItems = [];
   const cname = String(c.name || "");
@@ -1941,7 +1984,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
           { className: "phys-card-art-frame" },
           el("img", {
             className: "phys-card-art-img",
-            src: `/assets/cards/${effectiveArtId}.jpg?v=2`,
+            src: `/assets/cards/${effectiveArtId}.jpg?v=3`,
             alt: c.name || "Influence",
           })
         )
@@ -2070,7 +2113,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
             { className: "phys-card-art-frame" },
             el("img", {
               className: "phys-card-art-img",
-              src: `/assets/cards/${artId}.jpg?v=2`,
+              src: `/assets/cards/${artId}.jpg?v=3`,
               alt: card.name || "Event Encounter",
             })
           )
@@ -2291,7 +2334,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
           { className: "phys-card-art-frame" },
           el("img", {
             className: "phys-card-art-img",
-            src: `/assets/cards/${artId}.jpg?v=2`,
+            src: `/assets/cards/${artId}.jpg?v=3`,
             alt: card.name || "Encounter",
           })
         )
@@ -2446,12 +2489,19 @@ async function apiRequest(path, method = "GET", body = null) {
       headers["X-CSRF-Token"] = appState.csrfToken;
     }
   }
-  const resp = await fetch(fullUrl, {
-    method,
-    headers,
-    credentials: apiBaseUrl ? "include" : "same-origin",
-    body: body ? JSON.stringify(body) : null,
-  });
+  let resp;
+  try {
+    resp = await fetch(fullUrl, {
+      method,
+      headers,
+      credentials: apiBaseUrl ? "include" : "same-origin",
+      body: body ? JSON.stringify(body) : null,
+    });
+  } catch (netErr) {
+    throw new Error(
+      "Could not reach the Night Merchant server — check your connection or try again in a moment."
+    );
+  }
   const data = await resp.json().catch(() => {
     if (
       resp.status === 404 &&
@@ -2600,6 +2650,10 @@ async function bootstrap() {
     appState.googleClientId = me.googleClientId || "";
     if (typeof me.firebaseEnabled === "boolean") {
       appState.serverFirebaseEnabled = me.firebaseEnabled;
+    }
+    if (me.firebaseConfig && typeof me.firebaseConfig === "object") {
+      appState.runtimeFirebaseConfig = me.firebaseConfig;
+      await initFirebaseClientIfConfigured();
     }
     if (!me.authenticated && me.firebaseEnabled !== false) {
       const existingToken = await getFirebaseIdToken();
@@ -3780,7 +3834,11 @@ function renderApp() {
 
   const contentNodes = [renderTopbar()];
   if (!appState.user) {
-    contentNodes.push(renderAuthView());
+    if (appState.activeTab === "rulebook" || appState.activeTab === "reference") {
+      contentNodes.push(renderRulebookView());
+    } else {
+      contentNodes.push(renderAuthView());
+    }
   } else if (appState.activeTab === "tabletop" && appState.gameSummary) {
     contentNodes.push(renderTabletopView());
   } else if (appState.activeTab === "rulebook" || appState.activeTab === "reference") {
@@ -3876,6 +3934,25 @@ function renderTopbar() {
         },
       })
     );
+  } else {
+    navButtons.push(
+      el("button", {
+        className: `nav-btn ${appState.activeTab !== "rulebook" && appState.activeTab !== "reference" ? "active" : ""}`,
+        text: "🏛️ Sign In",
+        onClick: () => {
+          appState.activeTab = "portal";
+          renderApp();
+        },
+      }),
+      el("button", {
+        className: `nav-btn ${appState.activeTab === "rulebook" || appState.activeTab === "reference" ? "active" : ""}`,
+        text: "📜 Rulebook",
+        onClick: () => {
+          appState.activeTab = "rulebook";
+          renderApp();
+        },
+      })
+    );
   }
 
   const userStripChildren = [];
@@ -3919,13 +3996,11 @@ function renderTopbar() {
       "div",
       {
         className: "brand",
-        style: appState.user ? { cursor: "pointer" } : undefined,
-        onClick: appState.user
-          ? () => {
-              appState.activeTab = appState.gameSummary ? "tabletop" : "portal";
-              renderApp();
-            }
-          : undefined,
+        style: { cursor: "pointer" },
+        onClick: () => {
+          appState.activeTab = appState.user && appState.gameSummary ? "tabletop" : "portal";
+          renderApp();
+        },
       },
       el("img", {
         className: "brand-crest-img",
@@ -4002,7 +4077,7 @@ function openGoogleSignInModal() {
     placeholder: "Optional — defaults to your Google profile name",
     value: "",
   });
-  let selectedColor = "Ruby";
+  let selectedColor = "Z3";
   const colorButtons = [];
   const swatchGrid = el(
     "div",
@@ -4142,7 +4217,7 @@ function renderAuthView() {
   const emailInput = el("input", {
     className: "form-input",
     type: "email",
-    placeholder: "e.g. marcus@collegium-ostia.org (Required for game invites)",
+    placeholder: "e.g. marcus@collegium-ostia.org",
     autocomplete: "email",
   });
   const displayInput = el("input", {
@@ -4157,7 +4232,7 @@ function renderAuthView() {
     autocomplete: isLogin ? "current-password" : "new-password",
   });
 
-  let selectedColor = "Ruby";
+  let selectedColor = "Z3";
   const colorBtns = [];
   const colorPickerGrid = el(
     "div",
@@ -4215,33 +4290,13 @@ function renderAuthView() {
   };
 
   const handleQuickDemo = async () => {
-    const demoUser = "mercator_romanus";
-    const demoEmail = "lucius.mercator@collegium-ostia.org";
-    const demoPass = "RomaAeterna211!";
     try {
-      let res;
-      try {
-        res = await apiRequest("/api/auth/login", "POST", { username: demoUser, password: demoPass });
-      } catch (_loginErr) {
-        res = await apiRequest("/api/auth/register", "POST", {
-          username: demoUser,
-          email: demoEmail,
-          displayName: "Lucius Mercator (Founder)",
-          password: demoPass,
-          preferredColor: "Ruby",
-        });
-      }
-      if (isFirebaseClientConfigured()) {
-        if (res.firebaseCustomToken) {
-          await signInWithFirebaseCustomToken(res.firebaseCustomToken);
-        } else if (res.user && res.user.email) {
-          await signInWithFirebaseEmailPassword(res.user.email, demoPass);
-        }
-      }
+      const res = await apiRequest("/api/auth/demo", "POST", {});
       appState.user = res.user;
       appState.csrfToken = res.csrfToken || null;
+      applyUserDefaultBoardView(res.user.settings);
       await refreshPortalOverview();
-      showToast(`Signed in as ${res.user.displayName}!`);
+      showToast(`Signed in to local sandbox as ${res.user.displayName}!`);
       renderApp();
       await handlePendingInviteDeepLink();
     } catch (err) {
@@ -4249,118 +4304,184 @@ function renderAuthView() {
     }
   };
 
-  return el(
-    "div",
-    { className: "portal-container" },
+  const pajouHoverTitle =
+    "Geta Dying in his Mother's Arms, Jacques-Augustin-Catherine Pajou, 1766–1828 (Staatsgalerie Stuttgart)";
+
+  const showcaseCard = el(
+    "section",
+    { className: "panel landing-showcase-card" },
     el(
       "div",
-      { className: "auth-card" },
-      el("h2", {
-        className: "panel-title fresco-banner-header fresco-merchants",
-        text: "🏛️ Collegium Mercatorum — Members Portal",
+      { className: "panel-title fresco-banner-header fresco-griffin" },
+      el("span", { text: "🦅 Anno Domini 211 — All Roads Lead to Rome" }),
+      el("span", { style: { fontSize: "0.78rem", color: "#fde6b0" }, text: "2–6 Merchants • Strategy Board Game" })
+    ),
+    el(
+      "figure",
+      {
+        className: "landing-pajou-figure",
+        title: pajouHoverTitle,
+      },
+      el("img", {
+        className: "landing-pajou-img",
+        src: "/assets/rome_art/geta_dying_pajou.jpg",
+        alt: pajouHoverTitle,
+        title: pajouHoverTitle,
       }),
-      appState.pendingInviteGameId
-        ? el(
-            "div",
-            {
-              style: {
-                padding: "0.6rem 0.8rem",
-                marginBottom: "0.85rem",
-                borderRadius: "4px",
-                background: "rgba(180, 83, 9, 0.12)",
-                border: "1px solid var(--gold)",
-                fontSize: "0.84rem",
-                color: "var(--text-main)",
-              },
-              text: `✉️ Expedition Invitation (#${appState.pendingInviteGameId}): Sign in with your invited Collegium account to claim your seat.`,
-            }
-          )
-        : null,
+      el(
+        "figcaption",
+        { className: "landing-pajou-caption" },
+        el("em", { text: "Geta Dying in his Mother's Arms" }),
+        el("span", {
+          text: " — Jacques-Augustin-Catherine Pajou, 1766–1828 (Staatsgalerie Stuttgart)",
+        })
+      )
+    ),
+    el(
+      "div",
+      { className: "landing-blurb-body" },
       el("p", {
-        style: { color: "var(--text-muted)", fontSize: "0.88rem", marginTop: "0" },
-        text: "Sign in with your Email, Username, or Google Account to host multiplayer games, receive expedition invites, customize your merchant cart, and climb the Imperial Leaderboard.",
+        className: "landing-blurb-lead",
+        text: "Emperor Septimius Severus is dead in Britain, leaving Rome in the volatile grip of his feuding sons, Caracalla and Geta. By day, Julius Caesar's Lex Iulia Municipalis bars heavy freight wagons from the capital's streets. Only when dusk falls at 8:00 P.M. do the city gates swing open—and the Night Merchants roll in.",
+      }),
+      el("p", {
+        className: "landing-blurb-text",
+        text: "Bid for Grain, Wine, Marble, Weapons, and Exotic Beasts at Portus Ostiae, hire gladiators and guards, and thread 36 torchlit neighborhoods across five ancient stone bridges of the Tiber before the 6:00 A.M. sunrise curfew. Court five rival Severan factions—Empress Julia Domna, exiled Plautilla, the old Aurelian Senate, and the warring co-emperors—before December 211's bloody Winter Reckoning crowns Rome's wealthiest purveyor.",
       }),
       el(
         "div",
-        { style: { display: "flex", gap: "0.5rem", marginBottom: "1rem" } },
+        { className: "landing-cta-row" },
         el("button", {
-          className: `btn ${isLogin ? "btn-primary" : ""}`,
-          style: { flex: "1" },
-          text: "Member Sign In",
+          type: "button",
+          className: "btn btn-primary",
+          text: "📜 Read the Official Rulebook",
           onClick: () => {
-            appState.authMode = "login";
+            appState.activeTab = "rulebook";
             renderApp();
           },
         }),
-        el("button", {
-          className: `btn ${!isLogin ? "btn-primary" : ""}`,
-          style: { flex: "1" },
-          text: "Register New Member",
-          onClick: () => {
-            appState.authMode = "register";
-            renderApp();
-          },
+        el("span", {
+          className: "landing-cta-note",
+          text: "Play solo against 5 distinct Roman AI personas or host live & async 2–6 player games.",
         })
+      )
+    )
+  );
+
+  const authCard = el(
+    "div",
+    { className: "auth-card landing-auth-card" },
+    el("h2", {
+      className: "panel-title fresco-banner-header fresco-merchants",
+      text: "🏛️ Collegium Mercatorum — Members Portal",
+    }),
+    appState.pendingInviteGameId
+      ? el(
+          "div",
+          {
+            style: {
+              padding: "0.6rem 0.8rem",
+              marginBottom: "0.85rem",
+              borderRadius: "4px",
+              background: "rgba(180, 83, 9, 0.12)",
+              border: "1px solid var(--gold)",
+              fontSize: "0.84rem",
+              color: "var(--text-main)",
+            },
+            text: `✉️ Expedition Invitation (#${appState.pendingInviteGameId}): Sign in with your invited Collegium account to claim your seat.`,
+          }
+        )
+      : null,
+    el("p", {
+      style: { color: "var(--text-muted)", fontSize: "0.88rem", marginTop: "0" },
+      text: "Sign in with your Email, Username, or Google Account to host multiplayer games, challenge AI merchants, customize your cart, and climb the Imperial Leaderboard.",
+    }),
+    el(
+      "div",
+      { style: { display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" } },
+      el("button", {
+        className: `btn ${isLogin ? "btn-primary" : ""}`,
+        style: { flex: "1 1 140px" },
+        text: "Member Sign In",
+        onClick: () => {
+          appState.authMode = "login";
+          renderApp();
+        },
+      }),
+      el("button", {
+        className: `btn ${!isLogin ? "btn-primary" : ""}`,
+        style: { flex: "1 1 140px" },
+        text: "Register New Member",
+        onClick: () => {
+          appState.authMode = "register";
+          renderApp();
+        },
+      })
+    ),
+    el(
+      "button",
+      {
+        type: "button",
+        className: "btn-google",
+        onClick: openGoogleSignInModal,
+      },
+      renderGoogleLogoSvg(),
+      el("span", { text: "Sign in with Google" })
+    ),
+    el("div", { className: "auth-divider", text: "or continue with email & password" }),
+    el(
+      "form",
+      { onSubmit: handleSubmit },
+      el(
+        "div",
+        { className: "form-group" },
+        el("label", { text: isLogin ? "Username or Email Address" : "Username" }),
+        usernameInput
       ),
+      !isLogin
+        ? el("div", { className: "form-group" }, el("label", { text: "Email Address (Required)" }), emailInput)
+        : null,
+      !isLogin
+        ? el("div", { className: "form-group" }, el("label", { text: "Roman Merchant Title / Display Name" }), displayInput)
+        : null,
+      !isLogin
+        ? el("div", { className: "form-group" }, el("label", { text: "Preferred Merchant Cart" }), colorPickerGrid)
+        : null,
+      el("div", { className: "form-group" }, el("label", { text: "Password (8+ characters)" }), passwordInput),
       el(
         "button",
-        {
-          type: "button",
-          className: "btn-google",
-          onClick: openGoogleSignInModal,
-        },
-        renderGoogleLogoSvg(),
-        el("span", { text: "Sign in with Google" })
-      ),
-      el("div", { className: "auth-divider", text: "or continue with email & password" }),
-      el(
-        "form",
-        { onSubmit: handleSubmit },
-        el(
+        { type: "submit", className: "btn btn-primary", style: { width: "100%", padding: "0.65rem" } },
+        isLogin ? "Enter the Port of Ostia" : "Register Account & Enter Portal"
+      )
+    ),
+    !isFirebaseClientConfigured()
+      ? el(
           "div",
-          { className: "form-group" },
-          el("label", { text: isLogin ? "Username or Email Address" : "Username" }),
-          usernameInput
-        ),
-        !isLogin
-          ? el("div", { className: "form-group" }, el("label", { text: "Email Address (Required)" }), emailInput)
-          : null,
-        !isLogin
-          ? el("div", { className: "form-group" }, el("label", { text: "Roman Merchant Title / Display Name" }), displayInput)
-          : null,
-        !isLogin
-          ? el("div", { className: "form-group" }, el("label", { text: "Preferred Merchant Cart" }), colorPickerGrid)
-          : null,
-        el("div", { className: "form-group" }, el("label", { text: "Password (8+ characters)" }), passwordInput),
-        el(
-          "button",
-          { type: "submit", className: "btn btn-primary", style: { width: "100%", padding: "0.65rem" } },
-          isLogin ? "Enter the Port of Ostia" : "Register Account & Enter Portal"
+          { style: { marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-subtle)", textAlign: "center" } },
+          el("button", {
+            type: "button",
+            className: "btn btn-crimson",
+            style: { width: "100%" },
+            text: "⚡ Instant One-Click Local Sandbox Login",
+            onClick: handleQuickDemo,
+          })
         )
-      ),
-      !isFirebaseClientConfigured()
-        ? el(
-            "div",
-            { style: { marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-subtle)", textAlign: "center" } },
-            el("button", {
-              type: "button",
-              className: "btn btn-crimson",
-              style: { width: "100%" },
-              text: "⚡ Instant One-Click Local Demo Login (Lucius Mercator)",
-              onClick: handleQuickDemo,
-            })
-          )
-        : null
-    )
+      : null
+  );
+
+  return el(
+    "div",
+    { className: "portal-container" },
+    el("div", { className: "landing-hero-grid" }, showcaseCard, authCard)
   );
 }
 
 const DEFAULT_BOT_PERSONAS = [
   { strategy: "balanced", name: "Marcus Mercator", title: "Ostia Grain & Wine Syndic" },
   { strategy: "luxury", name: "Cornelia Severa", title: "Palatine Marble Purveyor" },
-  { strategy: "aggressive", name: "Titus Valerius", title: "Subura Arms & Guard Factor" },
-  { strategy: "faction", name: "Julia Crispina", title: "Severan Court Broker" },
-  { strategy: "opportunist", name: "Gaius Nocturnus", title: "Tiber Smuggler & Gambler" },
+  { strategy: "aggressive", name: "Titus Valerius", title: "Gladiator & Beasts Contractor" },
+  { strategy: "missions", name: "Julia Lucilla", title: "Senatorial Courier" },
+  { strategy: "opportunist", name: "Gaius Fulvius", title: "Subura Night Runner" },
 ];
 
 function getBotPersonasCatalog() {
@@ -4734,7 +4855,7 @@ function renderPortalView() {
       "div",
       { style: { marginTop: "1.1rem", fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: "1.4" } },
       el("strong", { style: { color: "var(--gold-bright)" }, text: "211 A.D. Overview: " }),
-      "Each game spans 3 Seasons (Spring, Summer, Fall) plus the December 211 Purge. Buy Goods & Guards at Portus Ostiae, enter Rome at dusk (8:00 P.M.) to navigate 36 nocturnal neighborhoods (A1–F6) and 4 Tiber Bridges, fulfill Missions, court 5 Severan Factions, and exit before Sunrise (6:00 A.M.)!"
+      "Each game spans 3 Seasons (Spring, Summer, Fall) plus the December 211 Purge. Buy Goods & Guards at Portus Ostiae, enter Rome at dusk to navigate 36 nocturnal neighborhoods, fulfill Missions, court 5 Severan Factions, and exit before Sunrise!"
     )
   );
 
@@ -8103,6 +8224,34 @@ function renderCleanupPhasePanel(gs, viewer) {
           })
         )
       : null,
+    gs.season === "Fall"
+      ? el(
+          "label",
+          {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.85rem",
+              cursor: "pointer",
+              fontSize: "0.86rem",
+            },
+          },
+          el("input", {
+            type: "checkbox",
+            checked:
+              appState.cleanupAllowWinterPvpInfluence !== undefined
+                ? Boolean(appState.cleanupAllowWinterPvpInfluence)
+                : viewer.allowWinterPvpInfluence !== false,
+            onChange: (e) => {
+              appState.cleanupAllowWinterPvpInfluence = Boolean(e.target.checked);
+            },
+          }),
+          el("span", {
+            text: "⚔️ Authorize Combat Influence cards in Winter Reckoning PvP Tie-Breakers (uncheck to save cards)",
+          })
+        )
+      : null,
     el("button", {
       className: "btn btn-crimson",
       text:
@@ -8113,6 +8262,10 @@ function renderCleanupPhasePanel(gs, viewer) {
         sendGameAction({
           type: "cleanup_finish",
           keepGuardIds: Array.from(appState.cleanupKeepGuards),
+          allowWinterPvpInfluence:
+            appState.cleanupAllowWinterPvpInfluence !== undefined
+              ? Boolean(appState.cleanupAllowWinterPvpInfluence)
+              : viewer.allowWinterPvpInfluence !== false,
         }),
     })
   );
@@ -8266,7 +8419,7 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
           ? hasActiveClimateOption(gs, "plautilla_3")
             ? "Smuggler's Fence: Sells 1 Scarcity step higher & does NOT count as a Failed Mission (Patron Hostile Favor still applies)!"
             : "Fencing this Mission Cargo sells it for cash but immediately FAILS the Mission!"
-          : `Sell ${item.name} in ${viewer.position} (Max 1 Good sold per hour)`,
+          : `Sell ${item.name} in ${viewer.position}`,
         text: sellOpt.isFencedCargo
           ? `🕵️ Fence (${sellOpt.price}d)`
           : `💰 Sell (${sellOpt.price}d @ ${sellOpt.scarcitySymbol || "="})`,
@@ -8275,9 +8428,35 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
             type: "delivery_sell",
             category: sellOpt.category,
             cardIds: [item.id],
+            missionId: sellOpt.missionId || undefined,
           }),
       })
     );
+    if (
+      sellOpt.category === "Grain" &&
+      !sellOpt.isFencedCargo &&
+      Number(sellOpt.bulkGrainCount) >= 2 &&
+      Array.isArray(sellOpt.bulkGrainCardIds)
+    ) {
+      externalMetaNodes.push(
+        el("button", {
+          type: "button",
+          className: "btn btn-sm btn-primary",
+          style: { width: "100%", padding: "0.16rem 0.26rem", fontSize: "0.66rem" },
+          disabled: viewer.transactedThisTurn,
+          title: `Bulk Grain Sale: Spend 1 hourly Transaction to sell all ${sellOpt.bulkGrainCount} Grain cards in your Cart for ${sellOpt.bulkGrainTotalPrice} Denarii total!`,
+          text: `🌾 Bulk All ${sellOpt.bulkGrainCount} (${sellOpt.bulkGrainTotalPrice}d)`,
+          onClick: () =>
+            sendGameAction({
+              type: "delivery_sell",
+              category: "Grain",
+              bulkGrain: true,
+              cardIds: sellOpt.bulkGrainCardIds,
+              missionId: sellOpt.missionId || undefined,
+            }),
+        })
+      );
+    }
     if (Array.isArray(sellOpt.amethystBoostOptions) && sellOpt.amethystBoostOptions.length > 0 && !viewer.transactedThisTurn) {
       const boost = sellOpt.amethystBoostOptions[sellOpt.amethystBoostOptions.length - 1];
       externalMetaNodes.push(
@@ -8294,6 +8473,7 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
               type: "delivery_sell",
               category: sellOpt.category,
               cardIds: [item.id],
+              missionId: sellOpt.missionId || undefined,
               spendAmethysts: boost.spend,
             }),
         })
@@ -9343,10 +9523,10 @@ const TIBER_UNBRIDGED_CELL_CLASSES = {
 
 const TIBER_BRIDGE_BADGES_BY_CELL = {
   A1: [
-    { pos: "E", label: "🌉 Pons Milvius" },
-    { pos: "S", label: "🌉 Pons Aelius" },
+    { pos: "E", label: "🌉 Pons Aelius" },
+    { pos: "S", label: "🌉 Pons Neronianus" },
   ],
-  A4: [{ pos: "N", label: "🌉 Pons Aurelius" }],
+  A4: [{ pos: "N", label: "🌉 Pons Agrippae" }],
   B4: [
     { pos: "E", label: "🌉 Pons Fabricius" },
     { pos: "S", label: "🌉 Pons Aemilius" },
@@ -9748,7 +9928,7 @@ function renderRomeNightBoard(gs, viewer) {
 
       const bridgeBadgeNodes = (TIBER_BRIDGE_BADGES_BY_CELL[coord] || []).map((bSpec) =>
         el("span", {
-          className: `tiber-bridge-pill bridge-pos-${bSpec.pos}`,
+          className: `tiber-bridge-pill bridge-dir-${bSpec.pos}`,
           title: `${bSpec.label} — Stone Bridge across the Tiber`,
           text: bSpec.label,
         })
@@ -9991,6 +10171,7 @@ function renderCartNavigationWidget(gs, viewer) {
   if (isMyDeliveryTurn && rev) {
     const smugglersFenceActive = hasActiveClimateOption(gs, "plautilla_3");
     let anySellableShown = false;
+    const shownBulkGrainKeys = new Set();
     for (const item of viewer.cart || []) {
       const hasPaidCost = !item.isMissionCargo && typeof item.purchasePrice === "number";
       for (const sOpt of item.availableSells || []) {
@@ -9999,7 +10180,37 @@ function renderCartNavigationWidget(gs, viewer) {
           txButtons.push(
             el("div", {
               style: { fontSize: "0.72rem", color: "var(--gold-bright)", fontWeight: "700" },
-              text: viewer.transactedThisTurn ? "✓ Transaction Used This Hour" : "💰 Sell 1 Good:",
+              text: viewer.transactedThisTurn ? "✓ Transaction Used This Hour" : "💰 Sell 1 Good (or Bulk Grain):",
+            })
+          );
+        }
+        const bulkKey = `${sOpt.missionId || "tile"}:${sOpt.modifier || "="}`;
+        if (
+          sOpt.category === "Grain" &&
+          !sOpt.isFencedCargo &&
+          Number(sOpt.bulkGrainCount) >= 2 &&
+          Array.isArray(sOpt.bulkGrainCardIds) &&
+          !shownBulkGrainKeys.has(bulkKey)
+        ) {
+          shownBulkGrainKeys.add(bulkKey);
+          const bulkNet = Number(sOpt.bulkGrainTotalPrice) - Number(sOpt.bulkGrainPurchasePrice || 0);
+          const bulkNetStr = bulkNet >= 0 ? `+${bulkNet}d` : `${bulkNet}d`;
+          txButtons.push(
+            el("button", {
+              type: "button",
+              className: "btn btn-sm btn-primary",
+              disabled: viewer.transactedThisTurn,
+              text: `🌾 Bulk Sell All ${sOpt.bulkGrainCount} Grain (${sOpt.bulkGrainTotalPrice}d @ ${sOpt.scarcitySymbol}) [Net ${bulkNetStr}]${
+                sOpt.isMission ? " [Mission]" : ""
+              }`,
+              onClick: () =>
+                sendGameAction({
+                  type: "delivery_sell",
+                  category: "Grain",
+                  bulkGrain: true,
+                  cardIds: sOpt.bulkGrainCardIds,
+                  missionId: sOpt.missionId || undefined,
+                }),
             })
           );
         }
@@ -10027,6 +10238,7 @@ function renderCartNavigationWidget(gs, viewer) {
                 type: "delivery_sell",
                 category: sOpt.category,
                 cardIds: [item.id],
+                missionId: sOpt.missionId || undefined,
               }),
           })
         );
@@ -10045,6 +10257,7 @@ function renderCartNavigationWidget(gs, viewer) {
                       type: "delivery_sell",
                       category: sOpt.category,
                       cardIds: [item.id],
+                      missionId: sOpt.missionId || undefined,
                       spendAmethysts: boost.spend,
                     }),
                 })
@@ -10457,7 +10670,12 @@ function renderPlayerSidebar(gs, viewer) {
                 })`,
               })
         ),
-        allMissions.length === 0
+        gs.phase === "setup_discard" && !viewer.setupDiscarded
+          ? el("div", {
+              className: "mission-section-empty",
+              text: "Select 2 of your 5 Starting Missions to discard in the Setup panel.",
+            })
+          : allMissions.length === 0
           ? el("div", { className: "mission-section-empty", text: "No active missions." })
           : el(
               "div",
@@ -10474,7 +10692,12 @@ function renderPlayerSidebar(gs, viewer) {
       "div",
       { className: "panel" },
       el("h3", { className: "panel-title", text: `🃏 Influence Cards (${(viewer.influence || []).length})` }),
-      (viewer.influence || []).length === 0
+      gs.phase === "setup_discard" && !viewer.setupDiscarded
+        ? el("div", {
+            style: { fontSize: "0.8rem", color: "var(--text-muted)" },
+            text: "Select 2 of your 5 Starting Influence cards to discard in the Setup panel.",
+          })
+        : (viewer.influence || []).length === 0
         ? el("div", { style: { fontSize: "0.8rem", color: "var(--text-muted)" }, text: "No Influence cards in hand." })
         : el(
             "div",
@@ -12911,7 +13134,7 @@ function renderProfileView() {
   if (!user) return renderAuthView();
 
   const userSettings = user.settings || {};
-  let selectedColor = user.preferredColor || "Ruby";
+  let selectedColor = user.preferredColor || "Z3";
 
   const displayNameInput = el("input", {
     className: "form-input",
@@ -13221,7 +13444,7 @@ const RULEBOOK_SECTIONS = [
       "Across 3 Seasons (Spring, Summer, and Fall), 2 to 6 merchants buy Goods and hire Guards at Portus Ostiae by day, then navigate 36 nocturnal neighborhoods of Rome (A1–F6) across 10 hourly turns (8:00 P.M. to 5:00 A.M.) before the 6:00 A.M. Sunrise Curfew. After Fall Clean-Up, the December 211 Purge (Winter Reckoning) settles unfinished contracts, cart inventory, loans, and imperial faction alliances—crowning the wealthiest merchant in Denarii (d)!",
     ],
     bullets: [
-      "Game Boards: The Portus Ostiae Market Board (6 tracks: Grain, Animals, Wine, Weapons, Marble, and Guards × 6 scarcity bays), the 6×3 Political Climate Board, and the Nocturnal Rome City Board (6×6 grid A1–F6, 36 neighborhoods including Mausoleum Hadriani at A1, 6 Via Entrances, 3 Imperial Forums, and the Tiber River crossed by 4 Stone Bridges).",
+      "Game Boards: The Portus Ostiae Market Board (6 tracks: Grain, Animals, Wine, Weapons, Marble, and Guards × 6 scarcity bays), the 6×3 Political Climate Board, and the Nocturnal Rome City Board (6×6 grid A1–F6, 36 neighborhoods including Mausoleum Hadriani at A1, Thermae Neronianae at B2, Saepta Julia at C2, and Mons Testaceus at A6, plus 6 Via Entrances, 3 Imperial Forums, and the Tiber River crossed by 5 Stone Bridges).",
       "Neighborhood Tiles: 432 square tiles (12 per neighborhood across 36 stacks) featuring streets, barricades, 2(d) road tolls, encounters, Stadium gambling, and nocturnal buyers.",
       "Decks & Mats: Market Cards, Missiones (Starting & Encounter Missions), Influence Cards, Patricii / Legiones / Nefarii Encounter Decks, Merchant Cart Mats (6■ Cargo Blocks in 2×3 grid, 2▲ Guard Slots in 2×1 column, 5 Uncapped Faction Favor tracks), and 6-sided Roman Numeral Dice (0, 0, I, I, II, III).",
     ],
@@ -13268,10 +13491,10 @@ const RULEBOOK_SECTIONS = [
     title: "3. Game Setup, Initial Discard, & Political Climate Draft",
     bullets: [
       "Starting Treasury & Market: Each merchant begins Spring with 12(d) and 0 Favor across all five factions. 24 Goods/Guards are dealt onto the Portus Ostiae Market Board and left-aligned toward Precious (<<).",
-      "Initial Hand & Speed Discard: Each merchant is dealt 5 Starting Missions and 5 Influence cards, then discards 2 Missions and 2 Influence cards (keeping 3 of each).",
+      "Initial Hand & Speed Discard: Each merchant is dealt 5 distinct Starting Missions and 5 distinct Influence cards, then discards 2 Missions and 2 Influence cards (keeping 3 of each).",
       "Political Climate Draft (6×3 Board): The FIRST merchant to finish discarding claims First Pick on the 6-column Political Climate Board (Caracalla, Geta, Domna, Plautilla, Aurelians, Missions — at most 1 option may be enacted per column).",
       "2-Player vs. 3+ Player Draft: In a 2-player game, 4 modifiers are enacted via snake draft (First Discarder → Rival → Rival → First Discarder — first pick and last pick!). In 3–6 player games, each merchant enacts 1 modifier in discard-completion order (up to all 6 columns).",
-      "Normal Game Turn Order: Once the Political Climate is set, the First Player Token goes to the merchant seated AFTER the First Discarder—so the merchant who claimed First Pick on the Political Climate acts LAST in normal turn order!",
+      "Normal Game Turn Order & 5th/6th Player Stipend: Once the Political Climate is set, the First Player Token goes to the merchant seated AFTER the First Discarder—so the merchant who claimed First Pick on the Political Climate acts LAST in normal turn order! In 5–6 player games, to offset late Spring Market position, the 5th merchant in Spring turn order receives +1(d) (starting at 13(d)) and the 6th merchant receives +2(d) (starting at 14(d)).",
     ],
   },
   {
@@ -13309,18 +13532,19 @@ const RULEBOOK_SECTIONS = [
       "Step 3 — Edge Cost / Hazard: Pay any 2(d) road toll (plus +4(d) Bridge Toll if Divided Tiber is active and you hold < +1 Emerald) or resolve any Edge Encounter crossed.",
       "Step 4 — Mission Cargo Pickup & Delivery: Upon arriving in a neighborhood—BEFORE any Center Tile Encounter triggers—you may load or deliver matching Mission Cargo!",
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
-      "Step 6 — One Transaction (Max 1 Good Sold/Hr): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here), Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4), OR Gamble once at a Stadium tile (up to 20(d) wager).",
+      "Step 6 — One Transaction (1 Good/Hr, or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here)—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4), OR Gamble once at a Stadium tile (up to 20(d) wager).",
       "Step 7 — Free Scout: Peek once per turn at the top unrevealed tile of any neighborhood stack or the top card of any deck.",
-      "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via the 5 Stone Bridges: Pons Milvius (A1↔B1), Pons Aelius (A1↔A2), Pons Aurelius (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
+      "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via Rome's 5 intra-urban Stone Bridges (in use in 211 A.D.): Pons Aelius (A1↔B1), Pons Neronianus (A1↔A2), Pons Agrippae (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
     ],
   },
   {
     id: "missions",
-    title: "6. Missions & Mission Cargo",
+    title: "6. Missions, Mission Cargo, & Regicide",
     bullets: [
       "Starting Missions: Kept during Setup (3 per merchant). Can be canceled voluntarily without Favor penalty (unless Bonded Couriers is active, which fines -10(d) on any failed/canceled/unfinished mission!). Starting Mission Cargo can NEVER be sold or fenced.",
       "Encounter Missions: Drawn from NPC encounters. Encounter Mission Cargo displays a Fence price row—fencing it to a matching buyer sells 1 card for quick Denarii, applies Patron Hostile Favor, and FAILS the mission (unless Smuggler's Fence is active, which boosts Fence Scarcity by +1 step and prevents fencing from counting as a Failed Mission!).",
       "Soothsayer Missions: Mandatory prophecies with 1(R) face-down Influence cards sealed underneath until completed. Cannot be voluntarily canceled unless holding 6 Soothsayer Missions simultaneously.",
+      "Regicide & Regime Change ('Any Player' Clauses): Two high-stakes Encounter Missions—Regicide (defeating Emperor Caracalla in combat) and Regime Change (defeating Co-Emperor Geta in combat)—trigger if ANY Player defeats that Emperor in combat while you hold the Mission! Completing Regicide immediately ends the game in an instant assassination victory for the Regicide holder; completing Regime Change awards 100(d) and +2 Rubies (+1 Diamond) while continuing the year.",
     ],
   },
   {
@@ -13328,8 +13552,8 @@ const RULEBOOK_SECTIONS = [
     title: "7. Encounters, Combat, Charts, & Stadium Gambling",
     bullets: [
       "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
-      "Combat Power (CP) & Wounds: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals, and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). If Player CP ≥ Opponent CP against an NPC, you win!",
-      "Armor, Guards, & Driver Fate: If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP - Player CP). Armor reduces Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
+      "Combat Power (CP) & Cargo Gear: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals (including Ostrich or negative-die beasts!), and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). Note that crated Loricae body armor carries 0 CP in street ambushes (too slow to don mid-attack, compensated by lucrative trade margins). If Player CP ≥ Opponent CP against an NPC, you win!",
+      "Armor, Guards, & Driver Fate: If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP - Player CP). Shields/Helmets reduce Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
       "1(R) Street Charts: Angry Mob (0: lose all Wine; I: lose all Grain; II: lose most expensive Good; III: safe), Theater Troupe (0: lose all positive Friendly Favor; I: lose all negative Hostile Favor; II: lose rest of turn & next turn; III: draw 1(R) Influence), Soothsayer (take mandatory Mission + seal 1(R) Influence cards).",
       "Stadium Gambling: On a tile with the Dice icon, wager 1(d) to 20(d) (capped at 20(d) per gamble action) and roll 1(R) to win Wager × Roll!",
     ],
@@ -13342,7 +13566,7 @@ const RULEBOOK_SECTIONS = [
       "Tile Cleanup: Persistent tiles (⤹) stay face-up for future seasons; Refresh tiles (↻) discard after encounters; ordinary revealed tiles return to the bottom of their stacks at Dawn.",
       "Buy Influence Cards: Cost scales by your current Influence hand size (including face-down Soothsayer cards): 0–1 cards = 2(d), 2–3 cards = 4(d), 4 cards = 6(d), 5+ cards = 8(d).",
       "Collegium Loans: Spring Loan grants +20(d) (repay 30(d) at end of Summer, or 45(d) at end of Fall / Winter Reckoning). Summer Loan grants +40(d) (repay 60(d) at end of Fall / Winter Reckoning).",
-      "Guard Upkeep & Next Season: Pay each retained Guard's current Market hiring cost (or release them to the bottom of the Market deck), then pass the First Player Token clockwise to begin the next season (or proceed to Winter Reckoning after Fall).",
+      "Guard Upkeep & Winter Tie-Breaker Policy: Pay each retained Guard's current Market hiring cost (or release them to the bottom of the Market deck). During Fall Clean-Up, you may also toggle whether your Driver is authorized to expend Combat Influence cards during Winter Reckoning PvP tie-breakers.",
     ],
   },
   {
@@ -13354,14 +13578,14 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Step 1 — Unfinished Missions Fail: Incomplete Missions fail first (applying Encounter Hostile Favor and -10(d) each if Bonded Couriers is active); remaining mission cargo is discarded.",
       "Step 2 — Cart Liquidation & Loans: Remaining non-mission Goods liquidate at Abundant (>>) Sell Price, then unpaid Spring (-45(d)) and Summer (-60(d)) Loans are deducted.",
-      "Step 3 — Enacted Political Climate Settlement: Resolve all enacted End-Game modifiers (Elimination → Flat Per-Gem/Mission Modifiers & Least Penalties → Exile's Informants Steal → Domna +20% Wealth). Eliminated merchants cannot win and rank below survivors.",
-      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: for 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
+      "Step 3 — Imperial Proscription FIRST, Then Political Climate Settlement: If Imperial Proscription (Caracalla Option 1) is enacted, it resolves FIRST—eliminating the merchant with Least Caracalla Favor BEFORE any other Most/Least awards, penalties, steals, or percentages! Eliminated merchants cannot win or suffer subsequent Most/Least awards and rank below all survivors. Then resolve Flat Gem/Mission Modifiers & Least Penalties → Exile's Informants Steal → Domna +20% Wealth.",
+      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: pre-roll cards (Mercenary Ambush, Distraction removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot, Gladiator's Intervention) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
     ],
     table: {
       headers: ["Caracalla", "Geta", "Julia Domna", "Plautilla", "Aurelians", "Missions"],
       rows: [
         [
-          "Imperial Proscription: End of game: Least Caracalla favor is eliminated.",
+          "Imperial Proscription: End of game (FIRST): Least Caracalla favor is eliminated.",
           "Brother's Grudge: End of game: Least Geta favor loses 25d.",
           "Imperial Patronage: End of game: Most Domna favor gains +20% wealth.",
           "Exile's Informants: End of game: Most Plautilla favor steals 15d from the wealthiest rival.",
@@ -13378,10 +13602,10 @@ const RULEBOOK_SECTIONS = [
         ],
         [
           "Army Pay Hike: Legiones gain +2 CP. Each +Ruby gives your Cart +1 CP.",
-          "Divided Tiber: Tiber Bridges cost a 4d toll, waived with +1 Emerald or Shortcut.",
+          "Divided Tiber: Crossing any of the 5 Tiber Bridges costs a 4d toll, waived with +1 Emerald or Shortcut.",
           "Empress Mediator: Exchange +Diamonds 1-for-1 into +Rubies or +Emeralds anytime.",
           "Smuggler's Fence: Fenced cargo sells +1 Scarcity step higher and does not fail the Mission.",
-          "Senatorial Privilege: Spend +Amethysts when selling a Good for +1 Scarcity step per gem.",
+          "Senatorial Privilege: Spend +Amethysts when selling Goods (including Bulk Grain) for +1 Scarcity step per gem.",
           "Bonded Couriers: Completed Missions pay 2× Denarii; failed or unfinished Missions fine 10d.",
         ],
       ],
@@ -13395,7 +13619,8 @@ const RULEBOOK_SECTIONS = [
       rows: [
         ["Green / Red Bar", "Tile Edge", "Open Street (free movement) / Barricaded Alley (impassable without Shortcut)."],
         ["2(d) Badge", "Tile Edge", "Road Toll — pay 2 Denarii to cross (unless waived by Shortcut or Pass)."],
-        ["🌊 Tiber / 🌉 Pons", "Rome Map Borders", "Unbridged Tiber borders & river diagonals are impassable; cross only at the 4 Stone Bridges."],
+        ["🌊 Tiber / 🌉 Pons", "Rome Map Borders", "Unbridged Tiber borders & river diagonals are impassable; cross only at the 5 Stone Bridges."],
+        ["🌾 Bulk Sell Grain", "Cart & Navigate Panel", "Spend 1 hourly Transaction to sell ALL non-fenced Grain cards in your Cart at once."],
         ["👁️ Scouted Badge", "Unrevealed Rome Cell", "Hover over any tile you have Scouted (or any face-up tile) to inspect its zoomed street layout."],
         ["Paid 𐆖X • Net ±𐆖Y", "Loaded Cart Cards & Sell Buttons", "Tracks what you paid for each Good and your exact net profit at the current buyer."],
         ["Numpad 1–9 / Key N", "Cart Mat & Rome Delivery", "Steer Cart via Numpad (7=NW, 8=N, 9=NE, 4=W, 6=E, 1=SW, 2=S, 3=SE); press 5 or N to toggle Cart Mat / Navigate tab."],
@@ -13423,7 +13648,7 @@ function buildRulebookSectionNodes(searchQuery) {
       el(
         "p",
         { style: { color: "var(--text-muted)", fontStyle: "italic", padding: "0.75rem 0" } },
-        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Favor, Loan, Curfew, or Winter.`
+        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Grain, Favor, Loan, Curfew, or Winter.`
       ),
     ];
   }
@@ -13473,7 +13698,7 @@ function renderRulebookView() {
   const searchInput = el("input", {
     className: "form-input",
     type: "search",
-    placeholder: "Search rules (e.g. Tiber, Favor, Cargo, Loan, Curfew, Winter)...",
+    placeholder: "Search rules (e.g. Tiber, Grain, Favor, Cargo, Loan, Winter)...",
     value: appState.rulebookSearch || "",
     onInput: (e) => {
       appState.rulebookSearch = e.target.value;
@@ -13485,6 +13710,21 @@ function renderRulebookView() {
     "aside",
     { className: "panel rulebook-toc" },
     el("h3", { className: "panel-title", text: "📜 Codex Regulae" }),
+    !appState.user
+      ? el(
+          "button",
+          {
+            type: "button",
+            className: "btn btn-primary",
+            style: { width: "100%", marginBottom: "0.75rem" },
+            onClick: () => {
+              appState.activeTab = "portal";
+              renderApp();
+            },
+          },
+          "← Back to Welcome & Sign In"
+        )
+      : null,
     el("div", { className: "form-group", style: { marginBottom: "0.75rem" } }, searchInput),
     ...RULEBOOK_SECTIONS.map((sec) =>
       el("button", {
@@ -14769,7 +15009,7 @@ function buildNpcSpeechBubbleVisualNodes(ev) {
       : "patricii";
     const cardImg = el("img", {
       className: "npc-bubble-card-img",
-      src: `/assets/cards/${cid}.jpg?v=2`,
+      src: `/assets/cards/${cid}.jpg?v=3`,
       alt: vis.card.name || "Encounter",
     });
     cardImg.onerror = () => {

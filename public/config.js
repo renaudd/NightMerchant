@@ -15,9 +15,10 @@
     // Cloud Run backend URL in production; "" on localhost/127.0.0.1 for local server dev
     apiBaseUrl: isLocalDev ? "" : "https://nightmerchant-api-208043966891.us-west2.run.app",
 
-    // Firebase Web App configuration (nightmerchant-f183d)
+    // Non-secret Firebase project identifiers.
+    // NOTE: Do NOT commit a Google/Firebase Web API key here — the client receives
+    // firebaseConfig dynamically at runtime from GET /api/auth/me on Cloud Run.
     firebaseConfig: {
-      apiKey: "AIzaSyAw4TolZSm12UKGecSBLBJgIEcDTr88kOE",
       authDomain: "nightmerchant-f183d.firebaseapp.com",
       projectId: "nightmerchant-f183d",
       storageBucket: "nightmerchant-f183d.firebasestorage.app",

@@ -4,8 +4,7 @@ V 2.0
 © Dashiell Renaud 2019–2026  
 Licensed under CC BY-NC-ND 4.0 (https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
- *Geta Dying in his Mother’s Arms*  
-Jacques Pajou
+*Geta Dying in his Mother’s Arms*, Jacques-Augustin-Catherine Pajou, 1766–1828 (Staatsgalerie Stuttgart)
 
 The year is 211 A.D. You are a merchant peddling staples and extravagances in the city of Rome during the sunset of its Golden Age.  
    
@@ -80,7 +79,7 @@ Once all 24 Goods have been placed on the Market, realign all of the Goods in ea
    
 5) Distribute **12(d)** to each Player from the bank.  
    
-6) Deal five **(5)** Mission cards and five **(5)** Influence cards to each Player.  
+6) Deal five **(5)** distinct Mission cards and five **(5)** distinct Influence cards to each Player.  
    
 7) Players must choose two **(2)** Mission cards and two **(2)** Influence cards to discard to the bottom of their respective decks.  
 
@@ -88,7 +87,7 @@ Once all 24 Goods have been placed on the Market, realign all of the Goods in ea
 - **2 Players (4 Active Modifiers)**: Snake draft **`1st Discarder → Rival → Rival → 1st Discarder`** (the fastest discarder gets **first pick and last pick**!).  
 - **3–6 Players (`min(N, 6)` Active Modifiers)**: Each Player enacts **1** modifier in the exact order they finished discarding.  
 
-9) **Normal Game Turn Order**: Once the Political Climate is set, give the **First Player Token** to the Player seated clockwise **after** the First Discarder—so the Player who claimed First Pick on the Political Climate acts **LAST** in normal turn order!  
+9) **Normal Game Turn Order & 5th/6th Player Stipend**: Once the Political Climate is set, give the **First Player Token** to the Player seated clockwise **after** the First Discarder—so the Player who claimed First Pick on the Political Climate acts **LAST** in normal turn order! In **5–6 Player games**, to offset late Spring Market position, the **5th Player** in Spring turn order receives **+1(d)** (**13(d)** total) and the **6th Player** receives **+2(d)** (**14(d)** total) from the bank.  
    
 **Combat breaks all ties in the Game (including every Most/Least Political Climate modifier, even when tied at 0!). See COMBAT BETWEEN PLAYERS.**  
  
@@ -143,10 +142,10 @@ Patricii Icon: passable, but triggers Patricii Deck Encounter.
 2(d): Must pay **2 denarii** (or listed amount) in order to pass through this edge.  
 *Complete Edge Encounters before moving to or revealing the next tile.*
 
-**Crossing the Tiber River**: Heavy freight carts cannot ford the Tiber River (`A1` in the northwest and `A4`, `B4`, `A5` in Trans Tiberim on the West Bank). Carts **cannot cross the Tiber diagonally**, and may only cross between the West Bank and East Bank orthogonally across Rome’s **five Stone Bridges** (provided the tile edges on the bridge are passable):
-- **Pons Milvius**: **A1 ↔ B1** (*Mausoleum Hadriani* ↔ *Via Flaminia*)
-- **Pons Aelius**: **A1 ↔ A2** (*Mausoleum Hadriani* ↔ *Circus Agonalis*)
-- **Pons Aurelius**: **A3 ↔ A4** (*Theatrum Pompeii* ↔ *Via Aurelia*)
+**Crossing the Tiber River**: Heavy freight carts cannot ford the Tiber River (`A1` in the northwest and `A4`, `B4`, `A5` in Trans Tiberim on the West Bank). Carts **cannot cross the Tiber diagonally**, and may only cross between the West Bank and East Bank orthogonally across Rome’s **five intra-urban Stone Bridges** (provided the tile edges on the bridge are passable):
+- **Pons Aelius**: **A1 ↔ B1** (*Mausoleum Hadriani* ↔ *Via Flaminia*)
+- **Pons Neronianus**: **A1 ↔ A2** (*Mausoleum Hadriani* ↔ *Circus Agonalis*)
+- **Pons Agrippae**: **A3 ↔ A4** (*Theatrum Pompeii* ↔ *Via Aurelia*)
 - **Pons Fabricius**: **B4 ↔ C4** (*Trans Tiberim* ↔ *Mons Capitolinus*)
 - **Pons Aemilius**: **B4 ↔ B5** (*Trans Tiberim* ↔ *Collis Aventinus*)
 
@@ -154,14 +153,14 @@ Patricii Icon: passable, but triggers Patricii Deck Encounter.
 
 4) **Complete Mission(s)**. Player *may* fulfill any missions that Player has that are relevant to the occupied cell.  
 For Delivery Missions: Items can be picked up at this cell by moving the mission cargo onto the Player’s Cart mat. Items can be delivered at this cell immediately upon arrival (before any Step 5 Tile Encounter) by moving the mission card to the bottom of the Missiones Deck and claiming its rewards.  
-For Sell Missions: Player may complete the mission during Step 7 (Transact) by selling **one (1)** matching Good subject to the price modifier indicated on the Mission Card (e.g., if the mission is to “Sell Cheap Wine at `+` in C3”, and if the market scarcity for Wine is “Common/`>`”, then when Player arrives at C3, Player can sell 1 Cheap Wine for the amount listed in the “Uncommon/`=`” Sell Price column for that wine).
+For Sell Missions: Player may complete the mission during Step 7 (Transact) by selling **one (1)** matching Good—or any number of non-fenced **Grain** cards if it is a Grain Sell Mission—subject to the price modifier indicated on the Mission Card (e.g., if the mission is to “Sell Cheap Wine at `+` in C3”, and if the market scarcity for Wine is “Common/`>`”, then when Player arrives at C3, Player can sell 1 Cheap Wine for the amount listed in the “Uncommon/`=`” Sell Price column for that wine).
 
 5) **Trigger Encounter**. If the revealed Tile has an encounter icon in the central field, trigger the appropriate Deck or Table encounter indicated by the icon(s).
 
 6) **Refresh**. If the revealed Tile has a **⤿** icon, then move it to the bottom of the Tile stack after resolving the encounter, reveal the next Tile in the stack, and continue from Step 5.
 
 7) **Transact**. Player may make one Sale, Purchase, or Gamble:  
-- **Sell (Limit 1 Good per Hour)**: Player may sell **at most one (1) Good card** in a category printed in the white box on the revealed tile (or authorized by an active Sell Mission at this cell). The Scarcity Modifier for the category affects the sell price for the Good relative to its present market scarcity.  
+- **Sell (1 Good per Hour — or Bulk Grain!)**: Player may sell **at most one (1) Good card** in a category printed in the white box on the revealed tile (or authorized by an active Sell Mission at this cell)—**EXCEPT for non-fenced Grain**, where a single hourly Transaction may sell **any number (or all!) of the Player’s Grain cards simultaneously** at the current Grain scarcity modifier. The Scarcity Modifier for the category affects the sell price for the Good(s) relative to present market scarcity. *(Fenced Encounter Mission cargo is always sold 1 card at a time.)*  
 - **Purchase**: (On any of the three central Forum cells: **C3**, **D3**, **D4**) Player can purchase one good from the Market subject to the Scarcity Modifier listed on the tile.  
 - **Gamble**: If the revealed tile has a Gambling/Dice icon, then the Player can elect to spend their transaction making a single Gamble of up to **20(d)**. See TABLE ENCOUNTERS – Gambling.
 
@@ -194,7 +193,7 @@ Clean-Up Phase is used to prepare for the following season.
    
 5) **Pay Your Guards.** Players must pay any guards they wish to keep an amount equal to what their hiring cost would be if they were placed in the first exposed slot on the right of the market board (i.e. if there are three guards on the market, the Pay price is the Uncommon/`=` Hire price of the guard; if there are four guards on the market, the Pay price is the Common/`>` Hire price of the guard).
 
-6) **Next Season**. Pass the First Player Token clockwise and advance to the next season (or proceed to Winter Reckoning after Fall).  
+6) **Next Season**. Pass the First Player Token clockwise and advance to the next season (or proceed to Winter Reckoning after Fall). *(In the digital edition, during Fall Clean-Up Players may also toggle whether their Driver is authorized to expend Combat Influence cards during Winter Reckoning PvP tie-breakers.)*  
  
 
 **ENCOUNTERS**  
@@ -260,11 +259,15 @@ III: **Triple Up** – Receive `3×` wager (`+2×` net profit).
 **MISSIONS**  
 A Player can have a **Maximum of five (5) active missions**. There are three types of mission assignments:
 
-1) **Starting Missions**. At the beginning of the game, Players receive five missions and pick three to keep. These missions can be failed voluntarily (by canceling or replacing them when full). There is no Favor penalty for failing Starting Missions *(unless **Bonded Couriers** is active, which fines **-10(d)** on every failed or unfinished mission)*, **and Goods picked up for Starting Mission delivery quests cannot be sold** (if abandoned, the cargo is discarded for nothing, never fenced).
+1) **Starting Missions**. At the beginning of the game, Players receive five distinct missions and pick three to keep. These missions can be failed voluntarily (by canceling or replacing them when full). There is no Favor penalty for failing Starting Missions *(unless **Bonded Couriers** is active, which fines **-10(d)** on every failed or unfinished mission)*, **and Goods picked up for Starting Mission delivery quests cannot be sold** (if abandoned, the cargo is discarded for nothing, never fenced).
 
 2) **Deck Encounter Missions**. A character encountered in Rome may give the Player a mission. Goods picked up for Deck Encounter delivery missions *can* be fenced to an interested buyer for the Fenced Sell value on the card, which immediately fails the mission and triggers **Hostile Favor Consequences** from the patron *(unless **Smuggler’s Fence** is active, in which case fenced cargo sells **1 Scarcity step higher** and does **not** count as a Failed Mission, though Patron Hostile Favor still applies)*. If a Deck Encounter Mission is failed for any reason (including remaining unfinished at the end of Fall!), Player receives the **Hostile Favor Consequences** from the patron.  
 
 3) **Soothsayer Missions**. Mandatory and cannot be failed voluntarily (unless holding 6 Soothsayer missions simultaneously). Goods picked up for Soothsayer delivery missions cannot be sold, though they can be stolen.  
+
+4) **Special Imperial Combat Missions (*Regicide* & *Regime Change*)**. Two high-stakes Encounter Missions carry an **“any Player”** clause:  
+- **Regicide**: Completed if **any Player** defeats Emperor **Caracalla** in combat while you hold *Regicide*. Completing *Regicide* **immediately ends the game in an instant assassination victory** for the Player holding *Regicide*!  
+- **Regime Change**: Completed if **any Player** defeats Co-Emperor **Geta** in combat while you hold *Regime Change*, awarding **100(d)** plus `+2 Rubies` and `+1 Diamond` while play continues normally.  
 
 DEMANDS & COMBAT  
 COMBAT  
@@ -272,14 +275,14 @@ COMBAT
 2) Generate Player’s CP:  
 - Player’s Driver has `1®` CP  
 - `+` CP from Guards  
-- `+` CP from Weapons  
-- `+` Mandatory Exotic Animals in Cart (must roll all Exotic Animals in combat, including any negative dice!)  
+- `+` CP from Weapons *(Note: crated **Loricae** body armor carries **0 CP** in sudden street ambushes—too slow to strap on mid-attack, offset by its lucrative sell-to-buy margin!)*  
+- `+` Mandatory Exotic Animals in Cart (must roll all Exotic Animals in combat, including *Ostrich* or any negative-die beasts!)  
 - `+` `+1 CP` per positive Caracalla Ruby if **Army Pay Hike** is active  
-3) Opponent rolls `(#)®` CP (unless card formula states otherwise; `+2 CP` to all `Legiones` NPCs if **Army Pay Hike** is active).  
+3) Opponent rolls `(#)®` CP (unless card formula states otherwise; `+2 CP` to all `Legiones` NPCs if **Army Pay Hike** is active; *Distraction* deducts `1®` positive die from the target’s pool prior to rolling).  
 4) All ® on both sides are rolled simultaneously so post-roll Influence cards (*Twist Of Fate*, *Flying Chamber Pot*, *Gladiator’s Intervention*) may modify the dice.  
 5) If **Player’s CP ≥ Opponent’s CP**: **Player wins**, collects Combat Rewards (if any), and Player’s turn proceeds.  
 Otherwise, **Opponent wins**:  
-a) Player suffers `1` Wound (W) for each point of CP difference (after armor/shield wound-ignore rolls). Guards absorb wounds first (Player chooses which Guard dies if holding multiple; dead Guards return to the bottom of the Market deck), and the Driver must survive if possible.  
+a) Player suffers `1` Wound (W) for each point of CP difference (after shield/helmet wound-ignore rolls). Guards absorb wounds first (Player chooses which Guard dies if holding multiple; dead Guards return to the bottom of the Market deck), and the Driver must survive if possible.  
 b) Player’s turn ends.  
 c) **If Player initiated combat by refusing a Demand, Player must still fulfill the refused Demand** (to the greatest extent possible from remaining cash/goods/influence).  
    
@@ -303,21 +306,21 @@ During Setup, Players draft active modifiers from the **6×3 Political Climate B
 
 | Factor | Option 1 *(End-Game)* | Option 2 *(End-Game)* | Option 3 *(Mid-Game Decree)* |
 | :--- | :--- | :--- | :--- |
-| **Caracalla (Ruby)** | **Imperial Proscription**: **Least** Caracalla favor is **ELIMINATED**! | **Praetorian Backlash**: **-10(d)** per positive Ruby; **+5(d)** per negative Ruby. | **Army Pay Hike**: All `Legiones` NPCs gain **+2 CP**; each positive Ruby grants your Cart **+1 CP** in ALL combat. |
-| **Geta (Emerald)** | **Brother’s Grudge**: **Least** Geta favor loses **-25(d)**. | **Jealous Brothers**: **+15(d)** per positive Emerald if `≤ 0` Rubies, OR **-10(d)** per positive Emerald if `≥ +1` Rubies; **-5(d)** per negative Emerald. | **Divided Tiber**: Crossing any of the 4 Tiber Bridges costs **+4(d)** toll, waived if you hold `≥ +1` Emerald (or play *Shortcut*). |
+| **Caracalla (Ruby)** | **Imperial Proscription**: *(Resolves FIRST)* **Least** Caracalla favor is **ELIMINATED**! | **Praetorian Backlash**: **-10(d)** per positive Ruby; **+5(d)** per negative Ruby. | **Army Pay Hike**: All `Legiones` NPCs gain **+2 CP**; each positive Ruby grants your Cart **+1 CP** in ALL combat. |
+| **Geta (Emerald)** | **Brother’s Grudge**: **Least** Geta favor loses **-25(d)**. | **Jealous Brothers**: **+15(d)** per positive Emerald if `≤ 0` Rubies, OR **-10(d)** per positive Emerald if `≥ +1` Rubies; **-5(d)** per negative Emerald. | **Divided Tiber**: Crossing any of the 5 Tiber Bridges costs **+4(d)** toll, waived if you hold `≥ +1` Emerald (or play *Shortcut*). |
 | **Domna (Diamond)** | **Imperial Patronage**: **Most** Domna favor gains **+20%** of final wealth. | **Court Neutrality**: **-15(d)** per positive Diamond AND **-15(d)** per negative Diamond. | **Empress Mediator**: Positive Diamonds may be exchanged **1-for-1** into Rubies (`+1 Caracalla`) or Emeralds (`+1 Geta`) at any time. |
 | **Plautilla (Sapphire)** | **Exile’s Informants**: **Most** Plautilla favor steals **15(d)** from the wealthiest rival. | **Smuggled Dowry**: **+10(d)** per completed mission showing a `+Sapphire` reward OR issued by a Plautilla-aligned NPC. | **Smuggler’s Fence**: Fencing Encounter Mission cargo sells **1 Scarcity step higher** and does **NOT** count as a Failed Mission (Hostile Favor still applies). |
-| **Aurelians (Amethyst)** | **Old Senate Purse**: **Most** Aurelian favor gains **+25(d)**. | **Choose a Side**: **+10(d)** per positive Amethyst AND **+10(d)** per negative Amethyst. | **Senatorial Privilege**: When selling a Good (max 1/hr), spend positive Amethysts (**1 gem = +1 Scarcity step** toward `<<`). |
-| **Missions** | **Master Purveyor**: **Most** completed missions gains **+30(d)**. | **Guild Ledger**: **+10(d)** per completed mission and **-10(d)** per failed/unfinished mission *(net negative allowed)*. | **Bonded Couriers**: Completed missions pay **2× Denarii**, AND every failed or unfinished mission immediately fines **-10(d)**. |
+| **Aurelians (Amethyst)** | **Old Senate Purse**: **Most** Aurelian favor gains **+25(d)**. | **Choose a Side**: **+10(d)** per positive Amethyst AND **+10(d)** per negative Amethyst. | **Senatorial Privilege**: When selling a Good (or Bulk Grain), spend positive Amethysts (**1 gem = +1 Scarcity step** toward `<<`). |
+| **Missions** | **Master Purveyor**: **Most** completed missions gains **+30(d)**. | **Guild Ledger**: **+10(d)** per completed mission and **-10(d)** per failed/unfinished mission *(net negative allowed)*. | **Bonded Couriers**: Completed Missions pay **2× Denarii**, AND every failed or unfinished mission immediately fines **-10(d)**. |
 
-After Fall Clean-Up concludes, December 211 arrives and each Player’s final score in **Denarii (d)** is settled in order:
+After Fall Clean-Up concludes, December 211 arrives and each Player’s final score in **Denarii (d)** is settled in strict order:
 1) **Unfinished Missions**: Any incomplete Missions fail automatically (counting as Failed Missions, fining **-10(d)** each if *Bonded Couriers* is active, and applying **Hostile Favor Consequences** for incomplete Deck Encounter Missions).
 2) **Unsold Goods Liquidation**: Remaining non-mission Goods in a Player’s Cart liquidate at their **Abundant (`>>`) Sell Price**.
 3) **Unpaid Loans**: Deduct **45(d)** for an unpaid Spring Loan and **60(d)** for an unpaid Summer Loan.
 4) **Enacted Political Climate Settlement**:
-   - **Elimination** (*Imperial Proscription*, if active): Player with Least Caracalla Favor is eliminated (ranked below all survivors and ineligible to win).
-   - **Flat Gem/Mission Reckoning & Penalties**: Resolve enacted flat per-gem/per-mission modifiers and Least penalties (*Praetorian Backlash*, *Brother’s Grudge*, *Jealous Brothers*, *Court Neutrality*, *Smuggled Dowry*, *Old Senate Purse*, *Choose a Side*, *Master Purveyor*, *Guild Ledger*).
-   - **Wealth Steal & Percentage Patronage**: Resolve *Exile’s Informants* (`15(d)` stolen from the wealthiest rival), followed by *Imperial Patronage* (`+20%` of positive wealth, rounded to nearest Denarius).
+   - **Step 4a — Elimination FIRST** (*Imperial Proscription*, if active): The Player with **Least** Caracalla Favor is **eliminated immediately** before any other Political Climate awards or penalties resolve. Eliminated Players rank below all survivors, cannot win the game, and are **excluded from all subsequent Most/Least awards, penalties, steals, and percentage bonuses**!
+   - **Step 4b — Flat Gem/Mission Reckoning & Penalties**: Among surviving Players, resolve enacted flat per-gem/per-mission modifiers and Least penalties (*Praetorian Backlash*, *Brother’s Grudge*, *Jealous Brothers*, *Court Neutrality*, *Smuggled Dowry*, *Old Senate Purse*, *Choose a Side*, *Master Purveyor*, *Guild Ledger*).
+   - **Step 4c — Wealth Steal & Percentage Patronage**: Among surviving Players, resolve *Exile’s Informants* (`15(d)` stolen from the wealthiest surviving rival), followed by *Imperial Patronage* (`+20%` of positive wealth, rounded to nearest Denarius).
 
 The surviving Merchant with the highest final Denarii total wins!
 
@@ -331,5 +334,6 @@ FAVOR SUMMARY
    
 COMBAT BETWEEN PLAYERS  
 **All ties in the game**—including every **Most** or **Least** Political Climate award (even when Players are tied at `0`!), tied wealthiest rivals, and Final Score ties at Winter Reckoning—are broken by **Combat between the tied Players**, using Drivers (`1®`), Guards, Weapons, mandatory Exotic Animals, combat Influence cards, and `+1 CP` per positive Ruby if *Army Pay Hike* is active.  
+- **Pre-Roll vs. Post-Roll Combat Influence**: Pre-roll cards (*Mercenary Ambush* `+1®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* zeroing an opponent’s highest die; *Gladiator’s Intervention* `+3 CP`) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
 - **Strictly One Recipient**: Every Most/Least bonus or penalty is awarded to **strictly one Player**. For **Most** awards, the Combat **winner** claims the bonus; for **Least** penalties or elimination, the Combat winner escapes and the Combat **loser** suffers the penalty!  
 - **No Draws**: If a Combat between Players ends in a draw, repeat Combat (any one-shot Influence cards or consumable Weapons used in a previous round remain exhausted) until one side wins by at least **1 CP**!
