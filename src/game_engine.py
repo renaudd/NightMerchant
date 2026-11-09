@@ -3394,7 +3394,7 @@ def parse_opponent_combat(formula: str, x_count: int, extra_dice_mod: int = 0) -
 
     dice_count = max(0, dice_count + extra_dice_mod)
     rolls = [roll_rome_die() for _ in range(dice_count)]
-    total = max(0, sum(rolls) + flat_bonus)
+    total = sum(rolls) + flat_bonus
     return total, rolls, flat_bonus
 
 
@@ -3436,8 +3436,8 @@ def _format_combat_total_label(cp: int, dice_objs: List[Dict[str, Any]], flat_va
 def _recompute_combat_totals(c_state: Dict[str, Any]) -> None:
     p_dice_sum = sum(int(d["value"]) * int(d.get("sign", 1)) for d in c_state.get("playerDiceObjs", []) if int(d.get("sign", 1)) != 0)
     o_dice_sum = sum(int(d["value"]) * int(d.get("sign", 1)) for d in c_state.get("oppDiceObjs", []) if int(d.get("sign", 1)) != 0)
-    p_cp = max(0, p_dice_sum + int(c_state.get("playerFlat", 0)))
-    o_cp = max(0, o_dice_sum + int(c_state.get("oppFlat", 0)))
+    p_cp = p_dice_sum + int(c_state.get("playerFlat", 0))
+    o_cp = o_dice_sum + int(c_state.get("oppFlat", 0))
     c_state["playerCP"] = p_cp
     c_state["oppCP"] = o_cp
     if "ignoreWoundsFlat" in c_state:
@@ -4526,7 +4526,7 @@ def execute_combat(
     for c_item in consumables_used:
         _remove_cart_item(state, player, c_item, reason="consumed in combat")
 
-    player_cp = max(0, sum(player_rolls) + player_flat)
+    player_cp = sum(player_rolls) + player_flat
     opp_cp, opp_rolls, opp_flat = parse_opponent_combat(card.get("combatFormula", "X(R)"), x_count, opp_dice_mod)
     opp_flat_mods: List[Dict[str, Any]] = []
     if opp_flat != 0:
@@ -4539,12 +4539,12 @@ def execute_combat(
     if has_climate_modifier(state, "caracalla_3") and eff_deck == "legiones":
         opp_flat += 2
         opp_flat_mods.append({"label": "Army Pay Hike (Legiones +2 CP)", "value": 2})
-        opp_cp = max(0, sum(opp_rolls) + opp_flat)
+        opp_cp = sum(opp_rolls) + opp_flat
     opp_flat_inf = int(player.get("turnEffects", {}).get("oppFlatBonus", 0))
     if opp_flat_inf != 0:
         opp_flat += opp_flat_inf
         opp_flat_mods.append({"label": "Influence Bonus", "value": opp_flat_inf})
-        opp_cp = max(0, sum(opp_rolls) + opp_flat)
+        opp_cp = sum(opp_rolls) + opp_flat
     opp_dice_objs = [
         {
             "value": r_o,
@@ -7110,7 +7110,7 @@ def _resolve_pvp_combat_tiebreaker(
         dice2 = _roll_side(p2, pos2, neg2)
 
         def _calc_cp(d_list: List[Dict[str, Any]], f_val: int) -> int:
-            return max(0, sum(int(d["value"]) * int(d["sign"]) for d in d_list) + int(f_val))
+            return sum(int(d["value"]) * int(d["sign"]) for d in d_list) + int(f_val)
 
         # Step 3 (Round 1 only): Reactive Post-Roll Combat Influence (Flying Chamber Pot, Twist Of Fate, Gladiator's Intervention)
         if round_num == 1:
@@ -8791,10 +8791,31 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # 5. Delivery Entry Phase (Initial Scout + Gate Selection)
     if state["phase"] == "delivery_entry":
-        if act_type == "initial_scout":
+        if act_type in ("initial_scout", "delivery_scout"):
             if player.get("scoutedThisTurn"):
                 return False, "You have already used your Initial Scout before this night."
-            cell = normalize_cell_id(action.get("cell", "B1")) or "B1"
+            target_type = action.get("targetType", "tile")
+            if target_type == "deck":
+                target_key = str(action.get("targetKey", "patricii")).strip().lower()
+                if target_key not in state["decks"]:
+                    return False, "Invalid scout deck target."
+                player["scoutedThisTurn"] = True
+                dk = state["decks"][target_key]
+                if dk:
+                    top_c = dk[0]
+                    player["scoutedInfo"].append({
+                        "id": f"scout_{secrets.token_hex(4)}",
+                        "turn": 0,
+                        "targetType": "deck",
+                        "targetKey": target_key,
+                        "label": f"Initial Scout (Deck {target_key.capitalize()})",
+                        "summary": f"{top_c.get('name', 'Card')} — {top_c.get('actionText') or top_c.get('effectText') or top_c.get('category', '')}",
+                        "revealedData": copy.deepcopy(top_c),
+                    })
+                add_log(state, f"{player['name']} performed their Initial Scout on the {target_key.capitalize()} deck.", "action")
+                return True, f"Scouted top card of {target_key.capitalize()}."
+            raw_cell = action.get("cell") or action.get("targetKey") or "B1"
+            cell = normalize_cell_id(raw_cell) or "B1"
             if cell not in state["romeBoard"]:
                 return False, "Invalid neighborhood cell."
             stack = state["romeBoard"][cell]["stack"]
@@ -9269,14 +9290,16 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return _apply_gamble_roll_outcome(state, player, gamble_state, emit_dice_event=True)
 
         if act_type == "delivery_scout":
+            if player.get("pendingMarketReward") or player.get("pendingCartOverflow") or player.get("pendingNpcOffer"):
+                return False, "Please finish choosing your pending reward or offer before scouting."
             if player.get("scoutedThisTurn"):
-                return False, "Already used your Free Scout this turn."
+                return False, "Already used your Scout action this turn."
             target_type = action.get("targetType", "tile")
             target_key = action.get("targetKey", "C3")
             if target_type == "tile":
                 target_key = normalize_cell_id(target_key) or "C3"
-            player["scoutedThisTurn"] = True
             if target_type == "tile" and target_key in state["romeBoard"]:
+                player["scoutedThisTurn"] = True
                 stk = state["romeBoard"][target_key]["stack"]
                 if stk:
                     top_tile = stk[0]
@@ -9289,8 +9312,12 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                         "summary": _summarize_tile(top_tile),
                         "revealedData": copy.deepcopy(top_tile),
                     })
-                return True, f"Scouted top tile of {target_key}."
+                add_log(state, f"{player['name']} scouted {target_key} and ended their turn.", "action")
+                advance_delivery_turn(state)
+                run_bots_until_human(state)
+                return True, f"Scouted top tile of {target_key} (turn ended)."
             if target_type == "deck" and target_key in state["decks"]:
+                player["scoutedThisTurn"] = True
                 dk = state["decks"][target_key]
                 if dk:
                     top_c = dk[0]
@@ -9303,7 +9330,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                         "summary": f"{top_c.get('name', 'Card')} — {top_c.get('actionText') or top_c.get('effectText') or top_c.get('category', '')}",
                         "revealedData": copy.deepcopy(top_c),
                     })
-                return True, f"Scouted top card of {target_key.capitalize()}."
+                add_log(state, f"{player['name']} scouted the {target_key.capitalize()} deck and ended their turn.", "action")
+                advance_delivery_turn(state)
+                run_bots_until_human(state)
+                return True, f"Scouted top card of {target_key.capitalize()} (turn ended)."
             return False, "Invalid scout target."
 
         if act_type == "delivery_end_turn":
@@ -11003,7 +11033,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             cc["colIndex"] = col_idx
             cc["colSymbol"] = ["<<", "<", "=", "=", ">", ">>"][min(col_idx, 5)]
             if t_name == "Weapons" and not cc.get("combatText"):
-                cc["combatText"] = "No combat bonus (0 CP)"
+                cc["combatText"] = "No combat bonus"
             if t_name != "Guards" and "sell" in c:
                 cc["currentTrackSellPrice"] = int(c["sell"][sc_idx])
             enriched_cards.append(cc)
@@ -11078,7 +11108,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             "subcategory": c.get("subcategory", c["category"]),
             "blocks": c.get("blocks", 1),
             "guards": c.get("guards", 0),
-            "combatText": c.get("combatText") or ("No combat bonus (0 CP)" if c.get("track") == "Weapons" else None),
+            "combatText": c.get("combatText") or ("No combat bonus" if c.get("track") == "Weapons" else None),
             "buy": c.get("buy", []),
             "sell": c.get("sell", []),
         })

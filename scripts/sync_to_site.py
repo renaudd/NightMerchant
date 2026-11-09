@@ -53,6 +53,13 @@ def sync_public_to_site(target_dir: str, preserve_config: bool = False) -> None:
         with open(existing_cfg_path, "wb") as f:
             f.write(saved_config_bytes)
 
+    site_root = os.path.dirname(os.path.abspath(target_dir))
+    if os.path.isdir(site_root):
+        nojekyll_path = os.path.join(site_root, ".nojekyll")
+        if not os.path.exists(nojekyll_path):
+            with open(nojekyll_path, "w", encoding="utf-8") as f:
+                f.write("")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(

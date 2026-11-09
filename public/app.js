@@ -902,6 +902,88 @@ function replaceDenariiTokens(rawStr) {
  */
 const GAME_TOKEN_REGEX = /(\(R\)|\(r\)|®|🅁|𐆖)/g;
 
+/**
+ * Builds an inline SVG vector Roman Denarius monogram (X with crossbar: 𐆖)
+ * using createElementNS so it renders identically on mobile (iOS/Android) and desktop
+ * without relying on missing U+10196 system font glyphs.
+ */
+function createDenariusSvgNode(extraClass = "") {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 16 18");
+  svg.setAttribute("class", `denarius-sym-svg ${extraClass}`.trim());
+  svg.setAttribute("aria-hidden", "true");
+
+  const mkLine = (x1, y1, x2, y2, sw = "2.2") => {
+    const ln = document.createElementNS(svgNS, "line");
+    ln.setAttribute("x1", String(x1));
+    ln.setAttribute("y1", String(y1));
+    ln.setAttribute("x2", String(x2));
+    ln.setAttribute("y2", String(y2));
+    ln.setAttribute("stroke", "currentColor");
+    ln.setAttribute("stroke-width", sw);
+    ln.setAttribute("stroke-linecap", "round");
+    return ln;
+  };
+
+  // Diagonal X strokes of the Roman Denarius monogram (X = 10 asses)
+  svg.appendChild(mkLine(3, 2.5, 13, 15.5, "2.2"));
+  svg.appendChild(mkLine(13, 2.5, 3, 15.5, "2.2"));
+  // Horizontal crossbar through the center (𐆖)
+  svg.appendChild(mkLine(1.5, 9, 14.5, 9, "1.95"));
+  // Classical top & bottom serifs
+  svg.appendChild(mkLine(1.8, 2.5, 5.2, 2.5, "1.6"));
+  svg.appendChild(mkLine(10.8, 2.5, 14.2, 2.5, "1.6"));
+  svg.appendChild(mkLine(1.8, 15.5, 5.2, 15.5, "1.6"));
+  svg.appendChild(mkLine(10.8, 15.5, 14.2, 15.5, "1.6"));
+  return svg;
+}
+
+/**
+ * Builds a Cart-in-a-Circle symbol representing a Move action.
+ */
+function createMoveActionCircleNode(titleText = "Unused Move Action") {
+  const wrap = document.createElement("span");
+  wrap.className = "action-symbol-circle move-action-circle";
+  wrap.setAttribute("title", titleText);
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 20");
+  svg.setAttribute("aria-hidden", "true");
+
+  const body = document.createElementNS(svgNS, "path");
+  body.setAttribute("d", "M2 4 H5 L7.5 12.5 H17.5 L20 6 H6.5");
+  body.setAttribute("fill", "none");
+  body.setAttribute("stroke", "currentColor");
+  body.setAttribute("stroke-width", "2.2");
+  body.setAttribute("stroke-linecap", "round");
+  body.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(body);
+
+  for (const cx of [9, 16.5]) {
+    const wheel = document.createElementNS(svgNS, "circle");
+    wheel.setAttribute("cx", String(cx));
+    wheel.setAttribute("cy", "16");
+    wheel.setAttribute("r", "2.2");
+    wheel.setAttribute("fill", "currentColor");
+    svg.appendChild(wheel);
+  }
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+/**
+ * Builds a Denarius-in-a-Circle symbol representing a Transaction action.
+ */
+function createTransactionActionCircleNode(titleText = "Unused Transaction Action") {
+  const wrap = document.createElement("span");
+  wrap.className = "action-symbol-circle transaction-action-circle";
+  wrap.setAttribute("title", titleText);
+  wrap.appendChild(createDenariusSvgNode());
+  return wrap;
+}
+
 function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
   const str = replaceDenariiTokens(rawValue);
   if (!GAME_TOKEN_REGEX.test(str)) {
@@ -910,7 +992,11 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
   }
   GAME_TOKEN_REGEX.lastIndex = 0;
   if (isOptionTag) {
-    parentNode.appendChild(document.createTextNode(str.replace(/(\(R\)|\(r\)|®)/g, "🅁")));
+    const optSafe = str
+      .replace(/(\(R\)|\(r\)|®)/g, "🅁")
+      .replace(/𐆖(\d+)/g, "$1d")
+      .replace(/𐆖/g, "d");
+    parentNode.appendChild(document.createTextNode(optSafe));
     return;
   }
   const parts = str.split(GAME_TOKEN_REGEX);
@@ -926,7 +1012,8 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
       const denSpan = document.createElement("span");
       denSpan.className = "denarius-sym";
       denSpan.setAttribute("title", "Denarii");
-      denSpan.textContent = DENARIUS_SYM;
+      denSpan.setAttribute("aria-label", "Denarii");
+      denSpan.appendChild(createDenariusSvgNode());
       parentNode.appendChild(denSpan);
     } else {
       parentNode.appendChild(document.createTextNode(part));
@@ -972,6 +1059,9 @@ function el(tag, attrs = {}, ...children) {
       if (v) node[k] = true;
     } else if (k === "src" || k === "href") {
       node.setAttribute(k, resolveAssetUrl(String(v)));
+    } else if (k === "title") {
+      const safeTitle = String(v).replace(/𐆖(\d+)/g, "$1d").replace(/𐆖/g, "d");
+      node.setAttribute("title", safeTitle);
     } else {
       node.setAttribute(k, String(v));
     }
@@ -2059,7 +2149,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
           { className: "phys-card-art-frame" },
           el("img", {
             className: "phys-card-art-img",
-            src: `/assets/cards/${effectiveArtId}.jpg?v=3`,
+            src: `/assets/cards/${effectiveArtId}.jpg?v=43`,
             alt: c.name || "Influence",
           })
         )
@@ -2188,7 +2278,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
             { className: "phys-card-art-frame" },
             el("img", {
               className: "phys-card-art-img",
-              src: `/assets/cards/${artId}.jpg?v=3`,
+              src: `/assets/cards/${artId}.jpg?v=43`,
               alt: card.name || "Event Encounter",
             })
           )
@@ -2409,7 +2499,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
           { className: "phys-card-art-frame" },
           el("img", {
             className: "phys-card-art-img",
-            src: `/assets/cards/${artId}.jpg?v=3`,
+            src: `/assets/cards/${artId}.jpg?v=43`,
             alt: card.name || "Encounter",
           })
         )
@@ -2542,7 +2632,14 @@ function showModal(titleText, bodyNode, options = {}) {
         "div",
         { className: "panel-title" },
         el("span", { text: titleText }),
-        el("button", { className: "btn btn-sm", text: "Close ✕", onClick: closeModal })
+        el("button", {
+          id: "modal-close-btn",
+          type: "button",
+          className: "btn btn-sm",
+          title: "Close window (Hotkey: Esc or X)",
+          text: "Close [Esc] ✕",
+          onClick: closeModal,
+        })
       ),
       bodyNode
     )
@@ -5761,14 +5858,26 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
     }
   } else if (gs.phase === "delivery_entry") {
     promptText =
-      "⛩️ Start of Night Delivery (8:00 P.M.): You must start at one of the six Via entrances highlighted in gold on the map (A4, B1, B6, E1, F3, or F6). You may optionally Scout 1 neighborhood stack first.";
+      "⛩️ Start of Night Delivery (8:00 P.M.): You must start at one of the six Via entrances highlighted in gold on the map (A4, B1, B6, E1, F3, or F6). You may optionally Scout 1 neighborhood stack or deck card first.";
+    if (gs.activePlayerIndex === viewer.index) {
+      extraActions.push(
+        el("button", {
+          type: "button",
+          className: "btn btn-sm",
+          title: "Scout a neighborhood tile or card deck before selecting your Via entrance (Hotkey: S for Tile, D for Deck)",
+          text: "👁️ Scout [S / D]",
+          disabled: viewer.scoutedThisTurn,
+          onClick: () => openScoutModal(gs, viewer),
+        })
+      );
+    }
   } else if (gs.phase === "delivery") {
     const fineBase = gs.season === "Spring" ? 12 : gs.season === "Summer" ? 20 : 32;
     const fineGate = Math.floor(fineBase / 2);
     if (gs.turn === 1 && viewer.movesRemaining === 0) {
       promptText = `Turn 1 (8:00 P.M.) at ${viewer.position || "Gate"}: ${
         viewer.transactedThisTurn ? "Transacted ✓" : "1 Transaction available"
-      } • Free Scout or End Turn.`;
+      } • Scout (ends turn) or End Turn.`;
     } else {
       promptText = `Night Delivery (${gs.turnHourLabel}): ${viewer.movesRemaining} move left • ${
         viewer.transactedThisTurn ? "Transacted ✓" : "1 Transaction available"
@@ -5813,20 +5922,25 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
       }
       extraActions.push(
         el("button", {
+          type: "button",
           className: "btn btn-sm",
-          text: "👁️ Free Scout",
+          title: "Scout a neighborhood tile or card deck at the end of your turn (Hotkey: S for Tile, D for Deck)",
+          text: "👁️ Scout [S / D]",
           disabled: viewer.scoutedThisTurn,
           onClick: () => openScoutModal(gs, viewer),
         }),
         el("button", {
+          type: "button",
           className: "btn btn-sm",
           text: "🗑️ Trash Top Tile/Card",
           disabled: viewer.trashedThisTurn || viewer.influence.length === 0,
           onClick: () => openTrashModal(gs, viewer),
         }),
         el("button", {
+          type: "button",
           className: "btn btn-sm btn-crimson",
-          text: "End Turn ⏭️",
+          title: "End your hourly turn (Hotkey: E)",
+          text: "End Turn [E] ⏭️",
           onClick: () => sendGameAction({ type: "delivery_end_turn" }),
         })
       );
@@ -10183,6 +10297,79 @@ function showRomeHoverTooltip(coord, cell, previewTile, isScoutedPreview, crossi
   positionRomeHoverTooltip(tooltipEl, clientX, clientY);
 }
 
+function showRomeSimpleHoverTooltip(headingText, detailText, clientX, clientY) {
+  let tooltipEl = document.getElementById("rome-hover-tooltip");
+  if (!tooltipEl) {
+    tooltipEl = document.createElement("div");
+    tooltipEl.id = "rome-hover-tooltip";
+    tooltipEl.className = "rome-hover-tooltip";
+    document.body.appendChild(tooltipEl);
+  }
+  tooltipEl.replaceChildren(
+    el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "0.22rem", width: "100%" } },
+      el("strong", { style: { color: "var(--arch-gold)", fontSize: "0.82rem" }, text: headingText }),
+      detailText
+        ? el("div", { style: { fontSize: "0.74rem", lineHeight: "1.35", color: "#f8f1e5" }, text: detailText })
+        : null
+    )
+  );
+  positionRomeHoverTooltip(tooltipEl, clientX, clientY);
+}
+
+function showRomeUnrevealedCellHoverTooltip(coord, cell, unrevealedCount, crossingSummary, clientX, clientY) {
+  let tooltipEl = document.getElementById("rome-hover-tooltip");
+  if (!tooltipEl) {
+    tooltipEl = document.createElement("div");
+    tooltipEl.id = "rome-hover-tooltip";
+    tooltipEl.className = "rome-hover-tooltip";
+    document.body.appendChild(tooltipEl);
+  }
+  const cellName = cell && cell.name ? cell.name : coord;
+  const featureLines = [];
+  if (cell && cell.isGate) {
+    featureLines.push("⛩️ Via City Gate Entrance & Exit (halves 6:00 A.M. Curfew Fine)");
+  }
+  if (cell && cell.isForum) {
+    featureLines.push("🏛️ Imperial Forum Market (purchase Goods when revealed)");
+  }
+  const bridgesHere = TIBER_BRIDGE_BADGES_BY_CELL[coord] || [];
+  if (bridgesHere.length > 0) {
+    featureLines.push(`🌉 Tiber Bridge: ${bridgesHere.map((b) => b.label).join(", ")}`);
+  }
+
+  tooltipEl.replaceChildren(
+    el(
+      "div",
+      { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.4rem", marginBottom: "0.28rem", width: "100%" } },
+      el("strong", { style: { color: "var(--arch-gold)", fontSize: "0.8rem" }, text: `${coord} — ${cellName}` }),
+      el("span", {
+        className: "badge",
+        style: { fontSize: "0.65rem", padding: "0.08rem 0.35rem" },
+        text: `${unrevealedCount} Face-Down`,
+      })
+    ),
+    el(
+      "div",
+      { style: { fontSize: "0.73rem", lineHeight: "1.35", color: "#f8f1e5", width: "100%" } },
+      el("div", { text: `This is neighborhood ${coord} (${cellName}). Unrevealed stack (${unrevealedCount} tiles).` }),
+      ...featureLines.map((line) => el("div", { style: { color: "#fde68a", marginTop: "0.18rem" }, text: line })),
+      crossingSummary
+        ? el("div", {
+            style: { marginTop: "0.22rem", paddingTop: "0.22rem", borderTop: "1px solid rgba(255,248,232,0.22)", fontWeight: "700", color: crossingSummary.color },
+            text: crossingSummary.text,
+          })
+        : null,
+      el("div", {
+        style: { marginTop: "0.25rem", color: "#cbd5e1", fontSize: "0.68rem" },
+        text: "Click to open Move, Scout, or End Turn options.",
+      })
+    )
+  );
+  positionRomeHoverTooltip(tooltipEl, clientX, clientY);
+}
+
 function getCellOffBoardDirs(coord) {
   if (!coord || coord.length < 2) return [];
   const colIdx = COLS.indexOf(coord.slice(0, 1));
@@ -10296,6 +10483,15 @@ function renderRomeNightBoard(gs, viewer) {
       );
       const cellOffDirs = getCellOffBoardDirs(coord);
       const isCellPerimeter = cellOffDirs.length > 0;
+      const unrevealedCount = cell
+        ? Number(
+            cell.stackCount !== undefined
+              ? cell.stackCount
+              : cell.unrevealedCount !== undefined
+              ? cell.unrevealedCount
+              : 12
+          )
+        : 0;
 
       const cellClasses = ["rome-cell"];
       if (cell && cell.isGate) {
@@ -10312,6 +10508,21 @@ function renderRomeNightBoard(gs, viewer) {
       for (const tCls of TIBER_UNBRIDGED_CELL_CLASSES[coord] || []) {
         cellClasses.push(tCls);
       }
+
+      const cellTitleParts = [
+        `This is ${coord} (${cell ? cell.name : coord})`,
+        cell && cell.isGate ? "Via City Gate Entrance/Exit" : null,
+        cell && cell.isForum ? "Imperial Forum Market" : null,
+        rev
+          ? "Revealed Tile"
+          : scoutedTopTile
+          ? `Scouted Unrevealed Stack (${unrevealedCount} tiles)`
+          : `Unrevealed Stack (${unrevealedCount} face-down tiles)`,
+        isCurrent ? "Your Cart is here" : null,
+        isReachableMove ? `Reachable Move (${reachableDirsByCell[coord]})` : null,
+        "Click for Move, Scout, or End Turn options",
+      ].filter(Boolean);
+      const cellHelperTitle = cellTitleParts.join(" • ");
 
       const handleCellClick = (e) => {
         hideRomeHoverTooltip();
@@ -10334,46 +10545,11 @@ function renderRomeNightBoard(gs, viewer) {
         }
 
         appState.inspectedCell = coord;
-        if (gs.phase === "delivery_entry" && gs.activePlayerIndex === viewer.index) {
-          renderApp();
-          openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell);
-          return;
-        }
-        if (isMyDeliveryTurn && viewer.position && viewer.movesRemaining > 0) {
-          const moveDir = reachableDirsByCell[coord];
-          const unrevealedCount = cell
-            ? Number(
-                cell.stackCount !== undefined
-                  ? cell.stackCount
-                  : cell.unrevealedCount !== undefined
-                  ? cell.unrevealedCount
-                  : 0
-              )
-            : 0;
-          if (moveDir) {
-            if (!viewer.scoutedThisTurn && unrevealedCount > 0) {
-              renderApp();
-              openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, {
-                moveDir,
-                adjInfo: adjacentDirInfoByCell[coord] || null,
-              });
-              return;
-            }
-            sendGameAction({ type: "delivery_move", direction: moveDir });
-            return;
-          }
-          if (coord !== viewer.position && !viewer.scoutedThisTurn) {
-            renderApp();
-            openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell);
-            return;
-          }
-        }
-        if (isMyDeliveryTurn && viewer.movesRemaining <= 0 && coord !== viewer.position && !viewer.scoutedThisTurn) {
-          renderApp();
-          openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell);
-          return;
-        }
         renderApp();
+        openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, {
+          moveDir: reachableDirsByCell[coord] || null,
+          adjInfo: adjacentDirInfoByCell[coord] || null,
+        });
       };
 
       const handleCellMouseEnter = (e) => {
@@ -10438,8 +10614,7 @@ function renderRomeNightBoard(gs, viewer) {
         if (previewTile) {
           showRomeHoverTooltip(coord, cell, previewTile, Boolean(!rev && scoutedTopTile), crossingSummary, e.clientX, e.clientY);
         } else {
-          const existingTip = document.getElementById("rome-hover-tooltip");
-          if (existingTip) existingTip.remove();
+          showRomeUnrevealedCellHoverTooltip(coord, cell, unrevealedCount, crossingSummary, e.clientX, e.clientY);
         }
       };
 
@@ -10518,16 +10693,27 @@ function renderRomeNightBoard(gs, viewer) {
           "div",
           {
             className: cellClasses.join(" "),
+            title: cellHelperTitle,
             onClick: handleCellClick,
             onMouseEnter: handleCellMouseEnter,
             onMouseMove: handleCellMouseMove,
             onMouseLeave: () => hideRomeHoverTooltip(),
           },
           rev ? renderDynamicTileCardNode(rev, coord, "board") : null,
-          !rev && scoutedTopTile ? el("span", { className: "cell-scouted-badge", text: "👁️ Scouted" }) : null,
+          !rev && scoutedTopTile
+            ? el("span", {
+                className: "cell-scouted-badge",
+                title: `You have scouted the top unrevealed tile of ${coord} (${cell ? cell.name : coord})`,
+                text: "👁️ Scouted",
+              })
+            : null,
           ...bridgeBadgeNodes,
           exitEdgeStripNode,
-          el("div", { className: "cell-neighborhood-title", text: cell ? cell.name : "" }),
+          el("div", {
+            className: "cell-neighborhood-title",
+            title: cellHelperTitle,
+            text: cell ? cell.name : "",
+          }),
           playersHere.length > 0
             ? el(
                 "div",
@@ -10569,7 +10755,7 @@ function renderRomeNightBoard(gs, viewer) {
   const edgeExitTooltip =
     canExitOnEdgeClick && passableExitDir
       ? `Click the edge of the map to Exit Rome via ${passableExitDir}`
-      : "";
+      : "Rome Night Board Perimeter Border (6×6 Grid: Columns A–F × Rows 1–6)";
 
   const showViaStartBanner =
     gs.phase === "delivery_entry" || (gs.phase === "delivery" && Number(gs.turn) === 1);
@@ -10580,7 +10766,10 @@ function renderRomeNightBoard(gs, viewer) {
     showViaStartBanner
       ? el(
           "div",
-          { className: "via-start-reminder-bar" },
+          {
+            className: "via-start-reminder-bar",
+            title: "All merchants must enter Rome through one of the six Via City Gates: A4, B1, B6, E1, F3, or F6.",
+          },
           el("span", { className: "via-start-reminder-icon", text: "⛩️" }),
           el(
             "span",
@@ -10609,26 +10798,80 @@ function renderRomeNightBoard(gs, viewer) {
         { className: "rome-board-matrix" },
         el("div", {
           className: `rome-axis-corner ${canExitOnEdgeClick && passableExitDir ? "can-exit-rome-edge" : ""}`,
-          title: edgeExitTooltip,
+          title: canExitOnEdgeClick && passableExitDir
+            ? edgeExitTooltip
+            : "Rome Map Grid Axis (Columns A–F × Rows 1–6)",
+          onMouseEnter: (e) =>
+            showRomeSimpleHoverTooltip(
+              "Rome Map Grid Axis",
+              "Columns A–F (West to East) × Rows 1–6 (North to South).",
+              e.clientX,
+              e.clientY
+            ),
+          onMouseMove: (e) => {
+            const tip = document.getElementById("rome-hover-tooltip");
+            if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
+          },
+          onMouseLeave: () => hideRomeHoverTooltip(),
           onClick: (e) => triggerPerimeterMapEdgeExit(e),
         }),
         el(
           "div",
           {
             className: `rome-col-headers-bar ${canExitOnEdgeClick && passableExitDir ? "can-exit-rome-edge" : ""}`,
-            title: edgeExitTooltip,
+            title: canExitOnEdgeClick && passableExitDir
+              ? edgeExitTooltip
+              : "Rome Map Column Headers (Columns A–F)",
             onClick: (e) => triggerPerimeterMapEdgeExit(e),
           },
-          ...COLS.map((c) => el("div", { className: "rome-col-heading", text: c }))
+          ...COLS.map((c) =>
+            el("div", {
+              className: "rome-col-heading",
+              title: `This is the ${c} column (Neighborhoods ${c}1–${c}6)`,
+              onMouseEnter: (e) =>
+                showRomeSimpleHoverTooltip(
+                  `This is the ${c} column`,
+                  `Column ${c} contains Rome neighborhoods ${c}1 through ${c}6.`,
+                  e.clientX,
+                  e.clientY
+                ),
+              onMouseMove: (e) => {
+                const tip = document.getElementById("rome-hover-tooltip");
+                if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
+              },
+              onMouseLeave: () => hideRomeHoverTooltip(),
+              text: c,
+            })
+          )
         ),
         el(
           "div",
           {
             className: `rome-row-headers-bar ${canExitOnEdgeClick && passableExitDir ? "can-exit-rome-edge" : ""}`,
-            title: edgeExitTooltip,
+            title: canExitOnEdgeClick && passableExitDir
+              ? edgeExitTooltip
+              : "Rome Map Row Headers (Rows 1–6)",
             onClick: (e) => triggerPerimeterMapEdgeExit(e),
           },
-          ...ROWS.map((r) => el("div", { className: "rome-row-heading", text: r }))
+          ...ROWS.map((r) =>
+            el("div", {
+              className: "rome-row-heading",
+              title: `This is Row ${r} (Neighborhoods A${r}–F${r})`,
+              onMouseEnter: (e) =>
+                showRomeSimpleHoverTooltip(
+                  `This is Row ${r}`,
+                  `Row ${r} contains Rome neighborhoods A${r} through F${r}.`,
+                  e.clientX,
+                  e.clientY
+                ),
+              onMouseMove: (e) => {
+                const tip = document.getElementById("rome-hover-tooltip");
+                if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
+              },
+              onMouseLeave: () => hideRomeHoverTooltip(),
+              text: r,
+            })
+          )
         ),
         el("div", { className: "rome-grid" }, ...gridCells, renderRomeNpcAnimationLayer())
       )
@@ -11507,25 +11750,41 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
       )
     : 0;
   const isEntryPhase = gs.phase === "delivery_entry";
-  const isGateEntrance = Boolean(isEntryPhase && cell && cell.isGate && gs.activePlayerIndex === viewer.index);
-  const canScoutTile = !viewer.scoutedThisTurn && unrevealedCount > 0;
+  const isDeliveryPhase = gs.phase === "delivery";
+  const isMyTurn = Boolean(
+    gs &&
+      viewer &&
+      gs.activePlayerIndex === viewer.index &&
+      (isEntryPhase || isDeliveryPhase) &&
+      !viewer.exitedRome &&
+      !viewer.nightEnded
+  );
+  const isGateCell = Boolean(cell && cell.isGate);
+  const isGateEntrance = Boolean(isEntryPhase && isGateCell && isMyTurn);
+  const canScoutTile = Boolean(isMyTurn && !viewer.scoutedThisTurn && unrevealedCount > 0);
+  const canScoutDeck = Boolean(isMyTurn && !viewer.scoutedThisTurn);
   const moveDir = moveOpts && moveOpts.moveDir ? String(moveOpts.moveDir) : null;
   const adjInfo = (moveOpts && moveOpts.adjInfo) || null;
-  const canMoveHere = Boolean(
+  const canMoveStep = Boolean(
     !isEntryPhase &&
+      isDeliveryPhase &&
+      isMyTurn &&
       moveDir &&
-      gs.phase === "delivery" &&
-      gs.activePlayerIndex === viewer.index &&
-      viewer.movesRemaining > 0
+      Number(viewer.movesRemaining || 0) > 0
   );
-  const canEndTurnHere =
-    !isEntryPhase &&
-    Boolean(viewer.scoutedThisTurn) &&
-    gs.phase === "delivery" &&
-    gs.activePlayerIndex === viewer.index;
+  const canMoveHere = Boolean(canMoveStep || isGateEntrance);
+  const canEndTurnHere = Boolean(!isEntryPhase && isDeliveryPhase && isMyTurn);
+
+  const unusedMoves = isMyTurn
+    ? isEntryPhase
+      ? 1
+      : Math.max(0, Number(viewer.movesRemaining || 0))
+    : 0;
+  const unusedTransactions =
+    isMyTurn && isDeliveryPhase && !viewer.transactedThisTurn ? 1 : 0;
 
   let crossingNote = "";
-  if (canMoveHere && adjInfo) {
+  if (canMoveStep && adjInfo) {
     const shortcutActive = Boolean(viewer.turnEffects && viewer.turnEffects.shortcut);
     const bridgeName = adjInfo.bridgeName || adjInfo.bridge || getTiberBridgeName(viewer.position, coord);
     const tollAmt = !shortcutActive ? parseTollAmount(adjInfo.edge) : 0;
@@ -11546,31 +11805,70 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
     }
   }
 
-  let modalTitle = `👁️ Scout Neighborhood ${coord} — ${cellName}?`;
+  let modalTitle = `🧭 Neighborhood ${coord} — ${cellName}`;
   let promptDescription = "";
-  if (isEntryPhase) {
+  if (!isMyTurn) {
+    promptDescription = `Inspecting ${coord} (${cellName}) (${unrevealedCount} face-down tile(s) in stack). Actions are greyed out because it is not currently your Night Delivery turn.`;
+  } else if (isEntryPhase) {
     modalTitle = isGateEntrance
       ? `🚪 Entrance & Neighborhood ${coord} — ${cellName}`
       : `👁️ Neighborhood ${coord} — ${cellName}`;
     if (isGateEntrance && canScoutTile) {
-      promptDescription = `${coord} (${cellName}) is an available Via Entrance into Rome (${unrevealedCount} face-down tiles in stack). Would you like to Scout this tile first, Select ${coord} as your entrance for the night, or Do Nothing?`;
+      promptDescription = `${coord} (${cellName}) is an available Via Entrance into Rome (${unrevealedCount} face-down tiles in stack). You may Scout 1 tile or deck card first, or Move onto ${coord} as your entrance for the night.`;
     } else if (isGateEntrance) {
-      promptDescription = `${coord} (${cellName}) is an available Via Entrance into Rome (you have already used your Initial Scout this night). Would you like to Select ${coord} as your entrance for the night, or Do Nothing?`;
+      promptDescription = `${coord} (${cellName}) is an available Via Entrance into Rome (you have already used your Initial Scout this night). Move onto ${coord} to start Night Delivery.`;
     } else if (canScoutTile) {
-      promptDescription = `Would you like to use your pre-night Initial Scout to peek at the top face-down tile of ${coord} (${cellName}) (${unrevealedCount} face-down tiles in stack), or Do Nothing? Remember: to enter Rome, you must start at one of the six gold-outlined Via entrances (A4, B1, B6, E1, F3, or F6).`;
+      promptDescription = `You may use your pre-night Initial Scout to peek at the top face-down tile of ${coord} (${cellName}) (${unrevealedCount} face-down tiles in stack) or a deck card. To enter Rome, select one of the six gold-outlined Via entrances (A4, B1, B6, E1, F3, or F6).`;
     } else {
       promptDescription = `You have already used your Initial Scout before this night, and ${coord} (${cellName}) is not a Via entrance. Click one of the six gold-outlined Via entrances (A4, B1, B6, E1, F3, or F6) to start Night Delivery.`;
     }
-  } else if (canMoveHere && canScoutTile) {
+  } else if (canMoveStep && canScoutTile) {
     modalTitle = `🧭 Adjacent Neighborhood ${coord} — ${cellName} (${moveDir})`;
-    promptDescription = `${coord} (${cellName}) is adjacent (${moveDir}) and still has ${unrevealedCount} face-down tile(s) in its stack. You have not used your Free Scout this hour — would you like to Scout ${coord} first, or Move your Cart into ${coord} now?`;
+    promptDescription = `${coord} (${cellName}) is adjacent (${moveDir}) and has ${unrevealedCount} face-down tile(s) in its stack. Move your Cart into ${coord} now, or Scout at the end of your turn (committing to Scout ends your turn so the next merchant can begin).`;
+  } else if (canMoveStep) {
+    modalTitle = `🧭 Adjacent Neighborhood ${coord} — ${cellName} (${moveDir})`;
+    promptDescription = `${coord} (${cellName}) is adjacent (${moveDir}). Move your Cart into ${coord}, or End Turn.`;
+  } else if (canScoutTile) {
+    promptDescription = `Scout the top face-down tile of ${coord} (${cellName}) (${unrevealedCount} face-down tile(s) in stack) or a deck card at the end of your turn? Committing to Scout immediately advances the turn to the next merchant while you examine the scouted card or tile.`;
+  } else if (viewer.scoutedThisTurn) {
+    promptDescription = `You have already used your Scout action this turn.`;
   } else {
-    promptDescription = canScoutTile
-      ? `Use your Free Scout action to peek at the top face-down tile of ${coord} (${cellName})?`
-      : viewer.scoutedThisTurn
-      ? "You have already used your Free Scout action this turn."
-      : `There are no unrevealed tiles remaining in ${coord} (${cellName}).`;
+    promptDescription = `There are no unrevealed tiles remaining in ${coord} (${cellName}), and this neighborhood is not currently reachable in 1 move.`;
   }
+
+  const unusedIndicatorItems = [];
+  if (unusedMoves > 0) {
+    unusedIndicatorItems.push(
+      el(
+        "span",
+        {
+          style: { display: "inline-flex", alignItems: "center", gap: "0.28rem", fontWeight: "800", fontSize: "0.78rem", color: "#54150f" },
+          title: `${unusedMoves} unused Move action${unusedMoves > 1 ? "s" : ""} remaining this turn`,
+        },
+        createMoveActionCircleNode(),
+        el("span", { text: `×${unusedMoves}` })
+      )
+    );
+  }
+  if (unusedTransactions > 0) {
+    unusedIndicatorItems.push(
+      el(
+        "span",
+        {
+          style: { display: "inline-flex", alignItems: "center", gap: "0.28rem", fontWeight: "800", fontSize: "0.78rem", color: "#54150f" },
+          title: `${unusedTransactions} unused Transaction action remaining this turn`,
+        },
+        createTransactionActionCircleNode(),
+        el("span", { text: `×${unusedTransactions}` })
+      )
+    );
+  }
+
+  const moveBtnLabel = isEntryPhase
+    ? `🚪 Move to Gate ${coord} [V]`
+    : moveDir
+    ? `🛒 Move to ${coord} (${moveDir}) [V]`
+    : `🛒 Move to ${coord} [V]`;
 
   showModal(
     modalTitle,
@@ -11598,75 +11896,136 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
         : null,
       el(
         "div",
-        { style: { display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "flex-end", marginTop: "1rem" } },
-        el("button", {
-          type: "button",
-          className: "btn",
-          text: isEntryPhase ? "Do Nothing" : canScoutTile || canMoveHere ? "Cancel" : "Close",
-          onClick: () => {
-            closeModal();
-            renderApp();
+        {
+          style: {
+            display: "flex",
+            gap: "0.85rem",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            marginTop: "1rem",
+            paddingTop: "0.75rem",
+            borderTop: "1px solid var(--border-subtle)",
           },
-        }),
-        canEndTurnHere
-          ? el("button", {
-              type: "button",
-              className: "btn btn-crimson",
-              text: "⏭️ End Turn",
-              onClick: () => {
-                closeModal();
-                sendGameAction({ type: "delivery_end_turn" });
-              },
-            })
-          : null,
-        !isEntryPhase && !viewer.scoutedThisTurn
-          ? el("button", {
-              type: "button",
-              className: "btn",
-              text: "Scout a Card Deck Instead...",
-              onClick: () => {
-                closeModal();
-                openScoutModal(gs, viewer);
-              },
-            })
-          : null,
-        canScoutTile
-          ? el("button", {
-              type: "button",
-              className: isGateEntrance || canMoveHere ? "btn" : "btn btn-primary",
-              text: `👁️ Free Scout Tile ${coord}`,
-              onClick: () => {
-                closeModal();
-                if (isEntryPhase) {
-                  sendGameAction({ type: "initial_scout", cell: coord });
-                } else {
-                  sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: coord });
-                }
-              },
-            })
-          : null,
-        canMoveHere
-          ? el("button", {
-              type: "button",
-              className: "btn btn-primary",
-              text: `🛒 Move Cart to ${coord} (${moveDir})`,
-              onClick: () => {
-                closeModal();
-                sendGameAction({ type: "delivery_move", direction: moveDir });
-              },
-            })
-          : null,
-        isGateEntrance
-          ? el("button", {
-              type: "button",
-              className: "btn btn-primary",
-              text: `🚪 Select Entrance ${coord} (${cellName})`,
-              onClick: () => {
-                closeModal();
+        },
+        el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              gap: "0.55rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+              flex: "1 1 auto",
+            },
+          },
+          el("button", {
+            id: "modal-move-to-btn",
+            type: "button",
+            className: canMoveHere ? "btn btn-primary" : "btn",
+            disabled: !canMoveHere,
+            title: canMoveHere
+              ? `Move your Cart to ${coord} (Hotkey: V or M)`
+              : "Move to this tile is currently unavailable",
+            text: moveBtnLabel,
+            onClick: () => {
+              if (!canMoveHere) return;
+              closeModal();
+              if (isGateEntrance) {
                 sendGameAction({ type: "select_gate", gate: coord });
-              },
-            })
-          : null
+              } else {
+                sendGameAction({ type: "delivery_move", direction: moveDir });
+              }
+            },
+          }),
+          el("button", {
+            id: "modal-scout-tile-btn",
+            type: "button",
+            className: canScoutTile && !canMoveHere ? "btn btn-primary" : "btn",
+            disabled: !canScoutTile,
+            title: canScoutTile
+              ? isEntryPhase
+                ? `Scout the top face-down tile of ${coord} before entering Rome (Hotkey: S)`
+                : `Scout the top face-down tile of ${coord} and end your turn (Hotkey: S)`
+              : "Scout Tile is unavailable (already scouted, no face-down tiles, or not your turn)",
+            text: `👁️ Scout Tile ${coord} [S]`,
+            onClick: () => {
+              if (!canScoutTile) return;
+              closeModal();
+              if (isEntryPhase) {
+                sendGameAction({ type: "initial_scout", targetType: "tile", cell: coord });
+              } else {
+                sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: coord });
+              }
+            },
+          }),
+          el("button", {
+            id: "modal-scout-deck-btn",
+            type: "button",
+            className: "btn",
+            disabled: !canScoutDeck,
+            title: canScoutDeck
+              ? "Scout the top card of an Encounter deck (Hotkey: D)"
+              : "Scout Deck Card is unavailable (already scouted or not your turn)",
+            text: "🃏 Scout Deck Card [D]",
+            onClick: () => {
+              if (!canScoutDeck) return;
+              closeModal();
+              openScoutModal(gs, viewer);
+            },
+          })
+        ),
+        el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.32rem",
+              marginLeft: "auto",
+            },
+          },
+          unusedIndicatorItems.length > 0
+            ? el(
+                "div",
+                {
+                  className: "unused-turn-actions-indicator",
+                  style: {
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.45rem",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "999px",
+                    background: "#fbf3df",
+                    border: "1px solid #b59257",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.65)",
+                  },
+                  title: "Unused Move (Cart in circle) and/or Transaction (Denarius in circle) actions remaining this turn",
+                },
+                el("span", {
+                  style: { fontSize: "0.68rem", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.04em", color: "#6e2119" },
+                  text: "Unused:",
+                }),
+                ...unusedIndicatorItems
+              )
+            : null,
+          el("button", {
+            id: "modal-end-turn-btn",
+            type: "button",
+            className: "btn btn-crimson",
+            disabled: !canEndTurnHere,
+            title: canEndTurnHere
+              ? "End your hourly turn (Hotkey: E)"
+              : "End Turn is unavailable when it is not your turn (or before selecting a starting Via Gate)",
+            text: "⏭️ End Turn [E]",
+            onClick: () => {
+              if (!canEndTurnHere) return;
+              closeModal();
+              sendGameAction({ type: "delivery_end_turn" });
+            },
+          })
+        )
       )
     )
   );
@@ -13559,6 +13918,7 @@ function openGambleModal(viewer) {
 }
 
 function openScoutModal(gs, _viewer) {
+  const isEntryPhase = gs.phase === "delivery_entry";
   const cellSelect = el(
     "select",
     { className: "form-input" },
@@ -13578,16 +13938,24 @@ function openScoutModal(gs, _viewer) {
   ];
 
   showModal(
-    "👁️ Free Scout Action (Once per Turn)",
+    isEntryPhase
+      ? "👁️ Pre-Night Initial Scout (Before Selecting Gate)"
+      : "👁️ Scout Action (Ends Turn)",
     el(
       "div",
       {},
+      !isEntryPhase
+        ? el("p", {
+            style: { fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0", marginBottom: "0.75rem" },
+            text: "Committing to your Scout action immediately advances the turn so the next merchant in sequence can begin while you examine the scouted card or tile.",
+          })
+        : null,
       el(
         "div",
         { style: { marginBottom: "1.1rem" } },
         el("div", {
           style: { fontWeight: "700", color: "var(--gold-bright)", fontSize: "0.9rem", marginBottom: "0.25rem" },
-          text: "Option A: Tap an Encounter Card Deck to Scout Its Top Card",
+          text: "Option A: Tap an Encounter Card Deck to Scout Its Top Card [D]",
         }),
         el("div", {
           style: { fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" },
@@ -13598,7 +13966,11 @@ function openScoutModal(gs, _viewer) {
           encounterDeckSpecs,
           (dk) => {
             closeModal();
-            sendGameAction({ type: "delivery_scout", targetType: "deck", targetKey: dk });
+            sendGameAction({
+              type: isEntryPhase ? "initial_scout" : "delivery_scout",
+              targetType: "deck",
+              targetKey: dk,
+            });
           },
           "👆 Tap Deck to Scout"
         )
@@ -13616,7 +13988,7 @@ function openScoutModal(gs, _viewer) {
           { className: "form-group" },
           el("label", {
             style: { fontWeight: "700", color: "var(--gold-bright)" },
-            text: "Option B: Peek at Top Unrevealed Tile of a Neighborhood Stack",
+            text: "Option B: Peek at Top Unrevealed Tile of a Neighborhood Stack [S]",
           }),
           cellSelect
         ),
@@ -13624,10 +13996,14 @@ function openScoutModal(gs, _viewer) {
           type: "button",
           className: "btn btn-primary",
           style: { width: "100%" },
-          text: "👁️ Scout Selected Neighborhood Stack",
+          text: "👁️ Scout Selected Neighborhood Stack [S]",
           onClick: () => {
             closeModal();
-            sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: cellSelect.value });
+            if (isEntryPhase) {
+              sendGameAction({ type: "initial_scout", targetType: "tile", cell: cellSelect.value });
+            } else {
+              sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: cellSelect.value });
+            }
           },
         })
       )
@@ -14117,7 +14493,7 @@ const RULEBOOK_SECTIONS = [
     id: "delivery",
     title: "5. Phase II: Nocturnal Rome Delivery & The Tiber River",
     paragraphs: [
-      "At 8:00 P.M. (Turn 1), each merchant may take 1 Free Initial Scout and then enters Rome through one of the 6 Via City Gates: B1 (Via Flaminia), E1 (Via Nomentana), F3 (Via Tiburtina), F6 (Via Tusculana), B6 (Via Ostiensis), or A4 (Via Aurelia). Entering a Gate uses your Turn 1 movement.",
+      "At 8:00 P.M. (Turn 1), each merchant may take 1 Initial Scout (tile or deck card) and then enters Rome through one of the 6 Via City Gates: B1 (Via Flaminia), E1 (Via Nomentana), F3 (Via Tiburtina), F6 (Via Tusculana), B6 (Via Ostiensis), or A4 (Via Aurelia). Entering a Gate uses your Turn 1 movement.",
       "Across Turns 1–10 (8:00 P.M. to 5:00 A.M.), each active merchant resolves their hourly turn in strict sequence:",
     ],
     bullets: [
@@ -14127,7 +14503,7 @@ const RULEBOOK_SECTIONS = [
       "Step 4 — Mission Cargo Pickup & Delivery: Upon arriving in a neighborhood—BEFORE any Center Tile Encounter triggers—you may load or deliver matching Mission Cargo!",
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
       "Step 6 — One Transaction (1 Good/Hr, or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here)—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4), OR Gamble once at a Stadium tile (up to 20(d) wager).",
-      "Step 7 — Free Scout: Peek once per turn at the top unrevealed tile of any neighborhood stack or the top card of any deck.",
+      "Step 7 — End-of-Turn Scout: After completing your Move and Transaction actions, you may Scout one time at the end of your turn by peeking at the top unrevealed tile of any neighborhood stack or the top card of any deck. Committing to your Scout action immediately advances the turn so the next merchant in sequence can begin their turn while you finish examining the scouted tile or card (though the next merchant may choose to wait if they want to see whether you react or move toward that area).",
       "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via Rome's 5 intra-urban Stone Bridges (in use in 211 A.D.): Pons Aelius (A1↔B1), Pons Neronianus (A1↔A2), Pons Agrippae (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
     ],
   },
@@ -14147,7 +14523,7 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
       "Combat Power (CP) & Cargo Gear: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals (including Ostrich or negative-die beasts!), and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). Note that crated Loricae body armor carries 0 CP in street ambushes (too slow to don mid-attack, compensated by lucrative trade margins). If Player CP ≥ Opponent CP against an NPC, you win!",
-      "Armor, Guards, & Driver Fate: If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP - Player CP). Shields/Helmets reduce Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
+      "Armor, Guards, & Driver Fate (Damage Deficit Note): If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP − Player CP). Note that wounds from combat are always determined by the signed damage deficit between the two sides—even when one or both CP totals are negative (for example, if your overall CP is -2 and your opponent's CP is -1, you suffer 1 Wound). Shields/Helmets reduce Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
       "1(R) Street Charts: Angry Mob (0: lose all Wine; I: lose all Grain; II: lose most expensive Good; III: safe), Theater Troupe (0: lose all positive Friendly Favor; I: lose all negative Hostile Favor; II: lose rest of turn & next turn; III: draw 1(R) Influence), Soothsayer (take mandatory Mission + seal 1(R) Influence cards).",
       "Stadium Gambling: On a tile with the Dice icon, wager 1(d) to 20(d) (capped at 20(d) per gamble action) and roll 1(R) to win Wager × Roll!",
     ],
@@ -14218,8 +14594,9 @@ const RULEBOOK_SECTIONS = [
         ["👁️ Scouted Badge", "Unrevealed Rome Cell", "Hover over any tile you have Scouted (or any face-up tile) to inspect its zoomed street layout."],
         ["Paid 𐆖X • Net ±𐆖Y", "Loaded Cart Cards & Sell Buttons", "Tracks what you paid for each Good and your exact net profit at the current buyer."],
         ["Numpad 1–9 / Key N", "Cart Mat & Rome Delivery", "Steer Cart via Numpad (7=NW, 8=N, 9=NE, 4=W, 6=E, 1=SW, 2=S, 3=SE); press 5 or N to toggle Cart Mat / Navigate tab."],
+        ["Hotkeys: S / D / V / E / Esc", "Neighborhood Popup & Delivery", "Scout Tile (S), Scout Deck Card (D), Move To Selected Tile (V or M), End Turn (E), and Close Window (Esc or X)."],
         ["Hotkeys: M / R / C / B", "Tabletop View", "Toggle Ostia Market (M), Rome Night Board (R), Political Climate Senate Board (C), or All Boards (B)."],
-        ["Hotkeys: Space / Esc", "Overlays & Modals", "Advance settled Dice / AI Turn Replay (Space/Enter) or close active modal/tooltip (Esc)."],
+        ["Hotkeys: Space / Esc", "Overlays & Modals", "Advance settled Dice / AI Turn Replay (Space/Enter) or close active modal/tooltip (Esc or X)."],
       ],
     },
   },
@@ -15603,7 +15980,7 @@ function buildNpcSpeechBubbleVisualNodes(ev) {
       : "patricii";
     const cardImg = el("img", {
       className: "npc-bubble-card-img",
-      src: `/assets/cards/${cid}.jpg?v=3`,
+      src: `/assets/cards/${cid}.jpg?v=43`,
       alt: vis.card.name || "Encounter",
     });
     cardImg.onerror = () => {
@@ -16005,6 +16382,50 @@ function installGlobalHotkeys() {
 
     if (inEditable) return;
 
+    const k = e.key.toLowerCase();
+    const modalRoot = document.getElementById("modal-root");
+    const hasOpenModal = Boolean(modalRoot && modalRoot.hasChildNodes());
+
+    // Close window hotkey (X when a modal is open)
+    if (hasOpenModal && k === "x") {
+      e.preventDefault();
+      closeModal();
+      return;
+    }
+
+    // Modal action hotkeys for Scout Tile (S), Scout Deck Card (D), Move To (V / M), and End Turn (E)
+    if (hasOpenModal) {
+      if (k === "s") {
+        const scoutTileBtn = document.getElementById("modal-scout-tile-btn");
+        if (scoutTileBtn && !scoutTileBtn.disabled) {
+          e.preventDefault();
+          scoutTileBtn.click();
+          return;
+        }
+      } else if (k === "d") {
+        const scoutDeckBtn = document.getElementById("modal-scout-deck-btn");
+        if (scoutDeckBtn && !scoutDeckBtn.disabled) {
+          e.preventDefault();
+          scoutDeckBtn.click();
+          return;
+        }
+      } else if (k === "v" || k === "m") {
+        const moveToBtn = document.getElementById("modal-move-to-btn");
+        if (moveToBtn && !moveToBtn.disabled) {
+          e.preventDefault();
+          moveToBtn.click();
+          return;
+        }
+      } else if (k === "e") {
+        const endTurnBtn = document.getElementById("modal-end-turn-btn");
+        if (endTurnBtn && !endTurnBtn.disabled) {
+          e.preventDefault();
+          endTurnBtn.click();
+          return;
+        }
+      }
+    }
+
     if (e.key === " " || e.key === "Enter") {
       if (tag === "BUTTON" || tag === "A") return;
       if (appState.activeDiceOverlay && !appState.isDiceRolling) {
@@ -16023,16 +16444,14 @@ function installGlobalHotkeys() {
     }
 
     if (appState.activeTab === "tabletop" && appState.gameState) {
-      const modalRoot = document.getElementById("modal-root");
-      const hasOpenModal = Boolean(modalRoot && modalRoot.hasChildNodes());
       const gs = appState.gameState;
+      const viewer = gs.players[gs.viewerPlayerIndex] || gs.players[0];
 
       // Numpad 1-9 directional Cart steering (7=NW, 8=N, 9=NE, 4=W, 6=E, 1=SW, 2=S, 3=SE)
       const numpadDir =
         NUMPAD_CODE_TO_DIR[e.code] || (e.location === 3 ? NUMPAD_DIGIT_TO_DIR[e.key] : null);
       if (numpadDir && !hasOpenModal && !appState.activeDiceOverlay && !appState.activeNpcEvent) {
         e.preventDefault();
-        const viewer = gs.players[gs.viewerPlayerIndex] || gs.players[0];
         if (!viewer) return;
         if (gs.pendingEncounter) {
           showToast("Resolve the active Encounter before moving your Cart.", true);
@@ -16081,7 +16500,64 @@ function installGlobalHotkeys() {
         return;
       }
 
-      const k = e.key.toLowerCase();
+      if (!hasOpenModal && !appState.activeDiceOverlay && viewer) {
+        const isMyTurn =
+          gs.activePlayerIndex === viewer.index &&
+          (gs.phase === "delivery" || gs.phase === "delivery_entry") &&
+          !gs.pendingEncounter;
+        if (k === "s" && isMyTurn) {
+          e.preventDefault();
+          if (viewer.scoutedThisTurn) {
+            showToast("You have already used your Scout action this turn.", true);
+            return;
+          }
+          const targetCoord = appState.inspectedCell || viewer.position || "B1";
+          const targetCell = gs.romeBoard && gs.romeBoard[targetCoord];
+          if (targetCell) {
+            openConfirmScoutNeighborhoodModal(gs, viewer, targetCoord, targetCell);
+          } else {
+            openScoutModal(gs, viewer);
+          }
+          return;
+        }
+        if (k === "d" && isMyTurn) {
+          e.preventDefault();
+          if (viewer.scoutedThisTurn) {
+            showToast("You have already used your Scout action this turn.", true);
+            return;
+          }
+          openScoutModal(gs, viewer);
+          return;
+        }
+        if (k === "v" && isMyTurn) {
+          e.preventDefault();
+          const targetCoord = appState.inspectedCell || viewer.position || "B1";
+          const targetCell = gs.romeBoard && gs.romeBoard[targetCoord];
+          if (targetCell) {
+            const currCellObj = viewer.position && gs.romeBoard ? gs.romeBoard[viewer.position] : null;
+            const currOutDirs = (currCellObj && currCellObj.revealed && currCellObj.revealed.outgoingDirections) || {};
+            let moveDir = null;
+            let adjInfo = null;
+            for (const [dir, dInfo] of Object.entries(currOutDirs)) {
+              if (dInfo && dInfo.targetCell === targetCoord) {
+                adjInfo = { dir, ...dInfo };
+                const riverBlocked = Boolean(dInfo.blockedByRiver) || isTiberCrossingBlocked(viewer.position, targetCoord);
+                if (!riverBlocked && (dInfo.passable || (viewer.turnEffects && viewer.turnEffects.shortcut))) {
+                  moveDir = dir;
+                }
+              }
+            }
+            openConfirmScoutNeighborhoodModal(gs, viewer, targetCoord, targetCell, { moveDir, adjInfo });
+          }
+          return;
+        }
+        if (k === "e" && gs.phase === "delivery" && gs.activePlayerIndex === viewer.index && !gs.pendingEncounter) {
+          e.preventDefault();
+          sendGameAction({ type: "delivery_end_turn" });
+          return;
+        }
+      }
+
       if ((e.code === "Numpad5" || (e.location === 3 && e.key === "5") || k === "n") && !hasOpenModal) {
         e.preventDefault();
         appState.cartPanelTab = appState.cartPanelTab === "navigate" ? "cart" : "navigate";

@@ -197,10 +197,41 @@ button, input, select {
 }
 
 .denarius-sym {
-  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "Georgia", serif;
-  font-weight: 800;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -0.11em;
+  width: 0.86em;
+  height: 0.94em;
   margin-right: 1px;
+  line-height: 1;
+}
+
+.denarius-sym-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.action-symbol-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #9a7026;
+  background: linear-gradient(180deg, #fffdf7 0%, #f1e3c6 100%);
+  color: #5b2217;
+  box-shadow: 0 1px 3px rgba(34, 16, 8, 0.25);
+  flex-shrink: 0;
+}
+
+.action-symbol-circle svg {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
 /* Player Cart Icon (replaces colored dot) */
@@ -1612,8 +1643,12 @@ button, input, select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.75rem 1.5rem;
+  justify-content: flex-start;
+  gap: 1.1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem 1.25rem;
   user-select: none;
   animation: diceOverlayFadeIn 0.18s ease-out;
 }
