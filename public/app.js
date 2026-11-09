@@ -861,6 +861,9 @@ const appState = {
   npcPacingTotal: 0,
   npcPacingIndex: 0,
   _wasViewerTurn: false,
+  marketBoardScrollLeft: 0,
+  marketBoardScrollTop: 0,
+  climateBoardScrollLeft: 0,
 };
 
 function navigateToMarketBoardForCategory(category) {
@@ -3492,7 +3495,7 @@ function renderCompletedGamesView() {
         el("button", {
           type: "button",
           className: "btn btn-sm",
-          text: "👤 Player Profile",
+          text: "👤 Profile",
           onClick: () => {
             appState.activeTab = "profile";
             renderApp();
@@ -3813,6 +3816,9 @@ async function openGame(gameId) {
     appState.setupDiscardInfluence.clear();
     syncGameUiTransitions(res.state, isSwitchingGame);
     if (isSwitchingGame) {
+      appState.marketBoardScrollLeft = 0;
+      appState.marketBoardScrollTop = 0;
+      appState.climateBoardScrollLeft = 0;
       seedSeenScoutIds(res.state);
       stopNpcTurnPacing();
       enqueueNewNpcEvents(res.state, true);
@@ -3904,6 +3910,16 @@ function renderApp() {
   const root = document.getElementById("app-root");
   if (!root) return;
 
+  const prevMarketMatrixEl = document.querySelector(".ostia-market-board-matrix");
+  if (prevMarketMatrixEl) {
+    appState.marketBoardScrollLeft = prevMarketMatrixEl.scrollLeft;
+    appState.marketBoardScrollTop = prevMarketMatrixEl.scrollTop;
+  }
+  const prevClimateMatrixEl = document.querySelector(".senate-climate-board-matrix");
+  if (prevClimateMatrixEl) {
+    appState.climateBoardScrollLeft = prevClimateMatrixEl.scrollLeft;
+  }
+
   hideRomeHoverTooltip();
 
   const contentNodes = [renderTopbar()];
@@ -3936,6 +3952,19 @@ function renderApp() {
     appState.chronicleUserScrolled = false;
     appState.chronicleScrollTop = 0;
   } else {
+    const marketMatrixEl = document.querySelector(".ostia-market-board-matrix");
+    if (marketMatrixEl) {
+      if (typeof appState.marketBoardScrollLeft === "number" && appState.marketBoardScrollLeft > 0) {
+        marketMatrixEl.scrollLeft = appState.marketBoardScrollLeft;
+      }
+      if (typeof appState.marketBoardScrollTop === "number" && appState.marketBoardScrollTop > 0) {
+        marketMatrixEl.scrollTop = appState.marketBoardScrollTop;
+      }
+    }
+    const climateMatrixEl = document.querySelector(".senate-climate-board-matrix");
+    if (climateMatrixEl && typeof appState.climateBoardScrollLeft === "number" && appState.climateBoardScrollLeft > 0) {
+      climateMatrixEl.scrollLeft = appState.climateBoardScrollLeft;
+    }
     const logBoxEl = document.getElementById("chronicle-log-box");
     if (logBoxEl) {
       logBoxEl.scrollTop = appState.chronicleUserScrolled ? appState.chronicleScrollTop : 0;
@@ -4026,7 +4055,7 @@ function renderTopbar() {
       }),
       el("button", {
         className: `nav-btn ${appState.activeTab === "profile" ? "active" : ""}`,
-        text: "👤 Player Profile",
+        text: "👤 Profile",
         onClick: () => {
           appState.activeTab = "profile";
           renderApp();
@@ -4107,7 +4136,13 @@ function renderTopbar() {
         src: "/assets/icons/fleur_de_lis_gold.png",
         alt: "Night Merchant Crest",
       }),
-      el("div", { className: "brand-title", text: "Night Merchant: All Roads Lead to Rome" })
+      el(
+        "div",
+        { className: "brand-title" },
+        el("span", { className: "brand-title-main", text: "Night Merchant:" }),
+        " ",
+        el("span", { className: "brand-title-sub", text: "All Roads Lead to Rome" })
+      )
     ),
     el("nav", { className: "nav-tabs" }, ...navButtons),
     el("div", { className: "user-strip" }, ...userStripChildren)
@@ -5868,16 +5903,7 @@ function renderActiveClimateStrip(gs, viewer) {
   );
 }
 
-function buildPoliticalClimateExplainerNode(gs) {
-  const playerCount = gs && Array.isArray(gs.players) ? gs.players.length : 4;
-  const isDraftPhase = Boolean(gs && gs.phase === "setup_climate");
-  const unchosenNote =
-    playerCount < 6
-      ? ` Because this is a ${playerCount}-merchant game, ${playerCount} columns will have an enacted decree and the remaining ${
-          6 - playerCount
-        } column${6 - playerCount === 1 ? "" : "s"} will stay neutral with no special rule.`
-      : " With 6 merchants, every column will receive 1 enacted decree.";
-
+function buildPoliticalClimateExplainerNode(_gs) {
   return el(
     "div",
     { className: "climate-explainer-panel" },
@@ -5889,14 +5915,37 @@ function buildPoliticalClimateExplainerNode(gs) {
     el(
       "p",
       { className: "climate-explainer-text" },
-      `Before Spring trading begins, merchants convene in the Curia Julia to set Rome's political and economic laws for the entire game. Each of the 6 columns governs one of Rome's 5 Imperial Factions (Caracalla, Geta, Julia Domna, Plautilla, or Marcus Aurelius) or Missions, and offers 3 competing decrees. In draft order (the fastest merchant to finish Setup discards drafts first here and acts last in Spring turn order), each player enacts 1 decree from an open column — permanently locking out the other 2 options in that column for the rest of the game.${unchosenNote}`
+      "When you’re done selecting the influence and mission cards you’d like to keep, place your Senator pawn on one of the squares of the Political Climate table. Only one Senator can be placed in each column."
     ),
     el(
       "p",
       { className: "climate-explainer-text" },
-      isDraftPhase
-        ? "Every enacted decree stays active across all three Seasons (Spring, Summer, and Fall) through Winter Reckoning. The top two rows set end-of-game Winter Reckoning bonuses or penalties tied to Faction Favor gems and completed vs. failed Missions, while the bottom row changes ongoing rules during Ostia Market, Night Delivery, Combat, or Dawn Clean-Up. Click any decree in an unlocked column below when it is your turn to enact it."
-        : "Every enacted decree (marked ✓ Enacted) remains in force across all three Seasons through Winter Reckoning: decrees in the top two rows apply during end-of-game Winter Reckoning based on your Faction Favor gems and Mission record, while decrees in the bottom row modify live Market, Night Delivery, Combat, or Clean-Up rules."
+      "The options on the Political Climate table set rules that will grant additional bonuses for mission completion or faction alignment at the end of the game (rows 1 & 2) or that add new rules to the game (row 3)."
+    ),
+    el(
+      "p",
+      { className: "climate-explainer-text" },
+      "Row 1 rules give players bonuses or penalties based on which player has the most missions completed or most/least favor with a given faction; note that ties are decided by combat between the players."
+    ),
+    el(
+      "p",
+      { className: "climate-explainer-text" },
+      "Row 2 rules give players bonuses or penalties for each unit of faction loyalty/mission completion being measured."
+    ),
+    el(
+      "p",
+      { className: "climate-explainer-text" },
+      "Row 3 rules change the faction loyalty or mission completion dynamics in the game."
+    ),
+    el(
+      "p",
+      { className: "climate-explainer-text" },
+      "The last player to place a Senator receives the First Player Token."
+    ),
+    el(
+      "p",
+      { className: "climate-explainer-text" },
+      "In a two player game, the second player to place a Senator places two Senators and then the first player places a second Senator (for a total of four)."
     )
   );
 }
@@ -6001,7 +6050,12 @@ function buildPoliticalClimateBoardGridNode(gs, viewer, interactiveDraft = false
 
   return el(
     "div",
-    { className: "senate-climate-board-matrix" },
+    {
+      className: "senate-climate-board-matrix",
+      onScroll: (e) => {
+        appState.climateBoardScrollLeft = e.currentTarget.scrollLeft;
+      },
+    },
     el(
       "div",
       { className: "senate-climate-stage" },
@@ -8511,6 +8565,321 @@ function renderGoodPriceTableNode(card, trackName, colIndex, isPriceIdxDirect = 
   );
 }
 
+function openCartGoodDetailModal(item, gs, viewer, readOnly = false) {
+  if (!item) return;
+  const trackName = item.track || item.category || "Grain";
+  const trackClass = resolveGoodTrackClass(item);
+  const blocksCount = Math.max(1, Number(item.blocks) || 1);
+  const blocksSymbols = "■".repeat(blocksCount);
+  const meta = (gs && gs.marketMeta && gs.marketMeta[trackName]) || {
+    scarcityIndex: 2,
+    scarcityLabel: "Uncommon (=)",
+    scarcitySymbol: "=",
+  };
+  const activeScarcityIdx = typeof meta.scarcityIndex === "number" ? meta.scarcityIndex : 2;
+  const scarcitySymbols = ["<<", "<", "=", ">", ">>"];
+
+  const subtitleText = item.isMissionCargo
+    ? `Mission Cargo → ${item.deliverCell || "Rome"}`
+    : item.subtitle
+    ? `(${item.subtitle})`
+    : item.subcategory || item.category || trackName;
+
+  let combatLineText = null;
+  if (trackName === "Weapons") {
+    combatLineText = item.combatText || "0 CP";
+  } else if (item.combatText) {
+    combatLineText = item.combatText;
+  }
+
+  const sellArr = Array.isArray(item.sell) && item.sell.length >= 5 ? item.sell.slice(0, 5) : null;
+  const buyArr = Array.isArray(item.buy) && item.buy.length >= 5 ? item.buy.slice(0, 5) : null;
+  const hasSellTable = Boolean(sellArr);
+  const currentScarcitySellPrice =
+    sellArr && sellArr[activeScarcityIdx] !== undefined ? Number(sellArr[activeScarcityIdx]) : null;
+  const sellOpt = Array.isArray(item.availableSells) && item.availableSells.length > 0 ? item.availableSells[0] : null;
+  const canSellNow = Boolean(
+    !readOnly && sellOpt && gs && gs.phase === "delivery" && viewer && gs.activePlayerIndex === viewer.index
+  );
+  const hasPaidCost = !item.isMissionCargo && typeof item.purchasePrice === "number";
+  const refSellPrice =
+    sellOpt && !sellOpt.isFencedCargo
+      ? Number(sellOpt.price)
+      : currentScarcitySellPrice !== null
+      ? currentScarcitySellPrice
+      : null;
+  const netProfit = hasPaidCost && refSellPrice !== null ? refSellPrice - Number(item.purchasePrice) : null;
+
+  const fullCardNode = el(
+    "div",
+    { className: "cart-good-detail-showcase" },
+    el(
+      "div",
+      { className: `market-good-card ${trackClass} cart-good-detail-card` },
+      el(
+        "div",
+        { className: "market-good-card-inner" },
+        el(
+          "div",
+          { className: "good-card-header" },
+          el("div", { className: "slot-card-name", text: item.name }),
+          el("div", { className: "slot-sub", text: subtitleText }),
+          combatLineText ? el("div", { className: "good-combat-line", text: combatLineText }) : null
+        ),
+        renderGoodCardArtNode(item, trackName),
+        el(
+          "div",
+          {},
+          el("div", {
+            className: "good-blocks-row",
+            title: `Weight: ${blocksCount}■ of Cart Capacity`,
+            text: blocksSymbols,
+          }),
+          hasSellTable
+            ? renderGoodPriceTableNode(item, trackName, activeScarcityIdx, false)
+            : el("div", {
+                className: "mission-cargo-no-sell-note",
+                text: `Deliver @ ${item.deliverCell || "Target"}`,
+              })
+        )
+      )
+    )
+  );
+
+  const infoRows = [
+    el(
+      "div",
+      { className: "cart-good-detail-row" },
+      el("span", { className: "cart-good-detail-label", text: "Category & Weight:" }),
+      el("strong", {
+        text: `${item.isMissionCargo ? `Mission Cargo (${trackName})` : trackName} • ${blocksCount}■ (${blocksSymbols})`,
+      })
+    ),
+  ];
+
+  if (!item.isMissionCargo && currentScarcitySellPrice !== null) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Current Market Scarcity:" }),
+        el("strong", {
+          style: { color: "var(--gold-bright)" },
+          text: `${meta.scarcityLabel || scarcitySymbols[activeScarcityIdx]} — Base Sell Value: ${currentScarcitySellPrice}(d)`,
+        })
+      )
+    );
+  } else if (item.isMissionCargo) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Mission Delivery Target:" }),
+        el("strong", {
+          style: { color: "var(--gold-bright)" },
+          text: `Deliver to ${item.deliverCell || "Target"}${
+            currentScarcitySellPrice !== null ? ` (Fence @ ${meta.scarcitySymbol || "="}: ${currentScarcitySellPrice}(d))` : ""
+          }`,
+        })
+      )
+    );
+  }
+
+  if (sellArr) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", {
+          className: "cart-good-detail-label",
+          text: item.isMissionCargo ? "Fence Values (<< to >>):" : "Sell Values (<< to >>):",
+        }),
+        el("span", {
+          style: { fontWeight: "700" },
+          text: sellArr.map((v, idx) => `${scarcitySymbols[idx]} ${v}(d)`).join(" • "),
+        })
+      )
+    );
+  }
+
+  if (buyArr && !item.isMissionCargo) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Buy Values (<< to >>):" }),
+        el("span", {
+          text: buyArr.map((v, idx) => `${scarcitySymbols[idx]} ${v}(d)`).join(" • "),
+        })
+      )
+    );
+  }
+
+  if (hasPaidCost) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Purchase Price Paid:" }),
+        el(
+          "strong",
+          {},
+          el("span", { text: `${item.purchasePrice}(d)` }),
+          netProfit !== null
+            ? el("span", {
+                style: { color: netProfit >= 0 ? "#15803d" : "#b91c1c", marginLeft: "0.35rem" },
+                text: `(${netProfit >= 0 ? `+${netProfit}` : netProfit}(d) net at ${
+                  sellOpt ? sellOpt.scarcitySymbol || "=" : meta.scarcitySymbol || "="
+                })`,
+              })
+            : null
+        )
+      )
+    );
+  }
+
+  if (combatLineText) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Combat / Effect:" }),
+        el("strong", { text: combatLineText })
+      )
+    );
+  }
+
+  const actionBtns = [];
+  if (canSellNow && sellOpt) {
+    actionBtns.push(
+      el("button", {
+        type: "button",
+        className: `btn ${sellOpt.isFencedCargo ? "btn-crimson" : "btn-primary"}`,
+        disabled: viewer.transactedThisTurn,
+        text: sellOpt.isFencedCargo
+          ? `🕵️ Fence for ${sellOpt.price}(d)`
+          : `💰 Sell for ${sellOpt.price}(d) (${sellOpt.scarcitySymbol || "="})`,
+        onClick: () => {
+          closeModal();
+          sendGameAction({
+            type: "delivery_sell",
+            category: sellOpt.category,
+            cardIds: [item.id],
+            missionId: sellOpt.missionId || undefined,
+          });
+        },
+      })
+    );
+  }
+  actionBtns.push(
+    el("button", {
+      type: "button",
+      className: "btn btn-primary",
+      text: "Close",
+      onClick: () => closeModal(),
+    })
+  );
+
+  const modalBody = el(
+    "div",
+    { className: "cart-good-detail-modal" },
+    fullCardNode,
+    el("div", { className: "cart-good-detail-summary" }, ...infoRows),
+    el(
+      "div",
+      { style: { display: "flex", justifyContent: "flex-end", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.4rem" } },
+      ...actionBtns
+    )
+  );
+
+  showModal(`📦 ${item.name} — Cargo Details & Value`, modalBody);
+}
+
+function openCartGuardDetailModal(g) {
+  if (!g) return;
+  const guardsCount = Math.max(1, Number(g.guards) || 1);
+  const blocksSymbols = "▲".repeat(guardsCount);
+  const combatLineText = `${g.combatText || ""}${g.abilityText ? ` & ${g.abilityText}` : ""}`;
+  const buyArr = Array.isArray(g.buy) && g.buy.length >= 5 ? g.buy.slice(0, 5) : null;
+  const scarcitySymbols = ["<<", "<", "=", ">", ">>"];
+
+  const fullCardNode = el(
+    "div",
+    { className: "cart-good-detail-showcase" },
+    el(
+      "div",
+      { className: "market-good-card good-track-guards cart-good-detail-card" },
+      el(
+        "div",
+        { className: "market-good-card-inner" },
+        el(
+          "div",
+          { className: "good-card-header" },
+          el("div", { className: "slot-card-name", text: g.name }),
+          el("div", { className: "slot-sub", text: "Guard" }),
+          combatLineText ? el("div", { className: "good-combat-line", text: combatLineText }) : null
+        ),
+        renderGoodCardArtNode(g, "Guards"),
+        el(
+          "div",
+          {},
+          el("div", { className: "good-blocks-row", title: `Guard Seat: ${guardsCount}▲`, text: blocksSymbols }),
+          buyArr ? renderGoodPriceTableNode(g, "Guards", 2, false) : null
+        )
+      )
+    )
+  );
+
+  const infoRows = [
+    el(
+      "div",
+      { className: "cart-good-detail-row" },
+      el("span", { className: "cart-good-detail-label", text: "Guard Seats Occupied:" }),
+      el("strong", { text: `${guardsCount}▲ (${blocksSymbols})` })
+    ),
+    el(
+      "div",
+      { className: "cart-good-detail-row" },
+      el("span", { className: "cart-good-detail-label", text: "Seasonal Upkeep Cost:" }),
+      el("strong", { style: { color: "var(--gold-bright)" }, text: `${g.upkeepCost ?? 0}(d)` })
+    ),
+  ];
+  if (combatLineText) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Combat & Special Ability:" }),
+        el("strong", { text: combatLineText })
+      )
+    );
+  }
+  if (buyArr) {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Hire Costs (<< to >>):" }),
+        el("span", { text: buyArr.map((v, idx) => `${scarcitySymbols[idx]} ${v}(d)`).join(" • ") })
+      )
+    );
+  }
+
+  const modalBody = el(
+    "div",
+    { className: "cart-good-detail-modal" },
+    fullCardNode,
+    el("div", { className: "cart-good-detail-summary" }, ...infoRows),
+    el(
+      "div",
+      { style: { display: "flex", justifyContent: "flex-end", marginTop: "0.4rem" } },
+      el("button", { type: "button", className: "btn btn-primary", text: "Close", onClick: () => closeModal() })
+    )
+  );
+
+  showModal(`🛡️ ${g.name} — Guard Details`, modalBody);
+}
+
 function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
   const trackName = item.track || item.category || "Grain";
   const trackClass = resolveGoodTrackClass(item);
@@ -8541,9 +8910,23 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
       ? Number(sellOpt.price) - Number(item.purchasePrice)
       : null;
 
+  const openDetail = () => openCartGoodDetailModal(item, gs, viewer, readOnly);
+
   const cardFace = el(
     "div",
-    { className: `market-good-card ${trackClass} loaded-good-phys-card` },
+    {
+      className: `market-good-card ${trackClass} loaded-good-phys-card is-clickable-cart-card`,
+      role: "button",
+      tabIndex: "0",
+      title: `Click to view ${item.name} details & sell values`,
+      onClick: openDetail,
+      onKeyDown: (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      },
+    },
     el(
       "div",
       { className: "market-good-card-inner" },
@@ -8671,10 +9054,23 @@ function renderHiredGuardPhysicalCardNode(g) {
   const blocksSymbols = "▲".repeat(guardsCount);
   const combatLineText = `${g.combatText || ""}${g.abilityText ? ` & ${g.abilityText}` : ""}`;
   const hasHireTable = Array.isArray(g.buy) && g.buy.length >= 5;
+  const openDetail = () => openCartGuardDetailModal(g);
 
   const cardFace = el(
     "div",
-    { className: "market-good-card good-track-guards loaded-good-phys-card" },
+    {
+      className: "market-good-card good-track-guards loaded-good-phys-card is-clickable-cart-card",
+      role: "button",
+      tabIndex: "0",
+      title: `Click to view ${g.name} details & upkeep`,
+      onClick: openDetail,
+      onKeyDown: (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      },
+    },
     el(
       "div",
       { className: "market-good-card-inner" },
@@ -9683,7 +10079,13 @@ function renderOstiaMarketBoard(gs, viewer) {
       : null,
     el(
       "div",
-      { className: "ostia-market-board-matrix" },
+      {
+        className: "ostia-market-board-matrix",
+        onScroll: (e) => {
+          appState.marketBoardScrollLeft = e.currentTarget.scrollLeft;
+          appState.marketBoardScrollTop = e.currentTarget.scrollTop;
+        },
+      },
       colHeadersRow,
       el("div", { className: "ostia-market-grid" }, ...gridCells)
     )
