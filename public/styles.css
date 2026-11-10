@@ -421,10 +421,10 @@ button, input, select {
 
 .good-card-art-frame {
   width: 100%;
-  flex: 1 1 28px;
-  min-height: 26px;
-  max-height: 48px;
-  margin: 2px 0;
+  flex: 1 1 0px;
+  min-height: 0;
+  max-height: 46px;
+  margin: 1px 0;
   border-radius: 3px;
   overflow: hidden;
   border: 1px solid rgba(74, 52, 32, 0.48);
@@ -958,6 +958,7 @@ button, input, select {
   align-items: center;
   gap: 0.24rem;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .good-card-external-meta {
@@ -991,7 +992,7 @@ button, input, select {
   background: linear-gradient(180deg, #f8f5ec 0%, #eee8d8 100%);
   border: 4px solid var(--good-color, #464e50);
   border-radius: 6px;
-  padding: 0.22rem 0.26rem;
+  padding: 0.2rem 0.22rem;
   color: #18120e;
   display: flex;
   flex-direction: column;
@@ -1003,81 +1004,149 @@ button, input, select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.08;
+  line-height: 1.06;
   flex-shrink: 0;
+  width: 100%;
 }
 
+/* Priority 1: Name of the Good */
 .slot-card-name {
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: #140e0a;
-  line-height: 1.08;
+  line-height: 1.06;
+  flex-shrink: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
+/* Priority 5: Good Type / Subtitle */
 .slot-sub {
-  font-size: 0.61rem;
+  font-size: 0.59rem;
   font-weight: 700;
   color: var(--good-sub-color, #3a2b20);
   margin-top: 1px;
-  line-height: 1.06;
+  line-height: 1.04;
 }
 
+/* Priority 4: Combat Effects, if any */
 .good-combat-line {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 800;
   color: #1b130e;
   margin-top: 1px;
-  line-height: 1.08;
+  line-height: 1.05;
+  flex-shrink: 0;
 }
 
+.good-card-footer {
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Priority 3: Cart Space Cubes (■ / ▲) */
 .good-blocks-row {
-  font-size: 0.62rem;
-  letter-spacing: 2px;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
   color: #16110d;
   line-height: 1;
   margin: 1px 0;
+  flex-shrink: 0;
 }
 
-/* Physical 5-column Scarcity Price Grid (<< < = > >>) on Goods & Guards cards */
+/* Priority 2: Entire Price Board (<< < = > >> with Bold Green +𐆖 and Italic Red -𐆖) */
 .good-price-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.56rem;
   font-family: "Georgia", serif;
   margin: 1px 0 0;
   background: transparent;
   border: none;
+  flex-shrink: 0;
 }
 
 .good-price-table th,
 .good-price-table td {
   border: 1px solid #355731;
-  padding: 1px 1px;
+  padding: 1px 0;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.08;
   background: #fdfbf6;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .good-price-table th.price-corner-empty {
   border: none !important;
   background: transparent !important;
   padding: 0;
-  width: 18px;
+  width: 15%;
 }
 
 .good-price-table th.price-row-label {
-  background: #2d5a27;
-  color: #fff;
-  font-size: 0.54rem;
+  background: #f5efe2;
+  padding: 1px 0;
+  width: 15%;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.good-price-table th.price-row-label-sell {
+  background: #ecfdf3;
+  border-color: #166534;
+}
+
+.good-price-table th.price-row-label-buy {
+  background: #fef2f2;
+  border-color: #991b1b;
+}
+
+/* Bold Green +𐆖 (Sell / Fence) & Italic Red -𐆖 (Buy / Hire) */
+.price-sym-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.price-sym-sell {
+  color: #15803d;
+  font-weight: 900;
+  font-style: normal;
+  font-size: 0.62rem;
+  letter-spacing: -0.5px;
+}
+
+.price-sym-sell .denarius-inline-svg {
+  stroke: #15803d;
+  stroke-width: 1.2px;
+}
+
+.price-sym-buy {
+  color: #b91c1c;
   font-weight: 700;
-  width: 18px;
-  text-transform: uppercase;
+  font-style: italic;
+  font-size: 0.62rem;
+  letter-spacing: -0.5px;
+}
+
+.price-sym-buy .denarius-inline-svg {
+  transform: skewX(-12deg);
 }
 
 .good-price-table tr.scarcity-sym-row th {
   font-weight: 900;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   background: #f3efe4;
+  letter-spacing: -0.4px;
 }
 
 .good-price-table tr.scarcity-sym-row th.sym-col-0,
@@ -1098,7 +1167,92 @@ button, input, select {
 
 .good-price-table td.active-price-cell,
 .good-price-table th.active-price-cell {
-  background: rgba(216, 169, 75, 0.34);
+  background: rgba(216, 169, 75, 0.36);
+}
+
+/* =========================================================================
+   6-LEVEL DISPLAY PRIORITY FOR COMPACT CARDS & SMALL SCREENS:
+   1st: Name (.slot-card-name)
+   2nd: Price Board (.good-price-table)
+   3rd: Cart Space Cubes (.good-blocks-row)
+   4th: Combat Effects (.good-combat-line)
+   5th: Good Type (.slot-sub)
+   6th: Graphic (.good-card-art-frame)
+   ========================================================================= */
+
+@container (max-width: 138px) {
+  .market-good-card:not(.cart-good-detail-card) .good-card-art-frame {
+    display: none !important;
+  }
+  .market-good-card:not(.cart-good-detail-card) .market-good-card-inner {
+    border-width: 3px;
+    padding: 0.16rem 0.18rem;
+  }
+  .market-good-card:not(.cart-good-detail-card) .slot-card-name {
+    font-size: 0.68rem;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-price-table {
+    font-size: 0.53rem;
+  }
+}
+
+@container (max-width: 118px) {
+  .market-good-card:not(.cart-good-detail-card) .slot-sub {
+    display: none !important;
+  }
+  .market-good-card:not(.cart-good-detail-card) .slot-card-name {
+    font-size: 0.64rem;
+    line-height: 1.04;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-combat-line {
+    font-size: 0.54rem;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-blocks-row {
+    font-size: 0.54rem;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-price-table {
+    font-size: 0.51rem;
+  }
+}
+
+@container (max-width: 78px) {
+  .market-good-card:not(.cart-good-detail-card) .good-combat-line {
+    display: none !important;
+  }
+}
+
+@container (max-width: 64px) {
+  .market-good-card:not(.cart-good-detail-card) .good-blocks-row {
+    display: none !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .market-good-card:not(.cart-good-detail-card),
+  .cart-mat-occupied-slot > .good-card-unit > .market-good-card {
+    aspect-ratio: auto !important;
+    height: auto !important;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-card-art-frame {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .market-good-card:not(.cart-good-detail-card) .slot-sub {
+    display: none !important;
+  }
+  .market-good-card:not(.cart-good-detail-card) .market-good-card-inner {
+    border-width: 2.5px;
+    padding: 0.15rem 0.16rem;
+    gap: 1px;
+  }
+  .market-good-card:not(.cart-good-detail-card) .slot-card-name {
+    font-size: 0.64rem;
+  }
+  .market-good-card:not(.cart-good-detail-card) .good-price-table {
+    font-size: 0.52rem;
+  }
 }
 
 /* Colored border edges for Goods & Guards in Cart / Sidebar / Forum Modal */
@@ -2573,11 +2727,11 @@ button, input, select {
 }
 
 .phys-card-bio {
-  font-size: 0.55rem;
-  line-height: 1.15;
+  font-size: 0.54rem;
+  line-height: 1.13;
   color: #2c2620;
   margin-top: 2px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .phys-card-cp-line {
@@ -2800,6 +2954,18 @@ button, input, select {
   font-size: 0.84rem;
   line-height: 1.05;
   font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.enc-tier-inline-icon,
+.enc-tier-inline-svg {
+  display: inline-block;
+  vertical-align: -0.16em;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45));
 }
 
 .phys-enc-tier-cond {
@@ -2832,20 +2998,35 @@ button, input, select {
   width: 310px;
   max-width: 100%;
   margin: 0 auto;
+  aspect-ratio: auto !important;
+  min-height: 434px;
+  height: auto !important;
+}
+
+.phys-encounter-card.interactive-large .phys-card-inner {
+  min-height: 422px;
+  overflow: visible;
 }
 
 .phys-encounter-card.interactive-large .phys-card-title {
-  font-size: 0.96rem;
+  font-size: 0.95rem;
+  line-height: 1.12;
 }
 .phys-encounter-card.interactive-large .phys-card-bio {
   font-size: 0.66rem;
+  line-height: 1.16;
+  overflow: visible;
 }
 .phys-encounter-card.interactive-large .phys-card-body {
   font-size: 0.78rem;
+  overflow: visible;
 }
 .phys-encounter-card.interactive-large .phys-enc-tier-cell {
   font-size: 0.8rem;
   padding: 6px 4px;
+}
+.phys-encounter-card.interactive-large .phys-enc-tier-effect {
+  font-size: 0.96rem;
 }
 
 /* Clickable Sections on the Active Encounter Card */
@@ -3077,8 +3258,10 @@ button, input, select {
   border: none;
   border-left: 2.5px solid rgba(140, 86, 18, 0.32);
   color: var(--text-main);
-  padding: 0.38rem 0.65rem;
-  font-size: 0.82rem;
+  padding: 0.48rem 0.72rem;
+  margin-bottom: 0.22rem;
+  font-size: 0.83rem;
+  line-height: 1.35;
   cursor: pointer;
   border-radius: 0 5px 5px 0;
   transition: all 0.14s ease;
@@ -3099,56 +3282,213 @@ button, input, select {
   background-image: var(--marble-surface);
   background-size: auto, 380px 380px;
   border: 2px solid #755331;
-  border-radius: 6px;
-  padding: 1.65rem 2rem;
-  line-height: 1.64;
+  border-radius: 8px;
+  padding: 2.25rem 2.6rem;
+  line-height: 1.76;
   color: var(--text-main);
   box-shadow: var(--bevel-panel);
 }
 
 .rulebook-section {
-  margin-bottom: 2rem;
-  padding-bottom: 1.4rem;
-  border-bottom: 1.5px solid rgba(133, 94, 52, 0.32);
-  scroll-margin-top: 1rem;
+  background: rgba(255, 252, 245, 0.82);
+  border: 1.5px solid rgba(133, 94, 52, 0.34);
+  border-radius: 10px;
+  padding: 1.85rem 2.1rem;
+  margin-bottom: 2.35rem;
+  box-shadow: 0 4px 14px rgba(42, 24, 12, 0.08);
+  scroll-margin-top: 1.25rem;
 }
 
 .rulebook-section:last-child {
-  border-bottom: none;
   margin-bottom: 0;
 }
 
+.rulebook-section > h3,
 .rulebook-h2 {
   font-family: "Cinzel", "Georgia", serif;
   color: #6e2119;
-  font-size: 1.32rem;
-  margin: 0 0 0.75rem 0;
-  letter-spacing: 0.5px;
+  font-size: 1.28rem;
+  margin: 0 0 1.15rem 0;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid rgba(140, 86, 18, 0.28);
+  letter-spacing: 0.45px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .rulebook-h3 {
   font-family: "Cinzel", "Georgia", serif;
   color: #8c5612;
-  font-size: 1.02rem;
-  margin: 1rem 0 0.45rem 0;
+  font-size: 1.04rem;
+  margin: 1.2rem 0 0.55rem 0;
 }
 
+.rulebook-paragraph,
 .rulebook-p {
-  margin: 0.5rem 0;
-  font-size: 0.92rem;
+  margin: 0 0 1.15rem 0;
+  font-size: 0.95rem;
+  line-height: 1.78;
   color: #281b12;
 }
 
+.rulebook-bullet-list,
 .rulebook-list {
-  margin: 0.45rem 0 0.75rem 1.25rem;
+  list-style: none;
+  margin: 1.15rem 0 1.4rem 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
   color: #281b12;
 }
 
+.rulebook-bullet-item,
 .rulebook-list li {
-  margin-bottom: 0.38rem;
-  font-size: 0.9rem;
+  background: rgba(247, 239, 224, 0.74);
+  border: 1px solid rgba(181, 149, 107, 0.48);
+  border-left: 4px solid #8c5612;
+  border-radius: 6px;
+  padding: 0.78rem 1.05rem;
+  font-size: 0.92rem;
+  line-height: 1.68;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.rulebook-bullet-lead {
+  color: #6e2119;
+  font-weight: 800;
+  margin-right: 0.28rem;
+}
+
+/* Visual Icon & Symbol Galleries in Rulebook */
+.rulebook-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.55rem 0;
+}
+
+.rulebook-icon-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: linear-gradient(180deg, #fdfaf2 0%, #f5ecda 100%);
+  border: 1.5px solid #c6aa82;
+  border-radius: 8px;
+  padding: 0.85rem 0.95rem;
+  box-shadow: 0 2px 7px rgba(42, 24, 12, 0.08);
+}
+
+.rulebook-icon-visual {
+  flex: 0 0 58px;
+  min-height: 58px;
+  border-radius: 7px;
+  background: radial-gradient(circle at 50% 42%, #3a2316 0%, #22130b 100%);
+  border: 1.5px solid #b88b3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.rulebook-icon-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+.rulebook-icon-multi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.rulebook-icon-img-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.rulebook-symbol-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.24rem 0.45rem;
+  border-radius: 5px;
+  background: #fdfbf6;
+  border: 1.5px solid #8c5612;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.rulebook-symbol-pill-sell {
+  background: #ecfdf3;
+  border-color: #166534;
+}
+
+.rulebook-symbol-pill-sell .price-sym-sell {
+  font-size: 1.05rem;
+}
+
+.rulebook-symbol-pill-buy {
+  background: #fef2f2;
+  border-color: #991b1b;
+}
+
+.rulebook-symbol-pill-buy .price-sym-buy {
+  font-size: 1.05rem;
+}
+
+.rulebook-symbol-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.35rem;
+  border-radius: 4px;
+  background: #fdfbf6;
+  border: 1px solid #b88b3c;
+  color: #1e140c;
+  font-family: "Georgia", serif;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.rulebook-badge-cargo {
+  color: #3b2619;
+  letter-spacing: 0.5px;
+}
+
+.rulebook-badge-guard {
+  color: #991b1b;
+  letter-spacing: 0.5px;
+}
+
+.rulebook-icon-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.rulebook-icon-title {
+  font-family: "Cinzel", "Georgia", serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #6e2119;
+  line-height: 1.25;
+}
+
+.rulebook-icon-desc {
+  font-size: 0.82rem;
+  line-height: 1.52;
+  color: #2f2016;
 }
 
 .rulebook-callout {
@@ -3156,27 +3496,39 @@ button, input, select {
   border: 1px solid #cdb795;
   border-left: 4px solid #8c5612;
   border-radius: 5px;
-  padding: 0.75rem 1rem;
-  margin: 0.75rem 0;
-  font-size: 0.88rem;
+  padding: 0.9rem 1.15rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
   color: #231710;
   box-shadow: var(--bevel-sunken);
+}
+
+.rulebook-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.25rem 0 0.35rem 0;
 }
 
 .rulebook-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0.75rem 0;
-  font-size: 0.85rem;
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.58;
   background: #fbf7ee;
 }
 
 .rulebook-table th,
 .rulebook-table td {
   border: 1px solid #b09674;
-  padding: 0.45rem 0.65rem;
+  padding: 0.68rem 0.85rem;
   text-align: left;
+  vertical-align: top;
   color: #231710;
+}
+
+.rulebook-table tbody tr:nth-child(even) td {
+  background: rgba(239, 228, 205, 0.38);
 }
 
 .rulebook-table th {
@@ -3184,6 +3536,19 @@ button, input, select {
   color: #6e2119;
   font-family: "Cinzel", "Georgia", serif;
   font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .rulebook-content {
+    padding: 1.15rem 1rem;
+  }
+  .rulebook-section {
+    padding: 1.25rem 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+  .rulebook-icon-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mission-load-cargo-btn {
@@ -4600,6 +4965,25 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
+}
+
+.delayed-hover-tooltip {
+  position: fixed;
+  z-index: 4500;
+  pointer-events: none;
+  background: rgba(55, 58, 64, 0.96);
+  color: #e5e7eb;
+  border: 1px solid rgba(156, 163, 175, 0.45);
+  border-radius: 4px;
+  padding: 0.28rem 0.52rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  max-width: 320px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* Cost-Basis & Net Profit Strategy Badges */
@@ -6360,29 +6744,86 @@ button, input, select {
 }
 
 .cart-good-detail-showcase .cart-good-detail-card {
-  width: 224px;
+  width: 236px;
   max-width: 100%;
-  aspect-ratio: auto !important;
+  aspect-ratio: 4 / 4.65 !important;
   height: auto !important;
-  min-height: 280px;
+  min-height: 0 !important;
+  padding: 5px;
+  border-radius: 11px;
 }
 
 .cart-good-detail-showcase .cart-good-detail-card .market-good-card-inner {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 272px;
+  min-height: 0 !important;
+  height: 100%;
+  border-width: 6px !important;
+  border-radius: 8px;
+  padding: 0.36rem 0.4rem !important;
+  gap: 2px;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .slot-card-name {
+  font-size: 1.24rem !important;
+  line-height: 1.08 !important;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .slot-sub {
+  display: block !important;
+  font-size: 0.96rem !important;
+  line-height: 1.08 !important;
+  margin-top: 2px;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .good-combat-line {
+  display: block !important;
+  font-size: 0.94rem !important;
+  line-height: 1.08 !important;
+  margin-top: 2px;
 }
 
 .cart-good-detail-showcase .cart-good-detail-card .good-card-art-frame {
   display: block !important;
-  height: 112px;
+  flex: 1 1 0px !important;
+  height: auto !important;
+  min-height: 54px !important;
+  max-height: 84px !important;
+  margin: 3px 0 !important;
+  border-radius: 5px;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .good-blocks-row {
+  display: block !important;
+  font-size: 1.02rem !important;
+  letter-spacing: 2.5px !important;
+  margin: 2px 0 3px !important;
 }
 
 .cart-good-detail-showcase .cart-good-detail-card .good-price-table {
   display: table !important;
   width: 100%;
-  font-size: 0.72rem;
+  font-size: 0.92rem !important;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .good-price-table tr.scarcity-sym-row th {
+  font-size: 0.9rem !important;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .good-price-table th,
+.cart-good-detail-showcase .cart-good-detail-card .good-price-table td {
+  padding: 2px 0 !important;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .price-sym-sell,
+.cart-good-detail-showcase .cart-good-detail-card .price-sym-buy {
+  font-size: 0.98rem !important;
+}
+
+.cart-good-detail-showcase .cart-good-detail-card .mission-cargo-no-sell-note {
+  font-size: 0.92rem !important;
+  padding: 0.28rem 0.35rem !important;
 }
 
 .cart-good-detail-summary {

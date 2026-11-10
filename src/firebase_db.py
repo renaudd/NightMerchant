@@ -685,6 +685,8 @@ def update_user_profile(
         ):
             if b_key in settings:
                 curr_settings[b_key] = bool(settings[b_key])
+        if "hotkeys" in settings and isinstance(settings["hotkeys"], dict):
+            curr_settings["hotkeys"] = local_helpers.sanitize_hotkeys_dict(settings["hotkeys"])
 
     fb_uid = str(data.get("firebaseUid") or "")
     if new_password:

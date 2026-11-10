@@ -22,7 +22,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Senior patrician senator and consul ordinarius of 195 from the distinguished Tineii family, aligned with the old Aurelian order.",
+      "bio": "Senior patrician senator and consul ordinarius of 195 from the distinguished Tineii family.",
       "combatFormula": "1(R)+1",
       "friendlyFavor": [
         "Aurelius",
@@ -80,7 +80,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Celebrated Athenian sophist at Rome in Julia Domna's literary salon; commissioned by the Empress to write the Life of Apollonius of Tyana.",
+      "bio": "Commissioned by the Empress to write the Life of Apollonius of Tyana.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Domna",
@@ -110,7 +110,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Would serve as consul with Caracalla in 213. Emperor for three months in the Year of the Six Emperors (238).",
+      "bio": "Would serve as consul with Caracalla in 213. Emperor for three months in 238.",
       "combatFormula": "1(R)+2",
       "friendlyFavor": [
         "Caracalla",
@@ -210,7 +210,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Tutor of Caracalla and Geta. Romans were in outcry when soldiers sent to kill Cilo dragged him from his bath through the streets; Caracalla intervened—'Insult not my father, strike not my tutor!'—and had the arresting officer put to death.",
+      "bio": "Tutor of Caracalla and Geta.",
       "combatFormula": "2(R)",
       "friendlyFavor": [
         "Geta",
@@ -296,7 +296,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Mother of future emperor Elagabalus. The two were killed by the praetorian guard and discarded in the Tiber River in 222. Niece of Julia Domna.",
+      "bio": "Murdered alongside son Elagabalus by Praetorians and discarded in the Tiber in 222.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Domna"
@@ -375,7 +375,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Veteran consular general who built the desert forts of Roman Africa; sidelined in Rome by Caracalla until recalled to govern Asia in 217.",
+      "bio": "Built the desert forts of Roman Africa; sidelined by Caracalla until recalled to govern Asia in 217.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Aurelius",
@@ -421,7 +421,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Co-Emperor. Ambushed by Caracalla at a parley on December 26, 211. Died in the arms of their mother, Julia Domna.",
+      "bio": "Co-Emperor. Ambushed by Caracalla at a parley. Died in the arms of their mother, Julia Domna.",
       "combatFormula": "4(R)",
       "friendlyFavor": [
         "Geta",
@@ -511,7 +511,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "The apex of his career was serving as consul ordinarius in 219 with Emperor Elagabalus. Aligned with Aurelians.",
+      "bio": "Served as consul ordinarius in 219 with Emperor Elagabalus. Aligned with Aurelians.",
       "combatFormula": "2(R)-1",
       "friendlyFavor": [
         "Aurelius"
@@ -599,7 +599,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Renowned Roman antiquarian, physician-poet, and owner of a 62,000-scroll library; hacked to death at dinner during Caracalla's December 211 purge.",
+      "bio": "Renowned physician-poet. Owner of a 62,000-scroll library. Hacked to death at dinner during 211 purge.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Aurelius",
@@ -641,7 +641,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Served as consul in 227. Aligned with the Aurelians.",
+      "bio": "Served as consul in 227.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Aurelius",
@@ -678,7 +678,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Thought to have been the son of Thrasea Priscus, but served as consul in 214. Possibly a Plautilla sympathizer.",
+      "bio": "Thought to have been the son of Thrasea Priscus. Served as consul in 214.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -709,7 +709,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Patrician senator of ancient Republican lineage and consul ordinarius of 196; executed during Caracalla's purge as a suspected partisan of Geta.",
+      "bio": "Patrician senator of ancient Republican lineage; executed during Caracalla's purge as a suspected partisan of Geta.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Geta"
@@ -846,7 +846,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Bithynian senator, member of Julia Domna's court circle, and eyewitness historian whose eighty-book Roman History chronicles the terror of 211 A.D. firsthand.",
+      "bio": "Bithynian senator, member of Julia Domna's court circle, and eyewitness historian.",
       "combatFormula": "2(R)",
       "friendlyFavor": [
         "Domna",
@@ -885,7 +885,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Devoted imperial chamberlain and confidant of Septimius Severus who tried to restrain Bassianus's plots; ambushed and murdered by Caracalla's henchmen in 211.",
+      "bio": "Confidant of Septimius Severus who tried to restrain Caracalla's plots; ambushed and murdered by Caracalla's henchmen in 211.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Geta",
@@ -936,7 +936,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Son of the murdered Emperor Pertinax; executed in late 211 after fatally joking that Caracalla should add 'Geticus Maximus' to his victory titles for slaying Geta.",
+      "bio": "Son of Pertinax; executed for joking that Caracalla should add 'Geticus Maximus' to his victory titles for slaying Geta.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -974,7 +974,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Husband of Julia Maesa and prefect of Italy's imperial child-welfare endowments (praefectus alimentorum) under Caracalla. Loyal to Julia Domna.",
+      "bio": "Husband of Julia Maesa and prefect of imperial child-welfare endowments under Caracalla.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Domna"
@@ -1004,7 +1004,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Consul Ordinarius in 207. Executed in late 211 or early 212. Perhaps had been a friend of Geta's.",
+      "bio": "Consul Ordinarius in 207. Executed in late 211 or early 212.",
       "combatFormula": "2(R)",
       "friendlyFavor": [
         "Geta",
@@ -1048,7 +1048,7 @@
       "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Celebrated jurist and former Praetorian Prefect close to Julia Domna. When ordered to compose a legal defense for Geta's murder, he refused and was executed with an axe—prompting Caracalla to scold the executioner for not using a sword.",
+      "bio": "Celebrated jurist. Executed for refusing to compose a legal defense for Geta's murder.",
       "combatFormula": "1(R)+1",
       "friendlyFavor": [
         "Domna"
@@ -1161,7 +1161,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Intimate supporter of Caracalla. Elagabalus ordered that he be killed, but the centurion mistakenly expelled him from Rome instead.",
+      "bio": "Intimate supporter of Caracalla. Ordered killed by Elagabalus, but mistakenly expelled from Rome instead.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Caracalla"
@@ -1190,7 +1190,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Would serve as Consul ordinarius in 216, but may have been a Plautilla sympathizer.",
+      "bio": "Would serve as Consul ordinarius in 216.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Plautilla"
@@ -1223,7 +1223,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "A seer in Africa declared that Macrinus would seize imperial power. Fearing that he would be put to death over this prophecy, Macrinus conspired to assassinate Caracalla. Emperor from April 217-June 218.",
+      "bio": "Conspired to assassinate Caracalla after a seer prophesied that he would become Emperor. Emperor from 217-218.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "-Caracalla"
@@ -1293,7 +1293,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Great-grandson of Marcus Aurelius through Lucilla and Pompeianus; served as military tribune and young Aurelian senator under Caracalla before his consulship of 235.",
+      "bio": "Great-grandson of Marcus Aurelius; served as military tribune and senator under Caracalla.",
       "combatFormula": "X(R)+X",
       "friendlyFavor": [
         "Caracalla",
@@ -1328,7 +1328,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Watchmen of the city. Primarily firefighters. These ones are loyal to Plautilla.",
+      "bio": "Watchmen of the city. Primarily firefighters.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Plautilla"
@@ -1361,7 +1361,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Roman soldiers. These ones are loyal to Plautilla.",
+      "bio": "Roman soldiers.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Plautilla"
@@ -1390,7 +1390,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
-      "bio": "The Imperial Guard. These ones are loyal to Geta.",
+      "bio": "The Imperial Guard.",
       "combatFormula": "X(R)+X",
       "friendlyFavor": [
         "Geta",
@@ -1425,7 +1425,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
-      "bio": "The Imperial Guard. These ones are loyal to Julia Domna.",
+      "bio": "The Imperial Guard.",
       "combatFormula": "X+1",
       "friendlyFavor": [
         "Domna"
@@ -1454,7 +1454,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Roman police force used to counterbalance the Praetorian Guard. These ones are loyal to Plautilla.",
+      "bio": "Roman police force used to counterbalance the Praetorian Guard.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Plautilla"
@@ -1487,7 +1487,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
-      "bio": "Syrian equestrian married to Julia Soaemias and father of future emperor Elagabalus; served in Rome in 211 as acting Prefect (agens vice praefecti) overseeing both the Praetorian and Urban Prefectures.",
+      "bio": "Married to Julia Soaemias, father of future emperor Elagabalus; served as Prefect in Rome in 211.",
       "combatFormula": "X+1",
       "friendlyFavor": [
         "Domna",
@@ -1521,7 +1521,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "The Imperial Guard. These ones are loyal to Caracalla.",
+      "bio": "The Imperial Guard.",
       "combatFormula": "X(R)+X",
       "friendlyFavor": [
         "Caracalla",
@@ -1556,7 +1556,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Veteran equestrian commander and Co-Praetorian Prefect of Rome in 211 A.D., appointed alongside Valerius Patruinus at Septimius Severus's deathbed.",
+      "bio": "Veteran equestrian commander and Praetorian Prefect in 211. Appointed at Septimius Severus's deathbed.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Caracalla",
@@ -1632,7 +1632,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
-      "bio": "Curator of Via Flaminia. Responsible for Rome's food supply. Plausible Geta supporter.",
+      "bio": "Curator of Via Flaminia. Responsible for Rome's food supply.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Geta"
@@ -1677,7 +1677,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
-      "bio": "Septimius Severus's Italian legion stationed just outside Rome at Castra Albana. Fiercely loyal to Geta, they barred their camp gates against Caracalla after Geta's murder until bribed with vast donatives.",
+      "bio": "Barred their camp gates against Caracalla after Geta's murder until bribed with vast donatives.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Geta",
@@ -1836,16 +1836,16 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
-      "bio": "Initial assassin in the murder of Caracalla. Plausibly would have sided with Geta.",
+      "bio": "Initial assassin in the murder of Caracalla.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Geta",
-        "-Caracalla"
+        "Plautilla"
       ],
       "friendlyReward": "6(d)",
       "hostileFavor": [
         "-Geta",
-        "Caracalla"
+        "-Caracalla"
       ],
       "combatReward": "6(d)",
       "reactions": [
@@ -1904,7 +1904,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Suffect Consul in 231. Probably a military officer under Caracalla in 211.",
+      "bio": "Suffect Consul in 231.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Caracalla",
@@ -1939,7 +1939,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
-      "bio": "Consul ordinarius in 230. Plausibly would have sided with Geta.",
+      "bio": "Consul ordinarius in 230.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Geta",
@@ -1978,7 +1978,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Tribune assigned to the praetorian guard in 217. Pretended to come to Caracalla's rescue after he had been stabbed by Martialis. Instead slew him. Member of the gens Aurelia.",
+      "bio": "Tribune in 217. Pretended to come to Caracalla's rescue after he had been stabbed by Martialis. Instead slew him.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Geta",
@@ -2012,7 +2012,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Veteran provincial commander under the Severans. Later co-emperor alongside Balbinus for three months in 238, before Praetorians dragged both from the palace and hacked them to death in the streets.",
+      "bio": "Co-emperor for three months in 238. Dragged from the palace and hacked to death in the streets by Praetorians.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Caracalla",
@@ -2071,7 +2071,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Plautilla sympathizer. Consul in 232.",
+      "bio": "Consul in 232.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Plautilla"
@@ -2112,7 +2112,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Co-Praetorian Prefect in 211 A.D. alongside Maecius Laetus; executed during Caracalla's purge right after Geta's assassination.",
+      "bio": "Praetorian Prefect in 211; executed during Caracalla's purge right after Geta's assassination.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -2162,7 +2162,7 @@
       "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
-      "bio": "Married to Julia Mamaea. Father of Severus Alexander. Loyal to Julia Domna.",
+      "bio": "Married to Julia Mamaea. Father of Severus Alexander.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Domna",
@@ -2198,7 +2198,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Celebrated Alexandrian grammarian in Rome (not to be confused with Herodian the historian), whose treatises on Greek accentuation were prized by Marcus Aurelius and Julia Domna's learned circle.",
+      "bio": "Celebrated grammarian whose treatises on Greek accentuation were prized by Domna's learned circle.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Domna"
@@ -2231,7 +2231,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Would go on to become Emperor Gordian II. Aurelian aligned. Killed at the Battle of Carthage in 238.",
+      "bio": "Would become Emperor Gordian II for twenty-two days in 238. Killed at the Battle of Carthage.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Aurelius"
@@ -2280,7 +2280,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Famed Roman bestiarius celebrated for slaying twenty wild beasts in a single arena spectacle; veteran arena hunters still invoke his name in Geta's games.",
+      "bio": "Famed Roman bestiarius celebrated for slaying twenty wild beasts in a single arena spectacle.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Geta",
@@ -2314,7 +2314,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Notorious eunuch, street poisoner (pharmacopola), and palace informer exiled to an island by Severus, now skulking back into Rome to extort senators for Caracalla.",
+      "bio": "Notorious eunuch, street poisoner, and palace informer exiled to an island by Severus.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Caracalla",
@@ -2386,7 +2386,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Towering Thracian recruit of low birth famous for out-wrestling whole cohorts in camp games; later seized the purple in 235 A.D.",
+      "bio": "Thracian recruit, famous for out-wrestling whole cohorts in camp games; Emperor in 235.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Aurelius"
@@ -2444,7 +2444,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Legendary 'Robin Hood' bandit captain of 600 brigands who mocked Imperial Prefect Papinian across Italy for two years (205–207 A.D.) before being betrayed by his mistress and thrown to wild beasts.",
+      "bio": "Legendary 'Robin Hood' bandit captain of 600 brigands. Betrayed by his mistress and thrown to wild beasts.",
       "combatFormula": "2X(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -2479,7 +2479,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Son of the executed prefect Plautianus and brother of Fulvia Plautilla; operating covertly with loyalist retainers before Caracalla orders both siblings strangled.",
+      "bio": "Son of the executed prefect Plautianus and brother of Fulvia Plautilla. Caracalla orders both siblings strangled.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Plautilla",
@@ -2513,7 +2513,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Shrewd household operative raised in the Roman palace of Julia Domna and her sister Julia Maesa, quietly brokering midnight favors for the Syrian imperial women.",
+      "bio": "Shrewd palace operative.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Domna"
@@ -2542,7 +2542,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Former slave and Roman pantomime dancer who taught Bassianus to dance, leveraging imperial favor to corner provisions and shake down night merchants.",
+      "bio": "Former slave and Roman pantomime dancer who taught Caracalla to dance.",
       "combatFormula": "X-1",
       "friendlyFavor": [
         "Caracalla",
@@ -2584,7 +2584,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Consul suffectus in 224. Plausibly would have sided with Geta.",
+      "bio": "Consul suffectus in 224.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Geta"
@@ -2622,7 +2622,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Underground Egyptian astrologer (mathematicus) plying forbidden horoscopes in Rome's dark alleys—whispering prophecies that Caracalla's reign will end in blood.",
+      "bio": "Underground Egyptian astrologer.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Plautilla"
@@ -2651,7 +2651,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
-      "bio": "Hired blade from the pitch-black tenements of the Subura, retained secretly by anxious Aurelian senators to settle scores and intercept midnight couriers.",
+      "bio": "Hired blade.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Aurelius",
@@ -2685,7 +2685,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Celebrated Roman charioteer who crowned 782 Circus victories—marked for death by Caracalla solely because he raced for the rival faction cheered by Geta.",
+      "bio": "Celebrated Roman charioteer who crowned 782 Circus victories. Marked for death by Caracalla solely because he raced for Geta's preferred faction.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Geta"
@@ -2764,7 +2764,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Estranged wife of Caracalla. Though officially banished to the island of Lipara on paper after her father Plautianus's execution, street rumor holds she has slipped back into Rome by night in disguise to conspire against the regime.",
+      "bio": "Estranged wife of Caracalla. Banished to Lipara after her father's execution. Ordered strangled in 211.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Plautilla"
@@ -2813,7 +2813,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Egyptian equestrian confidant of Plautianus exiled to an island in 205 A.D.; maneuvering in the shadows until Caracalla recalled him in 212 as Rome's first Egyptian senator.",
+      "bio": "Egyptian equestrian confidant of Plautianus exiled to an island in 205.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Caracalla",
@@ -2848,7 +2848,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Legendary Syrian secutor recorded on his Sicilian tombstone (CIL X 7297): fought 34 bouts, won 21, refused the wooden rudis of freedom four times, and died in the arena at age 30 in the 2nd century—still idolized by Geta's arena-mad partisans.",
+      "bio": "Fought 34 bouts, won 21, refused the wooden rudis of freedom four times. Died in the arena at age 30.",
       "combatFormula": "X(R)+1",
       "friendlyFavor": [
         "Geta",
@@ -2879,7 +2879,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
-      "bio": "Conniving imperial freedman and childhood tutor to Bassianus who engineered the deadly palace trap against Plautianus—before Caracalla had him executed too in late 211.",
+      "bio": "Engineered the palace trap against Plautianus. Nonetheless executed by Caracalla in late 211.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Caracalla",
@@ -2922,7 +2922,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Nighttime brothel-keeper under the arches of the Circus Maximus who trades patrician secrets and demands fine stone for Plautilla's covert safe-houses.",
+      "bio": "Brothel-keeper.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Plautilla",
@@ -2956,7 +2956,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Syrian nocturnal courier entangled in the fall of Plautianus's household, fencing fine vintages through back-alley taverns to finance exiled conspirators.",
+      "bio": "Nocturnal courier.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Plautilla",
@@ -2998,7 +2998,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Minor imperial freedman-clerk in 211 Rome whose sharp nighttime observations of the brothers' divided palace Guard would fill Book IV of his Roman History.",
+      "bio": "Minor imperial freedman-clerk in 211. Author of Herodian's Roman History.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Plautilla",
@@ -3033,7 +3033,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
-      "bio": "Ruthless imperial freedman and palace enforcer operating at night between the Palatine and Praetorian camp, shaking down passing carts for hush money.",
+      "bio": "Palace enforcer.",
       "combatFormula": "X(R)-1",
       "friendlyFavor": [
         "Domna",
@@ -3083,7 +3083,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
-      "bio": "Riverfront smuggling gang operating along the Tiber warehouses below Mons Testaceus, fencing wine amphorae to fund Plautilla's underground network.",
+      "bio": "Riverfront smuggling gang.",
       "combatFormula": "X(R)",
       "friendlyFavor": [
         "Plautilla"
@@ -3125,7 +3125,7 @@
       "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
-      "bio": "This one works for Julia Domna.",
+      "bio": "Purveyor of fine contraband.",
       "combatFormula": "X",
       "friendlyFavor": [
         "Domna"

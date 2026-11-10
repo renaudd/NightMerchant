@@ -158,6 +158,19 @@ def mask_email(email: Optional[str]) -> str:
     return f"{masked_local}@{domain_part}"
 
 
+DEFAULT_HOTKEYS: Dict[str, str] = {
+    "moveToTile": "v",
+    "scoutTile": "s",
+    "scoutDeck": "d",
+    "endTurn": "e",
+    "closeModal": "x",
+    "toggleCartNav": "n",
+    "viewRomeBoard": "r",
+    "viewMarketBoard": "m",
+    "viewClimateBoard": "c",
+    "viewAllBoards": "b",
+}
+
 DEFAULT_USER_SETTINGS: Dict[str, Any] = {
     "defaultBoardView": "auto",
     "autoPromptCargoLoad": True,
@@ -167,17 +180,32 @@ DEFAULT_USER_SETTINGS: Dict[str, Any] = {
     "confirmEndTurn": False,
     "allowUndoByDefault": False,
     "skipMissionCompletionPopups": False,
+    "hotkeys": dict(DEFAULT_HOTKEYS),
 }
+
+
+def sanitize_hotkeys_dict(raw_hotkeys: Any) -> Dict[str, str]:
+    merged = dict(DEFAULT_HOTKEYS)
+    if isinstance(raw_hotkeys, dict):
+        for hk_name in DEFAULT_HOTKEYS:
+            val = raw_hotkeys.get(hk_name)
+            if isinstance(val, str):
+                clean_k = val.strip().lower()[:1]
+                merged[hk_name] = clean_k
+    return merged
 
 
 def _parse_user_settings(raw_json: Optional[str]) -> Dict[str, Any]:
     merged = dict(DEFAULT_USER_SETTINGS)
+    merged["hotkeys"] = dict(DEFAULT_HOTKEYS)
     if raw_json:
         try:
             parsed = json.loads(raw_json)
             if isinstance(parsed, dict):
                 for k in DEFAULT_USER_SETTINGS:
-                    if k in parsed:
+                    if k == "hotkeys":
+                        merged["hotkeys"] = sanitize_hotkeys_dict(parsed.get("hotkeys"))
+                    elif k in parsed:
                         merged[k] = parsed[k]
         except Exception:
             pass
@@ -954,6 +982,8 @@ def update_user_profile(
                     current_settings["allowUndoByDefault"] = bool(settings["allowUndoByDefault"])
                 if "skipMissionCompletionPopups" in settings:
                     current_settings["skipMissionCompletionPopups"] = bool(settings["skipMissionCompletionPopups"])
+                if "hotkeys" in settings and isinstance(settings["hotkeys"], dict):
+                    current_settings["hotkeys"] = sanitize_hotkeys_dict(settings["hotkeys"])
 
             pw_hash = row["password_hash"]
             pw_salt = row["password_salt"]

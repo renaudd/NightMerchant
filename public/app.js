@@ -703,7 +703,7 @@ function renderCartIconNode(colorName, extraClass = "", titleText = "") {
   const wrap = document.createElement("span");
   wrap.className = `cart-icon-wrap color-${safeColor}${extraClass ? " " + extraClass : ""}`;
   if (titleText) {
-    wrap.setAttribute("title", titleText);
+    wrap.setAttribute("data-hover-title", titleText);
   }
   const svgNS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNS, "svg");
@@ -900,7 +900,8 @@ function replaceDenariiTokens(rawStr) {
  * - (d) or <num>d with the Roman Denarius symbol (𐆖)
  * - (R), (r), ®, or 🅁 with an inline square-enclosed 'R' symbol (<span class="rome-die-box">R</span>)
  */
-const GAME_TOKEN_REGEX = /(\(R\)|\(r\)|®|🅁|𐆖)/g;
+const GAME_TOKEN_REGEX =
+  /(\(SELL_SYM\)|\(BUY_SYM\)|\(COMBAT_ICON\)|\(DECK_ICON\)|\(QUEST_ICON\)|\(R\)|\(r\)|®|🅁|𐆖)/g;
 
 /**
  * Builds an inline SVG vector Roman Denarius monogram (X with crossbar: 𐆖)
@@ -940,12 +941,183 @@ function createDenariusSvgNode(extraClass = "") {
 }
 
 /**
+ * Builds a bold Green +𐆖 symbol representing Sell (or Fence) price on Goods cards.
+ */
+function createSellPriceSymbolNode(isFence = false) {
+  const span = document.createElement("span");
+  span.className = "price-sym-sell";
+  span.setAttribute("data-hover-title", isFence ? "Fence Price (+d)" : "Sell Price (+d)");
+  span.setAttribute("aria-label", isFence ? "Fence Price" : "Sell Price");
+  span.appendChild(document.createTextNode("+"));
+  span.appendChild(createDenariusSvgNode("price-sym-denarius-svg"));
+  return span;
+}
+
+/**
+ * Builds an italic Red -𐆖 symbol representing Buy (or Hire) price on Goods & Guard cards.
+ */
+function createBuyPriceSymbolNode(isGuard = false) {
+  const span = document.createElement("span");
+  span.className = "price-sym-buy";
+  span.setAttribute("data-hover-title", isGuard ? "Hire Cost (-d)" : "Buy Price (-d)");
+  span.setAttribute("aria-label", isGuard ? "Hire Cost" : "Buy Price");
+  span.appendChild(document.createTextNode("-"));
+  span.appendChild(createDenariusSvgNode("price-sym-denarius-svg"));
+  return span;
+}
+
+/**
+ * Builds an inline Combat icon node using the game's crossed-gladius artwork (/assets/icons/combat.png).
+ */
+function createCombatInlineIconNode(extraClass = "") {
+  const img = document.createElement("img");
+  img.className = `enc-tier-inline-icon combat-tier-icon ${extraClass}`.trim();
+  img.src = resolveAssetUrl("/assets/icons/combat.png");
+  img.alt = "Combat";
+  img.setAttribute("data-hover-title", "Combat");
+  return img;
+}
+
+/**
+ * Builds an inline SVG vector icon representing a fanned Roman Deck of Cards.
+ */
+function createDeckOfCardsIconNode(extraClass = "") {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 22");
+  svg.setAttribute("class", `enc-tier-inline-svg deck-cards-icon-svg ${extraClass}`.trim());
+  svg.setAttribute("aria-label", "Deck of Cards");
+
+  const mkCardRect = (x, y, w, h, rot, fill, stroke) => {
+    const r = document.createElementNS(svgNS, "rect");
+    r.setAttribute("x", String(x));
+    r.setAttribute("y", String(y));
+    r.setAttribute("width", String(w));
+    r.setAttribute("height", String(h));
+    r.setAttribute("rx", "1.8");
+    r.setAttribute("fill", fill);
+    r.setAttribute("stroke", stroke);
+    r.setAttribute("stroke-width", "1.35");
+    if (rot) r.setAttribute("transform", rot);
+    return r;
+  };
+
+  // Back card (tilted left)
+  svg.appendChild(mkCardRect(3, 3, 11, 15, "rotate(-15 8.5 10.5)", "#b48a4e", "#2b190d"));
+  // Middle card (tilted slightly)
+  svg.appendChild(mkCardRect(6, 2.5, 11, 15, "rotate(-4 11.5 10)", "#d8be8a", "#2b190d"));
+  // Front card (tilted right, parchment with inner gold border & Roman diamond emblem)
+  svg.appendChild(mkCardRect(9, 3, 11, 15, "rotate(8 14.5 10.5)", "#fbf5e6", "#2b190d"));
+
+  const innerFrame = document.createElementNS(svgNS, "rect");
+  innerFrame.setAttribute("x", "10.8");
+  innerFrame.setAttribute("y", "4.8");
+  innerFrame.setAttribute("width", "7.4");
+  innerFrame.setAttribute("height", "11.4");
+  innerFrame.setAttribute("rx", "0.8");
+  innerFrame.setAttribute("fill", "none");
+  innerFrame.setAttribute("stroke", "#92400e");
+  innerFrame.setAttribute("stroke-width", "0.9");
+  innerFrame.setAttribute("transform", "rotate(8 14.5 10.5)");
+  svg.appendChild(innerFrame);
+
+  const emblem = document.createElementNS(svgNS, "polygon");
+  emblem.setAttribute("points", "14.5,7.4 16.7,10.5 14.5,13.6 12.3,10.5");
+  emblem.setAttribute("fill", "#991b1b");
+  emblem.setAttribute("stroke", "#78350f");
+  emblem.setAttribute("stroke-width", "0.65");
+  emblem.setAttribute("transform", "rotate(8 14.5 10.5)");
+  svg.appendChild(emblem);
+
+  return svg;
+}
+
+/**
+ * Builds an inline SVG vector icon representing an Ancient Roman Treasure Chest (Arca).
+ */
+function createAncientRomanChestIconNode(extraClass = "") {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 20");
+  svg.setAttribute("class", `enc-tier-inline-svg roman-chest-icon-svg ${extraClass}`.trim());
+  svg.setAttribute("aria-label", "Ancient Roman Treasure Chest");
+
+  // Lower oak & bronze-bound coffer body
+  const base = document.createElementNS(svgNS, "rect");
+  base.setAttribute("x", "2.5");
+  base.setAttribute("y", "8.5");
+  base.setAttribute("width", "19");
+  base.setAttribute("height", "9.5");
+  base.setAttribute("rx", "1.4");
+  base.setAttribute("fill", "#7c3f16");
+  base.setAttribute("stroke", "#241207");
+  base.setAttribute("stroke-width", "1.4");
+  svg.appendChild(base);
+
+  // Vaulted Roman chest lid
+  const lid = document.createElementNS(svgNS, "path");
+  lid.setAttribute("d", "M2.5 8.5 C2.5 4.2, 6 2.5, 12 2.5 C18 2.5, 21.5 4.2, 21.5 8.5 Z");
+  lid.setAttribute("fill", "#9a5220");
+  lid.setAttribute("stroke", "#241207");
+  lid.setAttribute("stroke-width", "1.4");
+  lid.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(lid);
+
+  // Gold/bronze horizontal rim band
+  const rim = document.createElementNS(svgNS, "rect");
+  rim.setAttribute("x", "2");
+  rim.setAttribute("y", "7.6");
+  rim.setAttribute("width", "20");
+  rim.setAttribute("height", "2.1");
+  rim.setAttribute("rx", "0.7");
+  rim.setAttribute("fill", "#eab308");
+  rim.setAttribute("stroke", "#241207");
+  rim.setAttribute("stroke-width", "1.1");
+  svg.appendChild(rim);
+
+  // Left and right bronze vertical strapping bands
+  for (const bx of [5.5, 16.7]) {
+    const strap = document.createElementNS(svgNS, "rect");
+    strap.setAttribute("x", String(bx));
+    strap.setAttribute("y", "3.4");
+    strap.setAttribute("width", "1.8");
+    strap.setAttribute("height", "14.4");
+    strap.setAttribute("fill", "#d97706");
+    strap.setAttribute("stroke", "#241207");
+    strap.setAttribute("stroke-width", "0.85");
+    svg.appendChild(strap);
+  }
+
+  // Central Roman scutiform lockplate
+  const lockPlate = document.createElementNS(svgNS, "rect");
+  lockPlate.setAttribute("x", "9.8");
+  lockPlate.setAttribute("y", "6.8");
+  lockPlate.setAttribute("width", "4.4");
+  lockPlate.setAttribute("height", "5.2");
+  lockPlate.setAttribute("rx", "1");
+  lockPlate.setAttribute("fill", "#fde047");
+  lockPlate.setAttribute("stroke", "#241207");
+  lockPlate.setAttribute("stroke-width", "1.1");
+  svg.appendChild(lockPlate);
+
+  // Keyhole
+  const keyhole = document.createElementNS(svgNS, "circle");
+  keyhole.setAttribute("cx", "12");
+  keyhole.setAttribute("cy", "9.3");
+  keyhole.setAttribute("r", "0.85");
+  keyhole.setAttribute("fill", "#241207");
+  svg.appendChild(keyhole);
+
+  return svg;
+}
+
+/**
  * Builds a Cart-in-a-Circle symbol representing a Move action.
  */
 function createMoveActionCircleNode(titleText = "Unused Move Action") {
   const wrap = document.createElement("span");
   wrap.className = "action-symbol-circle move-action-circle";
-  wrap.setAttribute("title", titleText);
+  wrap.setAttribute("data-hover-title", titleText);
 
   const svgNS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNS, "svg");
@@ -979,7 +1151,7 @@ function createMoveActionCircleNode(titleText = "Unused Move Action") {
 function createTransactionActionCircleNode(titleText = "Unused Transaction Action") {
   const wrap = document.createElement("span");
   wrap.className = "action-symbol-circle transaction-action-circle";
-  wrap.setAttribute("title", titleText);
+  wrap.setAttribute("data-hover-title", titleText);
   wrap.appendChild(createDenariusSvgNode());
   return wrap;
 }
@@ -993,6 +1165,11 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
   GAME_TOKEN_REGEX.lastIndex = 0;
   if (isOptionTag) {
     const optSafe = str
+      .replace(/\(SELL_SYM\)/g, "+d")
+      .replace(/\(BUY_SYM\)/g, "-d")
+      .replace(/\(COMBAT_ICON\)/g, "Combat")
+      .replace(/\(DECK_ICON\)/g, "Deck ")
+      .replace(/\(QUEST_ICON\)/g, "Quest")
       .replace(/(\(R\)|\(r\)|®)/g, "🅁")
       .replace(/𐆖(\d+)/g, "$1d")
       .replace(/𐆖/g, "d");
@@ -1002,16 +1179,26 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
   const parts = str.split(GAME_TOKEN_REGEX);
   for (const part of parts) {
     if (!part) continue;
-    if (part === "(R)" || part === "(r)" || part === "®" || part === "🅁") {
+    if (part === "(SELL_SYM)") {
+      parentNode.appendChild(createSellPriceSymbolNode(false));
+    } else if (part === "(BUY_SYM)") {
+      parentNode.appendChild(createBuyPriceSymbolNode(false));
+    } else if (part === "(COMBAT_ICON)") {
+      parentNode.appendChild(createCombatInlineIconNode());
+    } else if (part === "(DECK_ICON)") {
+      parentNode.appendChild(createDeckOfCardsIconNode());
+    } else if (part === "(QUEST_ICON)") {
+      parentNode.appendChild(createAncientRomanChestIconNode());
+    } else if (part === "(R)" || part === "(r)" || part === "®" || part === "🅁") {
       const dieBox = document.createElement("span");
       dieBox.className = "rome-die-box";
-      dieBox.setAttribute("title", "Rome Die");
+      dieBox.setAttribute("data-hover-title", "Rome Die");
       dieBox.textContent = "R";
       parentNode.appendChild(dieBox);
     } else if (part === DENARIUS_SYM) {
       const denSpan = document.createElement("span");
       denSpan.className = "denarius-sym";
-      denSpan.setAttribute("title", "Denarii");
+      denSpan.setAttribute("data-hover-title", "Denarii");
       denSpan.setAttribute("aria-label", "Denarii");
       denSpan.appendChild(createDenariusSvgNode());
       parentNode.appendChild(denSpan);
@@ -1060,8 +1247,10 @@ function el(tag, attrs = {}, ...children) {
     } else if (k === "src" || k === "href") {
       node.setAttribute(k, resolveAssetUrl(String(v)));
     } else if (k === "title") {
-      const safeTitle = String(v).replace(/𐆖(\d+)/g, "$1d").replace(/𐆖/g, "d");
-      node.setAttribute("title", safeTitle);
+      const safeTitle = String(v).replace(/𐆖(\d+)/g, "$1d").replace(/𐆖/g, "d").trim();
+      if (safeTitle) {
+        node.setAttribute("data-hover-title", safeTitle);
+      }
     } else {
       node.setAttribute(k, String(v));
     }
@@ -1241,12 +1430,7 @@ function renderDynamicTileCardNode(tile, coord, mode = "board") {
       el(
         "div",
         {
-          className: "dyn-tile-buys-banner clickable-forum-sells",
-          title: `Click to open the Ostia Port Market Board (${buys.map((b) => b.category).join(", ")})`,
-          onClick: (e) => {
-            e.stopPropagation();
-            navigateToMarketBoardForCategory(buys[0].category);
-          },
+          className: "dyn-tile-buys-banner",
         },
         "Sells: ",
         ...buys.map((b, idx) => {
@@ -1833,10 +2017,12 @@ function renderPhysicalMissionCardNode(m, opts = {}) {
     );
   }
 
+  const missionHoverTitle = `${m.name || "Mission"}: ${formatMissionObjective(m)} — Reward: ${m.rewardText || "Special Reward"}`;
   const cardFace = el(
     "div",
     {
       className: `phys-card phys-mission-card ${selectable ? "selectable" : ""} ${selected ? "selected-discard" : ""}`,
+      title: missionHoverTitle,
       onClick,
     },
     selected ? el("div", { className: "phys-card-discard-ribbon", text: "DISCARD" }) : null,
@@ -2124,10 +2310,12 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
     footerItems.push(el("span", { text: "® CP ▲" }));
   }
 
+  const influenceHoverTitle = `${c.name || "Influence"}: ${getInfluenceCardEffectText(c)}`;
   const cardFace = el(
     "div",
     {
       className: `phys-card phys-influence-card ${selectable ? "selectable" : ""} ${selected ? "selected-discard" : ""}`,
+      title: influenceHoverTitle,
       onClick,
     },
     selected ? el("div", { className: "phys-card-discard-ribbon", text: "DISCARD" }) : null,
@@ -2182,17 +2370,17 @@ function formatReactionCondition(cond) {
 function formatReactionTypeSymbol(rOrType) {
   if (!rOrType) return "!";
   const t = typeof rOrType === "object" ? String(rOrType.type || rOrType.effect || "") : String(rOrType);
-  if (t === "combat") return "⚔️";
+  if (t === "combat") return "(COMBAT_ICON)";
   if (t === "demand_strict") return "!!";
-  if (t === "mission_strict") return "📦!!";
-  if (t === "mission_request") return "📦!";
-  if (t === "mission_offer" || t === "mission_bonus") return "📦?";
-  if (t === "deck_quest_demand") return "🃏📦!";
-  if (t === "deck_quest_offer") return "🃏📦?";
+  if (t === "mission_strict") return "(QUEST_ICON)!!";
+  if (t === "mission_request") return "(QUEST_ICON)!";
+  if (t === "mission_offer" || t === "mission_bonus") return "(QUEST_ICON)?";
+  if (t === "deck_quest_demand") return "(DECK_ICON)(QUEST_ICON)!";
+  if (t === "deck_quest_offer") return "(DECK_ICON)(QUEST_ICON)?";
   if (t === "demand") return "!";
   if (t === "offer" || t === "quest_optional") return "?";
   if (t === "cash_reward") {
-    return typeof rOrType === "object" && rOrType.reward ? String(rOrType.reward) : "💰";
+    return typeof rOrType === "object" && rOrType.reward ? String(rOrType.reward) : "(d)";
   }
   return t;
 }
@@ -2361,15 +2549,19 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
           effect: formatReactionTypeSymbol(r),
         }))
       : [
-          { cond: "≤ -1", effect: "⚔️" },
+          { cond: "≤ -1", effect: "(COMBAT_ICON)" },
           { cond: "≥ 0", effect: formatReactionTypeSymbol(pend ? pend.reaction || pend.reactionType : "demand") },
         ];
   const matchedIdx = pend && typeof pend.matchedTierIndex === "number" ? pend.matchedTierIndex : -1;
 
   const tierCells = tiers.map((t, idx) => {
     const isActive = idx === matchedIdx;
-    const eff = String(t.effect || "");
-    const isCombatTier = eff.includes("⚔") || eff.toLowerCase() === "combat";
+    const rawEff = String(t.effect || "");
+    const eff = rawEff
+      .replace(/⚔️|⚔/g, "(COMBAT_ICON)")
+      .replace(/🃏/g, "(DECK_ICON)")
+      .replace(/📦/g, "(QUEST_ICON)");
+    const isCombatTier = rawEff.includes("⚔") || eff.includes("(COMBAT_ICON)") || rawEff.toLowerCase() === "combat";
     const clickCls =
       interactive && isCombatTier
         ? canFight
@@ -2420,8 +2612,8 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
     defaultActionText = "?: Accept the top card of the Missiones deck (unseen) as a Mission.";
   } else if (!activeReactionType && card.actionText && (cardHasDeckQuestDemand || cardHasDeckQuestOffer)) {
     const dqNote = cardHasDeckQuestDemand
-      ? "🃏📦!: Accept top Missiones card (unseen)."
-      : "🃏📦?: Optional top Missiones card (unseen).";
+      ? "(DECK_ICON)(QUEST_ICON)!: Accept top Missiones card (unseen)."
+      : "(DECK_ICON)(QUEST_ICON)?: Optional top Missiones card (unseen).";
     defaultActionText = `${card.actionText} • ${dqNote}`;
   } else {
     defaultActionText =
@@ -2550,7 +2742,11 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
                     marginBottom: "4px",
                   },
                 },
-                el("span", { text: hasDeckQuestDemand ? "🃏📦! Deck Quest Demand" : "🃏📦? Optional Deck Quest Offer" })
+                el("span", {
+                  text: hasDeckQuestDemand
+                    ? "(DECK_ICON)(QUEST_ICON)! Deck Quest Demand"
+                    : "(DECK_ICON)(QUEST_ICON)? Optional Deck Quest Offer",
+                })
               )
             : null,
           el("div", {
@@ -2580,7 +2776,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
           interactive
             ? el("span", {
                 className: `enc-click-hint-pill ${canFight ? "combat" : "locked"}`,
-                text: canFight ? "⚔️ Click to Fight" : "🔒 No Combat",
+                text: canFight ? "(COMBAT_ICON) Click to Fight" : "🔒 No Combat",
               })
             : null
         ),
@@ -2610,13 +2806,16 @@ function showToast(message, isError = false) {
 }
 
 function closeModal() {
+  hideRomeHoverTooltip();
   const root = document.getElementById("modal-root");
   if (root) root.replaceChildren();
 }
 
 function showModal(titleText, bodyNode, options = {}) {
+  hideRomeHoverTooltip();
   const root = document.getElementById("modal-root");
   if (!root) return;
+  const hasBoxClick = Boolean(options && typeof options.onBoxClick === "function");
   const backdrop = el(
     "div",
     {
@@ -2627,7 +2826,18 @@ function showModal(titleText, bodyNode, options = {}) {
     },
     el(
       "div",
-      { className: options && options.wide ? "modal-box modal-box-wide" : "modal-box" },
+      {
+        className: options && options.wide ? "modal-box modal-box-wide" : "modal-box",
+        style: hasBoxClick ? { cursor: "pointer" } : undefined,
+        onClick: hasBoxClick
+          ? (e) => {
+              if (e.target && typeof e.target.closest === "function" && e.target.closest("[data-modal-close]")) {
+                return;
+              }
+              options.onBoxClick(e);
+            }
+          : undefined,
+      },
       el(
         "div",
         { className: "panel-title" },
@@ -2636,9 +2846,13 @@ function showModal(titleText, bodyNode, options = {}) {
           id: "modal-close-btn",
           type: "button",
           className: "btn btn-sm",
-          title: "Close window (Hotkey: Esc or X)",
-          text: "Close [Esc] ✕",
-          onClick: closeModal,
+          "data-modal-close": "1",
+          title: "Close window",
+          text: "Close ✕",
+          onClick: (e) => {
+            e.stopPropagation();
+            closeModal();
+          },
         })
       ),
       bodyNode
@@ -5792,31 +6006,23 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
           : "↩️ Undo Turn",
         onClick: () => sendGameAction({ type: "request_undo_turn" }),
       }),
-      gs.diceEvents && gs.diceEvents.length > 0
-        ? el("button", {
-            className: "btn btn-sm",
-            style: { borderColor: "#8c5612", color: "#6e2119" },
-            text: "🎲 Replay Last Roll",
-            onClick: () => replayLastDiceRoll(),
-          })
-        : null,
       ...["auto", "rome", "market", "climate", "both"].map((mode) =>
         el("button", {
           className: `btn btn-sm ${appState.boardViewMode === mode ? "btn-primary" : ""}`,
           title:
             mode === "climate"
-              ? "Switch to the 6×3 Roman Senate Political Climate Board (Hotkey: C)"
+              ? "Switch to the 6×3 Roman Senate Political Climate Board"
               : undefined,
           text:
             mode === "auto"
               ? "Auto View"
               : mode === "rome"
-              ? "🗺️ Rome 211 A.D. Board (R)"
+              ? "🗺️ Rome 211 A.D. Board"
               : mode === "market"
-              ? "⚓ Ostia Port Market (M)"
+              ? "⚓ Ostia Port Market"
               : mode === "climate"
-              ? `🏛️ Political Climate (${activeClimateCount}) (C)`
-              : "All Boards (B)",
+              ? `🏛️ Political Climate (${activeClimateCount})`
+              : "All Boards",
           onClick: () => {
             appState.boardViewMode = mode;
             renderApp();
@@ -5864,8 +6070,8 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
         el("button", {
           type: "button",
           className: "btn btn-sm",
-          title: "Scout a neighborhood tile or card deck before selecting your Via entrance (Hotkey: S for Tile, D for Deck)",
-          text: "👁️ Scout [S / D]",
+          title: "Scout a neighborhood tile or card deck before selecting your Via entrance",
+          text: "👁️ Scout",
           disabled: viewer.scoutedThisTurn,
           onClick: () => openScoutModal(gs, viewer),
         })
@@ -5924,8 +6130,8 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
         el("button", {
           type: "button",
           className: "btn btn-sm",
-          title: "Scout a neighborhood tile or card deck at the end of your turn (Hotkey: S for Tile, D for Deck)",
-          text: "👁️ Scout [S / D]",
+          title: "Scout a neighborhood tile or card deck at the end of your turn",
+          text: "👁️ Scout",
           disabled: viewer.scoutedThisTurn,
           onClick: () => openScoutModal(gs, viewer),
         }),
@@ -5939,8 +6145,8 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
         el("button", {
           type: "button",
           className: "btn btn-sm btn-crimson",
-          title: "End your hourly turn (Hotkey: E)",
-          text: "End Turn [E] ⏭️",
+          title: "End your hourly turn",
+          text: "End Turn ⏭️",
           onClick: () => sendGameAction({ type: "delivery_end_turn" }),
         })
       );
@@ -5987,7 +6193,7 @@ function renderActiveClimateStrip(gs, viewer) {
   return el(
     "div",
     { className: "active-climate-strip" },
-    el("span", { className: "active-climate-strip-label", text: "🏛️ Enacted Political Climate:" }),
+    el("span", { className: "active-climate-strip-label", text: "🏛️ Enacted Decree:" }),
     el(
       "div",
       { className: "active-climate-pills" },
@@ -6029,27 +6235,27 @@ function buildPoliticalClimateExplainerNode(_gs) {
     el(
       "p",
       { className: "climate-explainer-text" },
-      "When you’re done selecting the influence and mission cards you’d like to keep, place your Senator pawn on one of the squares of the Political Climate table. Only one Senator can be placed in each column."
+      "When you’re done selecting the influence and mission cards you’d like to keep, place your Senator pawn on one of the Decree squares of the Political Climate table. Only one Senator can be placed in each column."
     ),
     el(
       "p",
       { className: "climate-explainer-text" },
-      "The options on the Political Climate table set rules that will grant additional bonuses for mission completion or faction alignment at the end of the game (rows 1 & 2) or that add new rules to the game (row 3)."
+      "The decrees on the Political Climate table set rules that will grant bonuses for mission completion or faction alignment at the end of the game (rows 1 & 2) or change the gameplay (row 3)."
     ),
     el(
       "p",
       { className: "climate-explainer-text" },
-      "Row 1 rules give players bonuses or penalties based on which player has the most missions completed or most/least favor with a given faction; note that ties are decided by combat between the players."
+      "Row 1 rules reward or penalize players based on superlatives (most missions completed, most/least favor with a given faction). Note that ties are decided by combat between the players."
     ),
     el(
       "p",
       { className: "climate-explainer-text" },
-      "Row 2 rules give players bonuses or penalties for each unit of faction loyalty/mission completion being measured."
+      "Row 2 rules reward or penalize players for each unit of faction loyalty/mission completion being measured."
     ),
     el(
       "p",
       { className: "climate-explainer-text" },
-      "Row 3 rules change the faction loyalty or mission completion dynamics in the game."
+      "Row 3 rules change the in-game faction loyalty or mission completion mechanics."
     ),
     el(
       "p",
@@ -7487,11 +7693,6 @@ function renderPendingEncounterPanelCore(gs, viewer) {
           text: `⚔️ Combat Dice Rolled: ${encPlayer.name} (${pCP} CP) vs. ${card.name} (${oCP} CP) — ${statusLabel}${
             isOtherPlayerEncounter ? " [Your Intervention Window]" : ""
           }`,
-        }),
-        el("button", {
-          className: "btn btn-sm",
-          text: "🎲 View 3D Dice Roll",
-          onClick: () => replayLastDiceRoll(),
         })
       ),
       el(
@@ -7710,11 +7911,6 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               : `🎲 ${encPlayer.name}'s ${card.name || "Encounter"} Roll: Rolled [${rom}]${
                   isOtherPlayerEncounter ? " [Your Intervention Window]" : ""
                 }`,
-        }),
-        el("button", {
-          className: "btn btn-sm",
-          text: "🎲 View 3D Dice Roll",
-          onClick: () => replayLastDiceRoll(),
         })
       ),
       el(
@@ -7819,12 +8015,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       el(
         "h3",
         { className: "panel-title" },
-        el("span", { text: titleStr }),
-        el("button", {
-          className: "btn btn-sm",
-          text: "🎲 View 3D Dice Roll",
-          onClick: () => replayLastDiceRoll(),
-        })
+        el("span", { text: titleStr })
       ),
       el(
         "div",
@@ -7999,7 +8190,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         },
       },
       el("strong", { text: "⚔️ Hostile Encounter (Mandatory Combat): " }),
-      "Your Faction Favor places you in the Combat tier (⚔️). You may play any Pre-Roll Combat Influence cards below before clicking the Combat section on the Encounter card to roll!"
+      "Your Faction Favor places you in the Combat tier. You may play any Pre-Roll Combat Influence cards below before clicking the Combat section on the Encounter card to roll!"
     );
   } else if (canFight) {
     const reasonLabel =
@@ -8023,7 +8214,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         },
       },
       el("strong", { text: `⚔️ Combat Available (${reasonLabel}): ` }),
-      "Click the Middle Action/Tier box on the card to Comply/Accept, OR play Pre-Roll Influence cards below and click the Bottom Combat Bar / ⚔️ icon on the card to Fight!"
+      "Click the Middle Action/Tier box on the card to Comply/Accept, OR play Pre-Roll Influence cards below and click the Bottom Combat Bar on the card to Fight!"
     );
   } else {
     combatRuleBanner = el(
@@ -8154,8 +8345,8 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               el("div", {
                 style: { fontSize: "0.8rem", marginBottom: "0.25rem", color: canFight ? "#b91c1c" : "var(--text-muted)", fontWeight: canFight ? "600" : "400" },
                 text: canFight
-                  ? "• Click the ⚔️ Combat Formula or Bottom Combat Bar on the card → Initiate Combat!"
-                  : "• ⚔️ Combat Section Locked (Combat is not threatened; requires Combat Mission or 'Casus Belli')",
+                  ? "• Click the Combat Formula or Bottom Combat Bar on the card → Initiate Combat!"
+                  : "• Combat Section Locked (Combat is not threatened; requires Combat Mission or 'Casus Belli')",
               })
             )
           : null,
@@ -8168,10 +8359,10 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                 text: (() => {
                   const rType = pend.reaction || pend.reactionType || "";
                   if (rType === "deck_quest_demand") {
-                    return "🃏📦! Accept Top Missiones Card (Unseen)";
+                    return "(DECK_ICON)(QUEST_ICON)! Accept Top Missiones Card (Unseen)";
                   }
                   if (rType === "deck_quest_offer") {
-                    return "🃏📦? Accept Top Missiones Card (Unseen)";
+                    return "(DECK_ICON)(QUEST_ICON)? Accept Top Missiones Card (Unseen)";
                   }
                   if (
                     (rType === "mission_strict" ||
@@ -8653,7 +8844,11 @@ function renderGoodPriceTableNode(card, trackName, colIndex, isPriceIdxDirect = 
         ? el(
             "tr",
             {},
-            el("th", { className: "price-row-label", text: card.isMissionCargo ? "Fence" : "Sell" }),
+            el(
+              "th",
+              { className: "price-row-label price-row-label-sell" },
+              createSellPriceSymbolNode(Boolean(card.isMissionCargo))
+            ),
             ...sellArr.slice(0, 5).map((val, idx) =>
               el("td", {
                 className: `${idx === 2 ? "price-eq-col" : ""} ${idx === activePriceIdx ? "active-price-cell" : ""}`,
@@ -8666,7 +8861,11 @@ function renderGoodPriceTableNode(card, trackName, colIndex, isPriceIdxDirect = 
         ? el(
             "tr",
             {},
-            el("th", { className: "price-row-label", text: trackName === "Guards" ? "Hire" : "Buy" }),
+            el(
+              "th",
+              { className: "price-row-label price-row-label-buy" },
+              createBuyPriceSymbolNode(trackName === "Guards")
+            ),
             ...buyArr.slice(0, 5).map((val, idx) =>
               el("td", {
                 className: `${idx === 2 ? "price-eq-col" : ""} ${idx === activePriceIdx ? "active-price-cell" : ""}`,
@@ -8743,7 +8942,7 @@ function openCartGoodDetailModal(item, gs, viewer, readOnly = false) {
         renderGoodCardArtNode(item, trackName),
         el(
           "div",
-          {},
+          { className: "good-card-footer" },
           el("div", {
             className: "good-blocks-row",
             title: `Weight: ${blocksCount}■ of Cart Capacity`,
@@ -8936,7 +9135,7 @@ function openCartGuardDetailModal(g) {
         renderGoodCardArtNode(g, "Guards"),
         el(
           "div",
-          {},
+          { className: "good-card-footer" },
           el("div", { className: "good-blocks-row", title: `Guard Seat: ${guardsCount}▲`, text: blocksSymbols }),
           buyArr ? renderGoodPriceTableNode(g, "Guards", 2, false) : null
         )
@@ -9054,7 +9253,7 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
       renderGoodCardArtNode(item, trackName),
       el(
         "div",
-        {},
+        { className: "good-card-footer" },
         el("div", { className: "good-blocks-row", title: `Weight: ${blocksCount}■ of Cart Capacity`, text: blocksSymbols }),
         hasSellTable
           ? renderGoodPriceTableNode(item, trackName, activeScarcityIdx, true)
@@ -9198,7 +9397,7 @@ function renderHiredGuardPhysicalCardNode(g) {
       renderGoodCardArtNode(g, "Guards"),
       el(
         "div",
-        {},
+        { className: "good-card-footer" },
         el("div", { className: "good-blocks-row", title: `Guard Seat: ${guardsCount}▲`, text: blocksSymbols }),
         hasHireTable ? renderGoodPriceTableNode(g, "Guards", 2, true) : null
       )
@@ -10063,7 +10262,18 @@ function renderOstiaMarketBoard(gs, viewer) {
               { className: "good-card-unit" },
               el(
                 "div",
-                { className: `market-good-card ${trackClass} ${canForumBuy ? "forum-buyable-card" : ""}` },
+                {
+                  className: `market-good-card ${trackClass} ${canForumBuy ? "forum-buyable-card" : ""}`,
+                  style: { cursor: "pointer" },
+                  title: `Click to view ${card.name} up close`,
+                  onClick: () => {
+                    if (isGuardTrack) {
+                      openCartGuardDetailModal(card);
+                    } else {
+                      openCartGoodDetailModal(Object.assign({ track: trackName }, card), gs, viewer, true);
+                    }
+                  },
+                },
                 el(
                   "div",
                   { className: "market-good-card-inner" },
@@ -10077,7 +10287,7 @@ function renderOstiaMarketBoard(gs, viewer) {
                   renderGoodCardArtNode(card, trackName, false),
                   el(
                     "div",
-                    {},
+                    { className: "good-card-footer" },
                     el("div", { className: "good-blocks-row", text: blocksSymbols }),
                     renderGoodPriceTableNode(card, trackName, col)
                   )
@@ -10520,108 +10730,27 @@ function renderRomeNightBoard(gs, viewer) {
           : `Unrevealed Stack (${unrevealedCount} face-down tiles)`,
         isCurrent ? "Your Cart is here" : null,
         isReachableMove ? `Reachable Move (${reachableDirsByCell[coord]})` : null,
-        "Click for Move, Scout, or End Turn options",
+        "Click for Detailed Tile View",
       ].filter(Boolean);
       const cellHelperTitle = cellTitleParts.join(" • ");
 
-      const handleCellClick = (e) => {
+      const handleCellClick = () => {
         hideRomeHoverTooltip();
-        if (isMyDeliveryTurn && viewer.position && viewer.movesRemaining > 0 && isPlayerOnPerimeter && isCellPerimeter && e && e.currentTarget) {
-          const rect = e.currentTarget.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            const relX = (e.clientX - rect.left) / rect.width;
-            const relY = (e.clientY - rect.top) / rect.height;
-            const edgeThreshold = isCurrent ? 0.34 : 0.22;
-            const clickedNorthEdge = r === "1" && relY <= edgeThreshold;
-            const clickedSouthEdge = r === "6" && relY >= 1 - edgeThreshold;
-            const clickedWestEdge = c === "A" && relX <= edgeThreshold;
-            const clickedEastEdge = c === "F" && relX >= 1 - edgeThreshold;
-            if (clickedNorthEdge || clickedSouthEdge || clickedWestEdge || clickedEastEdge) {
-              if (triggerPerimeterMapEdgeExit(e)) {
-                return;
-              }
-            }
-          }
-        }
-
         appState.inspectedCell = coord;
         renderApp();
-        openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, {
+        const moveOpts = {
           moveDir: reachableDirsByCell[coord] || null,
           adjInfo: adjacentDirInfoByCell[coord] || null,
-        });
+        };
+        openFaceUpTileUpCloseModal(gs, viewer, coord, cell, rev || scoutedTopTile, moveOpts);
       };
 
-      const handleCellMouseEnter = (e) => {
-        const cellEl = e.currentTarget;
+      const handleCellMouseEnter = () => {
         document.querySelectorAll(".compass-btn.is-hovered-dir").forEach((b) => b.classList.remove("is-hovered-dir"));
-        document.querySelectorAll(".edge-hover-preview-pill").forEach((p) => p.remove());
-
-        let crossingSummary = null;
         const adjInfo = adjacentDirInfoByCell[coord];
         if (adjInfo && viewer.position && viewer.position !== coord) {
           const compassBtn = document.querySelector(`.compass-btn[data-compass-dir="${adjInfo.dir}"]`);
           if (compassBtn) compassBtn.classList.add("is-hovered-dir");
-          const riverBlocked = Boolean(adjInfo.blockedByRiver) || isTiberCrossingBlocked(viewer.position, coord);
-          const bridgeName = adjInfo.bridge || getTiberBridgeName(viewer.position, coord);
-          const shortcutActive = Boolean(viewer.turnEffects && viewer.turnEffects.shortcut);
-          const isPassable = !riverBlocked && (adjInfo.passable || shortcutActive);
-          const tollAmt = parseTollAmount(adjInfo.edge);
-          const isHazard =
-            !riverBlocked &&
-            !shortcutActive &&
-            Boolean(adjInfo.edge && !["green", "red", "None"].includes(String(adjInfo.edge)));
-          let pillText = "";
-          if (riverBlocked) {
-            pillText = `🌊 Tiber Impassable (${adjInfo.dir})`;
-            crossingSummary = { text: `🌊 Blocked by Tiber River (${viewer.position} → ${coord})`, color: "#fca5a5" };
-          } else if (!isPassable) {
-            pillText = `⛔ Blocked (${adjInfo.dir})`;
-            crossingSummary = { text: `⛔ Red Barricade (${viewer.position} → ${coord})`, color: "#fca5a5" };
-          } else if (shortcutActive && !adjInfo.passable) {
-            pillText = `✨ Shortcut (${adjInfo.dir})`;
-            crossingSummary = { text: `✨ Shortcut Bypasses Barricade (${adjInfo.dir})`, color: "#86efac" };
-          } else if (tollAmt > 0 && !shortcutActive) {
-            pillText = `${bridgeName ? "🌉 " : ""}Toll ${tollAmt}(d) (${adjInfo.dir})`;
-            crossingSummary = {
-              text: `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Road Toll: 𐆖${tollAmt} (${adjInfo.dir})`,
-              color: "#fde68a",
-            };
-          } else if (isHazard) {
-            const hLabel = formatEdgeLabel(adjInfo.edge);
-            pillText = `⚔️ ${hLabel} (${adjInfo.dir})`;
-            crossingSummary = {
-              text: `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${hLabel}`,
-              color: "#fde68a",
-            };
-          } else {
-            pillText = bridgeName ? `🌉 ${bridgeName} (${adjInfo.dir})` : `✓ Open Road (${adjInfo.dir})`;
-            crossingSummary = {
-              text: bridgeName ? `🌉 Cross ${bridgeName} — Open Street` : `✓ Open Street (${viewer.position} → ${coord})`,
-              color: "#86efac",
-            };
-          }
-          if (cellEl && pillText) {
-            const pillNode = el("div", {
-              className: `edge-hover-preview-pill ${!isPassable ? "is-blocked" : isHazard || tollAmt > 0 ? "is-hazard" : ""}`,
-              text: pillText,
-            });
-            cellEl.appendChild(pillNode);
-          }
-        }
-
-        const previewTile = rev || scoutedTopTile;
-        if (previewTile) {
-          showRomeHoverTooltip(coord, cell, previewTile, Boolean(!rev && scoutedTopTile), crossingSummary, e.clientX, e.clientY);
-        } else {
-          showRomeUnrevealedCellHoverTooltip(coord, cell, unrevealedCount, crossingSummary, e.clientX, e.clientY);
-        }
-      };
-
-      const handleCellMouseMove = (e) => {
-        const existingTip = document.getElementById("rome-hover-tooltip");
-        if (existingTip) {
-          positionRomeHoverTooltip(existingTip, e.clientX, e.clientY);
         }
       };
 
@@ -10696,8 +10825,9 @@ function renderRomeNightBoard(gs, viewer) {
             title: cellHelperTitle,
             onClick: handleCellClick,
             onMouseEnter: handleCellMouseEnter,
-            onMouseMove: handleCellMouseMove,
-            onMouseLeave: () => hideRomeHoverTooltip(),
+            onMouseLeave: () => {
+              document.querySelectorAll(".compass-btn.is-hovered-dir").forEach((b) => b.classList.remove("is-hovered-dir"));
+            },
           },
           rev ? renderDynamicTileCardNode(rev, coord, "board") : null,
           !rev && scoutedTopTile
@@ -10801,18 +10931,6 @@ function renderRomeNightBoard(gs, viewer) {
           title: canExitOnEdgeClick && passableExitDir
             ? edgeExitTooltip
             : "Rome Map Grid Axis (Columns A–F × Rows 1–6)",
-          onMouseEnter: (e) =>
-            showRomeSimpleHoverTooltip(
-              "Rome Map Grid Axis",
-              "Columns A–F (West to East) × Rows 1–6 (North to South).",
-              e.clientX,
-              e.clientY
-            ),
-          onMouseMove: (e) => {
-            const tip = document.getElementById("rome-hover-tooltip");
-            if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
-          },
-          onMouseLeave: () => hideRomeHoverTooltip(),
           onClick: (e) => triggerPerimeterMapEdgeExit(e),
         }),
         el(
@@ -10828,18 +10946,6 @@ function renderRomeNightBoard(gs, viewer) {
             el("div", {
               className: "rome-col-heading",
               title: `This is the ${c} column (Neighborhoods ${c}1–${c}6)`,
-              onMouseEnter: (e) =>
-                showRomeSimpleHoverTooltip(
-                  `This is the ${c} column`,
-                  `Column ${c} contains Rome neighborhoods ${c}1 through ${c}6.`,
-                  e.clientX,
-                  e.clientY
-                ),
-              onMouseMove: (e) => {
-                const tip = document.getElementById("rome-hover-tooltip");
-                if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
-              },
-              onMouseLeave: () => hideRomeHoverTooltip(),
               text: c,
             })
           )
@@ -10857,18 +10963,6 @@ function renderRomeNightBoard(gs, viewer) {
             el("div", {
               className: "rome-row-heading",
               title: `This is Row ${r} (Neighborhoods A${r}–F${r})`,
-              onMouseEnter: (e) =>
-                showRomeSimpleHoverTooltip(
-                  `This is Row ${r}`,
-                  `Row ${r} contains Rome neighborhoods A${r} through F${r}.`,
-                  e.clientX,
-                  e.clientY
-                ),
-              onMouseMove: (e) => {
-                const tip = document.getElementById("rome-hover-tooltip");
-                if (tip) positionRomeHoverTooltip(tip, e.clientX, e.clientY);
-              },
-              onMouseLeave: () => hideRomeHoverTooltip(),
               text: r,
             })
           )
@@ -11345,7 +11439,7 @@ function renderPlayerSidebar(gs, viewer) {
             role: "tab",
             "aria-selected": String(!isNavTab),
             className: `cart-panel-tab-btn${!isNavTab ? " is-active" : ""}`,
-            title: "View physical Cart Mat (Guards & Cargo) [Hotkey: N or Numpad 5]",
+            title: "View physical Cart Mat (Guards & Cargo)",
             onClick: () => {
               appState.cartPanelTab = "cart";
               renderApp();
@@ -11738,6 +11832,243 @@ function renderPlayerSidebar(gs, viewer) {
    MODALS FOR SOURCING, SCOUTING, CARGO LOADING, TRASHING, FORUM BUY, & GAMBLING
    ========================================================================= */
 
+/**
+ * Displays the up-close view of a face-up tile (or the tile currently occupied by the player's Cart),
+ * with an Interact button (which opens the Scout/Move/End Turn interface) and a Close button.
+ */
+function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts = null) {
+  const cellName = cell ? cell.name : coord;
+  const isCurrent = Boolean(viewer && viewer.position === coord && !viewer.exitedRome);
+  const occupants = ((gs && gs.players) || []).filter((p) => p.position === coord && !p.exitedRome);
+  const exposedTile = (cell && cell.revealed) || null;
+  const isScoutedPreview = Boolean(!exposedTile && tileData);
+  const rev = exposedTile || tileData || null;
+  const unrevealedCount = cell
+    ? Number(
+        cell.stackCount !== undefined
+          ? cell.stackCount
+          : cell.unrevealedCount !== undefined
+          ? cell.unrevealedCount
+          : 12
+      )
+    : 0;
+
+  const sellsStr =
+    rev && Array.isArray(rev.sells) && rev.sells.length > 0
+      ? rev.sells.map((s) => `${s.category} (${formatTileModifier(s.modifier)})`).join(", ")
+      : "None";
+  const buysStr =
+    rev && Array.isArray(rev.buys) && rev.buys.length > 0
+      ? rev.buys.map((b) => `${b.category} (${formatTileModifier(b.modifier)})`).join(", ")
+      : null;
+  const centerParts = rev
+    ? [
+        rev.encounter ? formatEdgeLabel(rev.encounter) : "No Center Encounter",
+        rev.gamble ? "Stadium Gambling (≤20(d))" : null,
+        rev.persistent ? "Persistent (⤹)" : rev.refresh ? "Refresh (↻)" : "Standard Tile",
+      ].filter(Boolean)
+    : [];
+
+  const featureLines = [];
+  if (cell && cell.isGate) {
+    featureLines.push("⛩️ Via City Gate Entrance & Exit (halves 6:00 A.M. Curfew Fine)");
+  }
+  if (cell && cell.isForum) {
+    featureLines.push("🏛️ Imperial Forum Market (purchase Goods when revealed)");
+  }
+  const bridgesHere = TIBER_BRIDGE_BADGES_BY_CELL[coord] || [];
+  if (bridgesHere.length > 0) {
+    featureLines.push(`🌉 Tiber Bridge: ${bridgesHere.map((b) => b.label).join(", ")}`);
+  }
+
+  let crossingNote = "";
+  const adjInfo = (moveOpts && moveOpts.adjInfo) || null;
+  if (adjInfo && viewer && viewer.position && viewer.position !== coord) {
+    const dir = adjInfo.dir || moveOpts.moveDir || "";
+    const riverBlocked = Boolean(adjInfo.blockedByRiver) || isTiberCrossingBlocked(viewer.position, coord);
+    const bridgeName = adjInfo.bridgeName || adjInfo.bridge || getTiberBridgeName(viewer.position, coord);
+    const shortcutActive = Boolean(viewer.turnEffects && viewer.turnEffects.shortcut);
+    const isPassable = !riverBlocked && (adjInfo.passable || shortcutActive);
+    const tollAmt = !shortcutActive ? parseTollAmount(adjInfo.edge) : 0;
+    const isHazard =
+      !riverBlocked &&
+      !shortcutActive &&
+      tollAmt <= 0 &&
+      Boolean(adjInfo.edge && !["green", "red", "None"].includes(String(adjInfo.edge)));
+    if (riverBlocked) {
+      crossingNote = `🌊 Blocked by Tiber River (${viewer.position} → ${coord})`;
+    } else if (!isPassable) {
+      crossingNote = `⛔ Red Barricade (${viewer.position} → ${coord})`;
+    } else if (shortcutActive && !adjInfo.passable) {
+      crossingNote = `✨ Shortcut Bypasses Barricade (${dir})`;
+    } else if (tollAmt > 0) {
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Road Toll: ${tollAmt}(d) (${dir})`;
+    } else if (isHazard) {
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${formatEdgeLabel(adjInfo.edge)} (${dir})`;
+    } else {
+      crossingNote = bridgeName
+        ? `🌉 Cross ${bridgeName} — Open Street (${dir})`
+        : `✓ Open Street (${viewer.position} → ${coord})`;
+    }
+  }
+
+  const proceedToNeighborhoodActions = (e) => {
+    if (e && typeof e.stopPropagation === "function") {
+      e.stopPropagation();
+    }
+    openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts);
+  };
+
+  showModal(
+    `🔍 Tile ${coord} — ${cellName}`,
+    el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.85rem" } },
+      el(
+        "div",
+        {
+          style: {
+            display: "flex",
+            gap: "0.45rem",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        },
+        el("span", {
+          className: "badge",
+          style: isScoutedPreview
+            ? { borderColor: "#38bdf8", color: "#0369a1", background: "#f0f9ff", fontWeight: "800" }
+            : exposedTile
+            ? { borderColor: "var(--gold)", background: "#fefce8", color: "#713f12", fontWeight: "700" }
+            : {},
+          text: isScoutedPreview
+            ? `👁️ Scouted Top Tile (${unrevealedCount} in Stack)`
+            : exposedTile
+            ? "Exposed Face-Up Tile"
+            : `${unrevealedCount} Face-Down Tile${unrevealedCount === 1 ? "" : "s"} in Stack`,
+        }),
+        ...occupants.map((p) =>
+          el(
+            "span",
+            {
+              className: "badge",
+              style:
+                viewer && p.index === viewer.index
+                  ? { borderColor: "var(--gold-bright)", background: "#fefce8", color: "#713f12", fontWeight: "800" }
+                  : {},
+            },
+            renderCartIconNode(p.color, "cart-icon-xs", `${p.name}'s Cart`),
+            el("span", {
+              style: { marginLeft: "0.3rem" },
+              text: viewer && p.index === viewer.index ? `${p.name} (Your Cart)` : p.name,
+            })
+          )
+        )
+      ),
+      el(
+        "div",
+        { style: { width: "280px", maxWidth: "100%", margin: "0 auto" } },
+        rev ? renderDynamicTileCardNode(rev, coord, "inspector") : renderDynamicTileBackNode(coord, cell)
+      ),
+      el(
+        "div",
+        {
+          style: {
+            width: "100%",
+            padding: "0.65rem 0.85rem",
+            borderRadius: "6px",
+            background: "#fbf7ee",
+            border: "1.5px solid #a88d6b",
+            boxShadow: "var(--bevel-sunken)",
+            fontSize: "0.84rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.25rem",
+          },
+        },
+        el(
+          "div",
+          {},
+          el("strong", { style: { color: "var(--gold-bright)" }, text: "Neighborhood: " }),
+          `${coord} — ${cellName}${isCurrent ? " (Your Current Tile)" : ""}`
+        ),
+        rev
+          ? [
+              el("div", {}, el("strong", { style: { color: "var(--gold-bright)" }, text: "Buys: " }), sellsStr),
+              buysStr ? el("div", {}, el("strong", { style: { color: "#0369a1" }, text: "Forum Sells: " }), buysStr) : null,
+              centerParts.length > 0
+                ? el(
+                    "div",
+                    {},
+                    el("strong", { style: { color: "var(--gold-bright)" }, text: "Properties: " }),
+                    centerParts.join(" • ")
+                  )
+                : null,
+            ]
+          : el(
+              "div",
+              {},
+              el("strong", { style: { color: "var(--gold-bright)" }, text: "Stack: " }),
+              `Unrevealed neighborhood stack (${unrevealedCount} face-down tile${unrevealedCount === 1 ? "" : "s"}).`
+            ),
+        ...featureLines.map((line) =>
+          el("div", { style: { color: "#78350f", fontWeight: "700", fontSize: "0.8rem" }, text: line })
+        ),
+        crossingNote
+          ? el("div", {
+              style: {
+                marginTop: "0.2rem",
+                paddingTop: "0.22rem",
+                borderTop: "1px solid rgba(168, 141, 107, 0.45)",
+                fontWeight: "700",
+                color: "#6e2119",
+              },
+              text: crossingNote,
+            })
+          : null,
+        el("div", {
+          style: { marginTop: "0.2rem", fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic" },
+          text: "Click this popup for Scout, Move, or End Turn options (or click outside / Close to dismiss).",
+        })
+      ),
+      el(
+        "div",
+        {
+          style: {
+            width: "100%",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "0.6rem",
+            paddingTop: "0.65rem",
+            borderTop: "1px solid var(--border-subtle)",
+          },
+        },
+        el("button", {
+          id: "modal-tile-interact-btn",
+          type: "button",
+          className: "btn btn-primary",
+          text: "🧭 Scout / Move / End Turn",
+          onClick: proceedToNeighborhoodActions,
+        }),
+        el("button", {
+          type: "button",
+          className: "btn",
+          "data-modal-close": "1",
+          text: "Close",
+          onClick: (e) => {
+            e.stopPropagation();
+            closeModal();
+          },
+        })
+      )
+    ),
+    {
+      onBoxClick: proceedToNeighborhoodActions,
+    }
+  );
+}
+
 function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = null) {
   const cellName = cell ? cell.name : coord;
   const unrevealedCount = cell
@@ -11865,10 +12196,10 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
   }
 
   const moveBtnLabel = isEntryPhase
-    ? `🚪 Move to Gate ${coord} [V]`
+    ? `🚪 Move to Gate ${coord}`
     : moveDir
-    ? `🛒 Move to ${coord} (${moveDir}) [V]`
-    : `🛒 Move to ${coord} [V]`;
+    ? `🛒 Move to ${coord} (${moveDir})`
+    : `🛒 Move to ${coord}`;
 
   showModal(
     modalTitle,
@@ -11925,7 +12256,7 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
             className: canMoveHere ? "btn btn-primary" : "btn",
             disabled: !canMoveHere,
             title: canMoveHere
-              ? `Move your Cart to ${coord} (Hotkey: V or M)`
+              ? `Move your Cart to ${coord}`
               : "Move to this tile is currently unavailable",
             text: moveBtnLabel,
             onClick: () => {
@@ -11945,10 +12276,10 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
             disabled: !canScoutTile,
             title: canScoutTile
               ? isEntryPhase
-                ? `Scout the top face-down tile of ${coord} before entering Rome (Hotkey: S)`
-                : `Scout the top face-down tile of ${coord} and end your turn (Hotkey: S)`
+                ? `Scout the top face-down tile of ${coord} before entering Rome`
+                : `Scout the top face-down tile of ${coord} and end your turn`
               : "Scout Tile is unavailable (already scouted, no face-down tiles, or not your turn)",
-            text: `👁️ Scout Tile ${coord} [S]`,
+            text: `👁️ Scout Tile ${coord}`,
             onClick: () => {
               if (!canScoutTile) return;
               closeModal();
@@ -11965,9 +12296,9 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
             className: "btn",
             disabled: !canScoutDeck,
             title: canScoutDeck
-              ? "Scout the top card of an Encounter deck (Hotkey: D)"
+              ? "Scout the top card of an Encounter deck"
               : "Scout Deck Card is unavailable (already scouted or not your turn)",
-            text: "🃏 Scout Deck Card [D]",
+            text: "🃏 Scout Deck Card",
             onClick: () => {
               if (!canScoutDeck) return;
               closeModal();
@@ -12016,9 +12347,9 @@ function openConfirmScoutNeighborhoodModal(gs, viewer, coord, cell, moveOpts = n
             className: "btn btn-crimson",
             disabled: !canEndTurnHere,
             title: canEndTurnHere
-              ? "End your hourly turn (Hotkey: E)"
+              ? "End your hourly turn"
               : "End Turn is unavailable when it is not your turn (or before selecting a starting Via Gate)",
-            text: "⏭️ End Turn [E]",
+            text: "⏭️ End Turn",
             onClick: () => {
               if (!canEndTurnHere) return;
               closeModal();
@@ -12108,7 +12439,7 @@ function openNpcOfferModal(gs, viewer) {
           renderGoodCardArtNode(c, trackName, false),
           el(
             "div",
-            {},
+            { className: "good-card-footer" },
             el("div", { className: "good-blocks-row", text: blocksSymbols }),
             renderGoodPriceTableNode(c, trackName, typeof cand.colIndex === "number" ? cand.colIndex : 2)
           )
@@ -12318,7 +12649,7 @@ function openMarketRewardModal(gs, viewer) {
           renderGoodCardArtNode(c, trackName, false),
           el(
             "div",
-            {},
+            { className: "good-card-footer" },
             el("div", { className: "good-blocks-row", text: blocksSymbols }),
             renderGoodPriceTableNode(c, trackName, typeof cand.colIndex === "number" ? cand.colIndex : 2)
           )
@@ -12469,26 +12800,29 @@ function renderScoutedMarketCardPreview(card) {
 
   return el(
     "div",
-    {
-      className: `market-good-card ${trackClass}`,
-      style: { width: "208px", margin: "0 auto" },
-    },
+    { className: "cart-good-detail-showcase" },
     el(
       "div",
-      { className: "market-good-card-inner" },
+      {
+        className: `market-good-card ${trackClass} cart-good-detail-card`,
+      },
       el(
         "div",
-        { className: "good-card-header" },
-        el("div", { className: "slot-card-name", style: { fontSize: "0.95rem" }, text: card.name }),
-        el("div", { className: "slot-sub", text: card.subtitle ? `(${card.subtitle})` : card.subcategory || card.category || trackName }),
-        card.combatText ? el("div", { className: "good-combat-line", text: card.combatText }) : null
-      ),
-      renderGoodCardArtNode(card, trackName, false),
-      el(
-        "div",
-        {},
-        el("div", { className: "good-blocks-row", text: blocksSymbols }),
-        renderGoodPriceTableNode(card, trackName, 2)
+        { className: "market-good-card-inner" },
+        el(
+          "div",
+          { className: "good-card-header" },
+          el("div", { className: "slot-card-name", text: card.name }),
+          el("div", { className: "slot-sub", text: card.subtitle ? `(${card.subtitle})` : card.subcategory || card.category || trackName }),
+          card.combatText ? el("div", { className: "good-combat-line", text: card.combatText }) : null
+        ),
+        renderGoodCardArtNode(card, trackName, false),
+        el(
+          "div",
+          { className: "good-card-footer" },
+          el("div", { className: "good-blocks-row", text: blocksSymbols }),
+          renderGoodPriceTableNode(card, trackName, 2)
+        )
       )
     )
   );
@@ -12552,7 +12886,7 @@ function openScoutResultModal(si) {
     const dk = (si.targetKey || "").toLowerCase();
     let cardNode = null;
     if (dk === "patricii" || dk === "legiones" || dk === "nefarii") {
-      cardNode = renderPhysicalEncounterCardNode(rData, dk);
+      cardNode = renderPhysicalEncounterCardNode(rData, dk, { interactive: true });
     } else if (dk === "missiones") {
       cardNode = renderPhysicalMissionCardNode(rData, { showStatusTag: false });
     } else if (dk === "influence") {
@@ -12563,7 +12897,7 @@ function openScoutResultModal(si) {
     visualNode = el(
       "div",
       { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" } },
-      cardNode ? el("div", { style: { width: "280px" } }, cardNode) : null,
+      cardNode ? el("div", { style: { width: "310px", maxWidth: "100%" } }, cardNode) : null,
       el(
         "div",
         {
@@ -13955,7 +14289,7 @@ function openScoutModal(gs, _viewer) {
         { style: { marginBottom: "1.1rem" } },
         el("div", {
           style: { fontWeight: "700", color: "var(--gold-bright)", fontSize: "0.9rem", marginBottom: "0.25rem" },
-          text: "Option A: Tap an Encounter Card Deck to Scout Its Top Card [D]",
+          text: "Option A: Tap an Encounter Card Deck to Scout Its Top Card",
         }),
         el("div", {
           style: { fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" },
@@ -13988,7 +14322,7 @@ function openScoutModal(gs, _viewer) {
           { className: "form-group" },
           el("label", {
             style: { fontWeight: "700", color: "var(--gold-bright)" },
-            text: "Option B: Peek at Top Unrevealed Tile of a Neighborhood Stack [S]",
+            text: "Option B: Peek at Top Unrevealed Tile of a Neighborhood Stack",
           }),
           cellSelect
         ),
@@ -13996,7 +14330,7 @@ function openScoutModal(gs, _viewer) {
           type: "button",
           className: "btn btn-primary",
           style: { width: "100%" },
-          text: "👁️ Scout Selected Neighborhood Stack [S]",
+          text: "👁️ Scout Selected Neighborhood Stack",
           onClick: () => {
             closeModal();
             if (isEntryPhase) {
@@ -14083,8 +14417,122 @@ function openTrashModal(gs, viewer) {
 }
 
 /* =========================================================================
-   PLAYER PROFILE & SETTINGS VIEW
+   PLAYER PROFILE, CUSTOMIZABLE HOTKEYS, & SETTINGS VIEW
    ========================================================================= */
+
+const DEFAULT_HOTKEYS = {
+  moveToTile: "v",
+  scoutTile: "s",
+  scoutDeck: "d",
+  endTurn: "e",
+  closeModal: "x",
+  toggleCartNav: "n",
+  viewRomeBoard: "r",
+  viewMarketBoard: "m",
+  viewClimateBoard: "c",
+  viewAllBoards: "b",
+};
+
+const HOTKEY_SPECS = [
+  {
+    key: "moveToTile",
+    label: "Move Cart to Selected Tile",
+    desc: "Moves your Cart into the selected adjacent neighborhood (or opens the Move/Scout action prompt).",
+  },
+  {
+    key: "scoutTile",
+    label: "Scout Neighborhood Tile Stack",
+    desc: "Peeks at the top unrevealed tile of the selected neighborhood stack (ends turn).",
+  },
+  {
+    key: "scoutDeck",
+    label: "Scout Encounter Deck Card",
+    desc: "Opens or triggers the Encounter Deck Scout picker (Patricii, Legiones, Nefarii).",
+  },
+  {
+    key: "endTurn",
+    label: "End Nocturnal Turn",
+    desc: "Ends your current hourly Delivery turn in Rome.",
+  },
+  {
+    key: "closeModal",
+    label: "Close Active Popup / Window",
+    desc: "Closes the currently open modal window (Esc also always closes modals).",
+  },
+  {
+    key: "toggleCartNav",
+    label: "Toggle Cart Mat / Navigate Tab",
+    desc: "Switches between your Cart Mat and the 8-direction Compass / Tile Inspector (Numpad 5 also toggles).",
+  },
+  {
+    key: "viewRomeBoard",
+    label: "Focus Rome Night Board",
+    desc: "Switches the tabletop view between Rome Night Board Only and Auto view.",
+  },
+  {
+    key: "viewMarketBoard",
+    label: "Focus Ostia Market Board",
+    desc: "Switches the tabletop view between Ostia Market Board Only and Auto view.",
+  },
+  {
+    key: "viewClimateBoard",
+    label: "Focus Political Climate Board",
+    desc: "Switches the tabletop view between Political Climate Senate Board and Auto view.",
+  },
+  {
+    key: "viewAllBoards",
+    label: "Show All Boards Stacked",
+    desc: "Toggles showing all tabletop boards stacked simultaneously.",
+  },
+];
+
+function getCustomHotkeys() {
+  const merged = Object.assign({}, DEFAULT_HOTKEYS);
+  try {
+    const rawLocal = localStorage.getItem("nm_custom_hotkeys");
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (parsed && typeof parsed === "object") {
+        for (const k of Object.keys(DEFAULT_HOTKEYS)) {
+          if (typeof parsed[k] === "string") {
+            merged[k] = parsed[k].trim().toLowerCase().slice(0, 1);
+          }
+        }
+      }
+    }
+  } catch (_e) {
+    // Ignore localStorage parse errors
+  }
+  const userHotkeys = appState.user && appState.user.settings && appState.user.settings.hotkeys;
+  if (userHotkeys && typeof userHotkeys === "object") {
+    for (const k of Object.keys(DEFAULT_HOTKEYS)) {
+      if (typeof userHotkeys[k] === "string") {
+        merged[k] = userHotkeys[k].trim().toLowerCase().slice(0, 1);
+      }
+    }
+  }
+  return merged;
+}
+
+function saveCustomHotkeysLocal(hotkeysMap) {
+  const clean = Object.assign({}, DEFAULT_HOTKEYS);
+  if (hotkeysMap && typeof hotkeysMap === "object") {
+    for (const k of Object.keys(DEFAULT_HOTKEYS)) {
+      if (typeof hotkeysMap[k] === "string") {
+        clean[k] = hotkeysMap[k].trim().toLowerCase().slice(0, 1);
+      }
+    }
+  }
+  try {
+    localStorage.setItem("nm_custom_hotkeys", JSON.stringify(clean));
+  } catch (_e) {
+    // Ignore localStorage write errors
+  }
+  if (appState.user && appState.user.settings) {
+    appState.user.settings.hotkeys = Object.assign({}, clean);
+  }
+  return clean;
+}
 
 function renderProfileView() {
   const user = appState.user;
@@ -14092,6 +14540,8 @@ function renderProfileView() {
 
   const userSettings = user.settings || {};
   let selectedColor = user.preferredColor || "Z3";
+  const currentHotkeys = getCustomHotkeys();
+  const hotkeyInputsByKey = {};
 
   const displayNameInput = el("input", {
     className: "form-input",
@@ -14182,9 +14632,82 @@ function renderProfileView() {
     })
   );
 
+  const hotkeyRows = HOTKEY_SPECS.map((spec) => {
+    const hkInput = el("input", {
+      className: "form-input",
+      type: "text",
+      maxLength: "1",
+      value: (currentHotkeys[spec.key] || "").toUpperCase(),
+      title: `Click and press a key to bind "${spec.label}"`,
+      style: {
+        width: "54px",
+        textAlign: "center",
+        fontWeight: "800",
+        fontFamily: "Cinzel, Georgia, serif",
+        fontSize: "0.92rem",
+        padding: "0.3rem 0.25rem",
+        textTransform: "uppercase",
+        flexShrink: "0",
+      },
+      onKeyDown: (ev) => {
+        if (ev.key === "Tab") return;
+        ev.preventDefault();
+        if (ev.key === "Backspace" || ev.key === "Delete") {
+          hkInput.value = "";
+          currentHotkeys[spec.key] = "";
+          saveCustomHotkeysLocal(currentHotkeys);
+          return;
+        }
+        if (ev.key && ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+          const cleanChar = ev.key.toLowerCase();
+          hkInput.value = cleanChar.toUpperCase();
+          currentHotkeys[spec.key] = cleanChar;
+          saveCustomHotkeysLocal(currentHotkeys);
+        }
+      },
+      onInput: () => {
+        const cleanChar = (hkInput.value || "").trim().toLowerCase().slice(-1);
+        hkInput.value = cleanChar.toUpperCase();
+        currentHotkeys[spec.key] = cleanChar;
+        saveCustomHotkeysLocal(currentHotkeys);
+      },
+    });
+    hotkeyInputsByKey[spec.key] = hkInput;
+
+    return el(
+      "div",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          padding: "0.45rem 0.65rem",
+          borderRadius: "6px",
+          background: "#fbf7ee",
+          border: "1px solid #c9b18c",
+        },
+      },
+      el(
+        "div",
+        { style: { minWidth: "0" } },
+        el("div", {
+          style: { fontWeight: "700", fontSize: "0.84rem", color: "#231710" },
+          text: spec.label,
+        }),
+        el("div", {
+          style: { fontSize: "0.74rem", color: "var(--text-muted)", lineHeight: "1.25" },
+          text: spec.desc,
+        })
+      ),
+      hkInput
+    );
+  });
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
+      const savedHotkeys = saveCustomHotkeysLocal(currentHotkeys);
       const payload = {
         displayName: displayNameInput.value.trim(),
         email: emailInput.value.trim(),
@@ -14197,6 +14720,7 @@ function renderProfileView() {
           soundEffects: soundEffectsCheckbox.checked,
           allowUndoByDefault: allowUndoByDefaultCheckbox.checked,
           skipMissionCompletionPopups: skipMissionPopupsCheckbox.checked,
+          hotkeys: savedHotkeys,
         },
       };
       if (newPasswordInput.value) {
@@ -14208,7 +14732,7 @@ function renderProfileView() {
       applyUserDefaultBoardView(res.user.settings);
       currentPasswordInput.value = "";
       newPasswordInput.value = "";
-      showToast("Player profile and merchant cart settings saved!");
+      showToast("Player profile, hotkeys, and merchant cart settings saved!");
       renderApp();
     } catch (err) {
       showToast(err.message, true);
@@ -14378,6 +14902,55 @@ function renderProfileView() {
             borderTop: "1px solid var(--border-subtle)",
           },
         },
+        el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.5rem",
+              flexWrap: "wrap",
+              marginBottom: "0.45rem",
+            },
+          },
+          el("div", {
+            style: { fontWeight: "700", fontSize: "0.88rem", color: "var(--gold-bright)" },
+            text: "⌨️ Keyboard Shortcuts (Hotkeys)",
+          }),
+          el("button", {
+            type: "button",
+            className: "btn btn-sm",
+            text: "↺ Reset Hotkeys to Defaults",
+            onClick: () => {
+              Object.assign(currentHotkeys, DEFAULT_HOTKEYS);
+              for (const [k, inp] of Object.entries(hotkeyInputsByKey)) {
+                inp.value = (DEFAULT_HOTKEYS[k] || "").toUpperCase();
+              }
+              saveCustomHotkeysLocal(currentHotkeys);
+              showToast("Hotkeys reset to defaults!");
+            },
+          })
+        ),
+        el("p", {
+          style: { fontSize: "0.76rem", color: "var(--text-muted)", margin: "0 0 0.6rem 0", lineHeight: "1.35" },
+          text: "Click any shortcut box below and press a key to customize it. Built-in directional & overlay keys: Numpad 1–9 steers your Cart in 8 compass directions (7=NW, 8=N, 9=NE, 4=W, 6=E, 1=SW, 2=S, 3=SE; 5 toggles Cart/Navigate), Space/Enter advances settled Dice & AI Turn overlays, and Esc always closes open windows.",
+        }),
+        el(
+          "div",
+          { style: { display: "flex", flexDirection: "column", gap: "0.4rem" } },
+          ...hotkeyRows
+        )
+      ),
+      el(
+        "div",
+        {
+          style: {
+            marginTop: "1rem",
+            paddingTop: "0.85rem",
+            borderTop: "1px solid var(--border-subtle)",
+          },
+        },
         el("div", { style: { fontWeight: "700", fontSize: "0.85rem", color: "var(--gold-bright)", marginBottom: "0.55rem" }, text: "🔐 Change Password (Optional)" }),
         el("div", { className: "form-group" }, el("label", { text: "Current Password" }), currentPasswordInput),
         el("div", { className: "form-group" }, el("label", { text: "New Password (8+ characters)" }), newPasswordInput)
@@ -14425,6 +14998,38 @@ const RULEBOOK_SECTIONS = [
     paragraphs: [
       "Five rival imperial figures command loyalty and fear across Rome in 211 A.D. Favor gems earned or lost from Missions, Encounters, and Influence cards are UNCAPPED (can reach ±5 or more!), determining whether a faction's agents treat you as a Friendly ally or a Hostile target and fueling the game's drafted Political Climate:",
     ],
+    iconGrid: [
+      {
+        img: "./assets/icons/ruby.png",
+        title: "Ruby — Caracalla",
+        desc: "Co-Emperor Marcus Aurelius Antoninus. Grants +1 CP per positive Ruby when Army Pay Hike is active.",
+      },
+      {
+        img: "./assets/icons/emerald.png",
+        title: "Emerald — Geta",
+        desc: "Co-Emperor Publius Septimius Geta. +1 Emerald waives the 4(d) Bridge Toll when Divided Tiber is active.",
+      },
+      {
+        img: "./assets/icons/diamond.png",
+        title: "Diamond — Julia Domna",
+        desc: "Empress Mother Julia Domna. Can be exchanged 1-for-1 into +Ruby or +Emerald when Empress Mediator is active.",
+      },
+      {
+        img: "./assets/icons/sapphire.png",
+        title: "Sapphire — Plautilla",
+        desc: "Exiled Augusta Fulvia Plautilla. Favored among nocturnal smugglers and the Nefarii underworld.",
+      },
+      {
+        img: "./assets/icons/amethyst.png",
+        title: "Amethyst — Aurelius",
+        desc: "Senatorial scion Pompeianus. Spend +Amethysts to boost sale scarcity by +1 step per gem with Senatorial Privilege.",
+      },
+      {
+        imgs: ["./assets/icons/thumb_up.png", "./assets/icons/thumbs.png", "./assets/icons/thumb_down.png"],
+        title: "Friendly / Neutral / Hostile",
+        desc: "Thumbs Up (Friendly, positive net Favor), Neutral (0 Favor), and Thumbs Down (Hostile, negative net Favor) govern NPC reactions.",
+      },
+    ],
     table: {
       headers: ["Faction & Gem", "Historical Role in 211 A.D.", "Alignments & Character"],
       rows: [
@@ -14455,6 +15060,9 @@ const RULEBOOK_SECTIONS = [
         ],
       ],
     },
+    bullets: [
+      "Historical Note — Lucius Fabius Cilo (Tutor of Caracalla & Geta): Even amid Caracalla's bloody December 211 A.D. purge of Geta's supporters, personal ties could halt Praetorian steel. Romans were in outcry when soldiers sent to kill Cilo dragged him from his bath through the streets; Caracalla intervened—'Insult not my father, strike not my tutor!'—and had the arresting officer put to death.",
+    ],
   },
   {
     id: "setup",
@@ -14462,47 +15070,113 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Starting Treasury & Market: Each merchant begins Spring with 12(d) and 0 Favor across all five factions. 24 Goods/Guards are dealt onto the Portus Ostiae Market Board and left-aligned toward Precious (<<).",
       "Initial Hand & Speed Discard: Each merchant is dealt 5 distinct Starting Missions and 5 distinct Influence cards, then discards 2 Missions and 2 Influence cards (keeping 3 of each).",
-      "Political Climate Draft (6×3 Board): The FIRST merchant to finish discarding claims First Pick on the 6-column Political Climate Board (Caracalla, Geta, Domna, Plautilla, Aurelians, Missions — at most 1 option may be enacted per column).",
+      "Political Climate Draft (6×3 Board): The FIRST merchant to finish discarding claims First Pick on the 6-column Political Climate Board (Caracalla, Geta, Domna, Plautilla, Aurelians, Missions — at most 1 Decree may be enacted per column).",
       "2-Player vs. 3+ Player Draft: In a 2-player game, 4 modifiers are enacted via snake draft (First Discarder → Rival → Rival → First Discarder — first pick and last pick!). In 3–6 player games, each merchant enacts 1 modifier in discard-completion order (up to all 6 columns).",
       "Normal Game Turn Order & 5th/6th Player Stipend: Once the Political Climate is set, the First Player Token goes to the merchant seated AFTER the First Discarder—so the merchant who claimed First Pick on the Political Climate acts LAST in normal turn order! In 5–6 player games, to offset late Spring Market position, the 5th merchant in Spring turn order receives +1(d) (starting at 13(d)) and the 6th merchant receives +2(d) (starting at 14(d)).",
     ],
   },
   {
     id: "market",
-    title: "4. Phase I: The Ostia Market Phase",
+    title: "4. Phase I: The Ostia Market Phase & Goods Card Symbols",
     paragraphs: [
-      "During daylight at Portus Ostiae, merchants take turns in turn order performing 1 Market Action per turn until all merchants pass consecutively:",
+      "During daylight at Portus Ostiae, merchants take turns in turn order performing 1 Market Action per turn until all merchants pass consecutively. Every Good and Guard card features a 5-column Price Board (from << Precious to >> Abundant) and compact symbols:",
+    ],
+    iconGrid: [
+      {
+        symbolType: "sell_sym",
+        title: "Bold Green +𐆖 (Sell / Fence Row)",
+        desc: "The top price row on a Good Card. Shows the Denarii you RECEIVE when selling that Good in Rome (or Fencing Encounter Mission Cargo) at each Scarcity column (<< to >>).",
+      },
+      {
+        symbolType: "buy_sym",
+        title: "Italic Red -𐆖 (Buy / Hire Row)",
+        desc: "The bottom price row on a Good or Guard Card. Shows the Denarii you PAY to buy that Good at Portus Ostiae (or a Rome Forum) or to hire/retain a Guard.",
+      },
+      {
+        symbolType: "denarius",
+        title: "Denarius (𐆖)",
+        desc: "Imperial silver coin (U+10196) used for all Market purchases, nocturnal sales, road tolls, Stadium wagers, Guard upkeep, and final victory scoring.",
+      },
+      {
+        badgeText: "<<  <  =  >  >>",
+        title: "5 Scarcity Columns",
+        desc: "From left to right: << Precious (0 cards left on track), < Rare (1 card), = Uncommon (2–3 cards), > Common (4 cards), and >> Abundant (5–6 cards).",
+      },
+      {
+        badgeText: "■  ■■  ■■■",
+        badgeClass: "rulebook-badge-cargo",
+        title: "Cart Space Cubes (■)",
+        desc: "Brown squares showing how many of your Cart Mat's 6 Cargo slots (6■) a Good occupies (1■, 2■, or 3■). Heavier Goods yield higher profit margins.",
+      },
+      {
+        badgeText: "▲  ▲▲",
+        badgeClass: "rulebook-badge-guard",
+        title: "Guard Seat Triangles (▲)",
+        desc: "Gold triangles showing how many of your Cart Mat's 2 Guard seats (2▲) a hired Guard occupies (1▲ or 2▲).",
+      },
     ],
     bullets: [
-      "Buy a Good or Hire a Guard: Pay the card's Buy/Hire price for its current column (<<, <, =, >, >>). Goods occupy ■ blocks on your Cart Mat (max 6■); Guards occupy ▲ slots (max 2▲). A replacement card is drawn onto the leftmost column of its category.",
+      "Buy a Good or Hire a Guard: Pay the card's italic Red (BUY_SYM) Buy/Hire price for its current column (<<, <, =, >, >>). Goods occupy ■ blocks on your Cart Mat (max 6■); Guards occupy ▲ slots (max 2▲). A replacement card is drawn onto the leftmost column of its category.",
       "Source a Good (Discard 1 Influence): Discard 1 Influence card to select a Good from the deck onto the leftmost column of its track (sliding existing cards right).",
       "Pass: Step out of the Market Round. Once a full round passes with no Market purchases, pass the First Player Token clockwise and enter Rome at dusk.",
     ],
     table: {
-      headers: ["Cards Remaining on Track", "Scarcity Symbol", "Market Supply State", "Base Rome Selling Column"],
+      headers: ["Cards Remaining on Track", "Scarcity Symbol", "Market Supply State", "Base Rome Selling Column ((SELL_SYM))"],
       rows: [
-        ["0 Cards", "<<", "Precious (Depleted)", "Sells at << (highest column) by default."],
+        ["0 Cards", "<<", "Precious (Depleted)", "Sells at << (highest (SELL_SYM) column) by default."],
         ["1 Card", "<", "Rare (Low Supply)", "Sells at < by default (+ shifts to <<)."],
         ["2–3 Cards", "=", "Uncommon (Balanced)", "Sells at = by default."],
         ["4 Cards", ">", "Common (High Supply)", "Sells at > by default."],
-        ["5–6 Cards", ">>", "Abundant (Flooded)", "Sells at >> (lowest column) by default."],
+        ["5–6 Cards", ">>", "Abundant (Flooded)", "Sells at >> (lowest (SELL_SYM) column) by default."],
       ],
     },
   },
   {
     id: "delivery",
-    title: "5. Phase II: Nocturnal Rome Delivery & The Tiber River",
+    title: "5. Phase II: Nocturnal Rome Delivery, Tile Icons, & The Tiber River",
     paragraphs: [
       "At 8:00 P.M. (Turn 1), each merchant may take 1 Initial Scout (tile or deck card) and then enters Rome through one of the 6 Via City Gates: B1 (Via Flaminia), E1 (Via Nomentana), F3 (Via Tiburtina), F6 (Via Tusculana), B6 (Via Ostiensis), or A4 (Via Aurelia). Entering a Gate uses your Turn 1 movement.",
       "Across Turns 1–10 (8:00 P.M. to 5:00 A.M.), each active merchant resolves their hourly turn in strict sequence:",
     ],
+    iconGrid: [
+      {
+        symbolType: "move_sym",
+        title: "Move Action Circle (M)",
+        desc: "Represents 1 Cart Movement action along an open green street edge (or granted as a bonus Move by Influence cards).",
+      },
+      {
+        symbolType: "tx_sym",
+        title: "Transaction Action Circle (T)",
+        desc: "Represents 1 hourly Transaction: Sell 1 Good (or Bulk-Sell all Grain!), Buy 1 Good at a Forum, or Gamble at a Stadium.",
+      },
+      {
+        badgeText: "++  +  =  -  --",
+        title: "Tile Buyer & Forum Modifiers",
+        desc: "Shifts a Good's current Ostia Scarcity column 1 or 2 steps toward << Precious (+ / ++) or >> Abundant (- / --) when buying or selling on that tile.",
+      },
+      {
+        img: "./assets/icons/persist.png",
+        title: "Persistent Tile Icon",
+        desc: "Landmarks marked with the Persistent icon stay face-up on the Rome board between Seasons instead of returning to their stack at Dawn.",
+      },
+      {
+        img: "./assets/icons/refresh.png",
+        title: "Refresh Tile Icon",
+        desc: "Volatile streets marked with the Refresh icon discard after their encounter resolves, immediately revealing the next tile beneath.",
+      },
+      {
+        img: "./assets/icons/fleur_de_lis_gold.png",
+        title: "Imperial Forum / First Player",
+        desc: "Marks Rome's 3 central Imperial Forums (C3, D3, D4) where Goods are sold to merchants, as well as the seasonal First Player emblem.",
+      },
+    ],
     bullets: [
       "Step 1 — Optional Trash: Discard 1 Influence card to bury the top unexposed tile of any neighborhood or the top card of any deck to the bottom.",
-      "Step 2 — Movement (1 Step): Move along a passable outgoing edge to an adjacent neighborhood (revealing its top tile if face-down) or out an exterior perimeter edge to Exit Rome.",
+      "Step 2 — Movement (1 Step (M)): Move along a passable outgoing edge to an adjacent neighborhood (revealing its top tile if face-down) or out an exterior perimeter edge to Exit Rome.",
       "Step 3 — Edge Cost / Hazard: Pay any 2(d) road toll (plus +4(d) Bridge Toll if Divided Tiber is active and you hold < +1 Emerald) or resolve any Edge Encounter crossed.",
       "Step 4 — Mission Cargo Pickup & Delivery: Upon arriving in a neighborhood—BEFORE any Center Tile Encounter triggers—you may load or deliver matching Mission Cargo!",
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
-      "Step 6 — One Transaction (1 Good/Hr, or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here)—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4), OR Gamble once at a Stadium tile (up to 20(d) wager).",
+      "Step 6 — One Transaction (1 Good/Hr (T), or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here) at its bold Green (SELL_SYM) price—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4) at its italic Red (BUY_SYM) price, OR Gamble once at a Stadium tile (up to 20(d) wager).",
       "Step 7 — End-of-Turn Scout: After completing your Move and Transaction actions, you may Scout one time at the end of your turn by peeking at the top unrevealed tile of any neighborhood stack or the top card of any deck. Committing to your Scout action immediately advances the turn so the next merchant in sequence can begin their turn while you finish examining the scouted tile or card (though the next merchant may choose to wait if they want to see whether you react or move toward that area).",
       "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via Rome's 5 intra-urban Stone Bridges (in use in 211 A.D.): Pons Aelius (A1↔B1), Pons Neronianus (A1↔A2), Pons Agrippae (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
     ],
@@ -14512,7 +15186,7 @@ const RULEBOOK_SECTIONS = [
     title: "6. Missions, Mission Cargo, & Regicide",
     bullets: [
       "Starting Missions: Kept during Setup (3 per merchant). Can be canceled voluntarily without Favor penalty (unless Bonded Couriers is active, which fines -10(d) on any failed/canceled/unfinished mission!). Starting Mission Cargo can NEVER be sold or fenced.",
-      "Encounter Missions: Drawn from NPC encounters. Encounter Mission Cargo displays a Fence price row—fencing it to a matching buyer sells 1 card for quick Denarii, applies Patron Hostile Favor, and FAILS the mission (unless Smuggler's Fence is active, which boosts Fence Scarcity by +1 step and prevents fencing from counting as a Failed Mission!).",
+      "Encounter Missions: Drawn from NPC encounters. Encounter Mission Cargo displays a bold Green (SELL_SYM) Fence price row—fencing it to a matching buyer sells 1 card for quick Denarii, applies Patron Hostile Favor, and FAILS the mission (unless Smuggler's Fence is active, which boosts Fence Scarcity by +1 step and prevents fencing from counting as a Failed Mission!).",
       "Soothsayer Missions: Mandatory prophecies with 1(R) face-down Influence cards sealed underneath until completed. Cannot be voluntarily canceled unless holding 6 Soothsayer Missions simultaneously.",
       "Regicide & Regime Change ('Any Player' Clauses): Two high-stakes Encounter Missions—Regicide (defeating Emperor Caracalla in combat) and Regime Change (defeating Co-Emperor Geta in combat)—trigger if ANY Player defeats that Emperor in combat while you hold the Mission! Completing Regicide immediately ends the game in an instant assassination victory for the Regicide holder; completing Regime Change awards 100(d) and +2 Rubies (+1 Diamond) while continuing the year.",
     ],
@@ -14520,6 +15194,61 @@ const RULEBOOK_SECTIONS = [
   {
     id: "combat",
     title: "7. Encounters, Combat, Charts, & Stadium Gambling",
+    paragraphs: [
+      "As your cart rolls through Rome's nocturnal streets and alleys, tile edges and centers trigger encounters with Rome's three major NPC decks, street hazards, and amphitheater games:",
+    ],
+    iconGrid: [
+      {
+        img: "./assets/icons/patricii_icon.png",
+        title: "Patricii Encounter",
+        desc: "Wealthy senators and aristocrats. Friendly Patricii offer lucrative Missions or trade deals; Hostile Patricii demand bribes, wine, or marble.",
+      },
+      {
+        img: "./assets/icons/legiones_icon.png",
+        title: "Legiones Encounter",
+        desc: "Praetorian guards and urban cohorts. Heavily aligned with Caracalla; gain +2 CP when Army Pay Hike is active.",
+      },
+      {
+        imgs: ["./assets/icons/nefarii_icon.png", "./assets/icons/nefarii_3_icon.png"],
+        title: "Nefarii & 3× Syndicate",
+        desc: "Cutthroats, thieves, and nocturnal syndicates. A 3-Dagger icon draws 3 Nefarii cards in succession!",
+      },
+      {
+        img: "./assets/icons/angry_mob.png",
+        title: "Angry Mob (1R Chart)",
+        desc: "Roll 1(R): 0 = Lose all Wine; I = Lose all Grain; II = Lose your most expensive Good; III = Escape unharmed.",
+      },
+      {
+        img: "./assets/icons/theater_masks.png",
+        title: "Theater Troupe (1R Chart)",
+        desc: "Roll 1(R): 0 = Lose all positive Favor; I = Lose all negative Favor; II = Lose rest of turn & next turn; III = Draw 1(R) Influence.",
+      },
+      {
+        img: "./assets/icons/soothsayer_icon.png",
+        title: "Soothsayer Prophecy",
+        desc: "Draws a mandatory Soothsayer Mission and seals 1(R) face-down Influence cards beneath it until you fulfill the prophecy.",
+      },
+      {
+        img: "./assets/icons/combat.png",
+        title: "Combat & Combat Power (CP)",
+        desc: "Crossed gladius swords mark street combat and hostile Combat tiers on Encounter cards. Compare total Player CP vs. Opponent CP.",
+      },
+      {
+        symbolType: "enc_deck_quest",
+        title: "Encounter Deck & Quest Chest",
+        desc: "Mid-card Encounter tier icons: the Fanned Deck + Roman Arca Chest ((DECK_ICON)(QUEST_ICON)! / ?) draws an unseen Missiones card; the Arca Chest alone ((QUEST_ICON)! / ?) assigns the card's printed Mission.",
+      },
+      {
+        symbolType: "rome_die",
+        title: "Roman Numeral Die (R)",
+        desc: "6-sided custom die with faces 0, 0, I, I, II, III (mean roll = 1.0). Rolled for Combat, Charts, and Stadium wagers.",
+      },
+      {
+        imgs: ["./assets/icons/dice.png", "./assets/icons/chest.png"],
+        title: "Stadium Wager & Loot Chest",
+        desc: "Dice icon lets you spend your Transaction to wager 1–20(d) (win Wager × 1(R) roll). Chest icon marks special cargo/treasure rewards.",
+      },
+    ],
     bullets: [
       "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
       "Combat Power (CP) & Cargo Gear: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals (including Ostrich or negative-die beasts!), and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). Note that crated Loricae body armor carries 0 CP in street ambushes (too slow to don mid-attack, compensated by lucrative trade margins). If Player CP ≥ Opponent CP against an NPC, you win!",
@@ -14547,7 +15276,7 @@ const RULEBOOK_SECTIONS = [
     ],
     bullets: [
       "Step 1 — Unfinished Missions Fail: Incomplete Missions fail first (applying Encounter Hostile Favor and -10(d) each if Bonded Couriers is active); remaining mission cargo is discarded.",
-      "Step 2 — Cart Liquidation & Loans: Remaining non-mission Goods liquidate at Abundant (>>) Sell Price, then unpaid Spring (-45(d)) and Summer (-60(d)) Loans are deducted.",
+      "Step 2 — Cart Liquidation & Loans: Remaining non-mission Goods liquidate at Abundant (>>) (SELL_SYM) Sell Price, then unpaid Spring (-45(d)) and Summer (-60(d)) Loans are deducted.",
       "Step 3 — Imperial Proscription FIRST, Then Political Climate Settlement: If Imperial Proscription (Caracalla Option 1) is enacted, it resolves FIRST—eliminating the merchant with Least Caracalla Favor BEFORE any other Most/Least awards, penalties, steals, or percentages! Eliminated merchants cannot win or suffer subsequent Most/Least awards and rank below all survivors. Then resolve Flat Gem/Mission Modifiers & Least Penalties → Exile's Informants Steal → Domna +20% Wealth.",
       "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: pre-roll cards (Mercenary Ambush, Distraction removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot, Gladiator's Intervention) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
     ],
@@ -14556,51 +15285,209 @@ const RULEBOOK_SECTIONS = [
       rows: [
         [
           "Imperial Proscription: End of game (FIRST): Least Caracalla favor is eliminated.",
-          "Brother's Grudge: End of game: Least Geta favor loses 25d.",
+          "Brother's Grudge: End of game: Least Geta favor loses 25(d).",
           "Imperial Patronage: End of game: Most Domna favor gains +20% wealth.",
-          "Exile's Informants: End of game: Most Plautilla favor steals 15d from the wealthiest rival.",
-          "Old Senate Purse: End of game: Most Aurelian favor gains 25d.",
-          "Master Purveyor: End of game: Most completed Missions gains 30d.",
+          "Exile's Informants: End of game: Most Plautilla favor steals 15(d) from the wealthiest rival.",
+          "Old Senate Purse: End of game: Most Aurelian favor gains 25(d).",
+          "Master Purveyor: End of game: Most completed Missions gains 30(d).",
         ],
         [
-          "Praetorian Backlash: End of game: Lose 10d per +Ruby; gain 5d per -Ruby.",
-          "Jealous Brothers: End of game: +15d per +Emerald if Caracalla ≤ 0, or -10d if ≥ +1; -5d per -Emerald.",
-          "Court Neutrality: End of game: Lose 15d per +Diamond and 15d per -Diamond.",
-          "Smuggled Dowry: End of game: Gain 10d per completed Mission with +Sapphire or a Plautilla patron.",
-          "Choose a Side: End of game: Gain 10d per +Amethyst and 10d per -Amethyst.",
-          "Guild Ledger: End of game: Gain 10d per completed Mission; lose 10d per failed or unfinished Mission.",
+          "Praetorian Backlash: End of game: Lose 10(d) per +Ruby; gain 5(d) per -Ruby.",
+          "Jealous Brothers: End of game: +15(d) per +Emerald if Caracalla ≤ 0, or -10(d) if ≥ +1; -5(d) per -Emerald.",
+          "Court Neutrality: End of game: Lose 15(d) per +Diamond and 15(d) per -Diamond.",
+          "Smuggled Dowry: End of game: Gain 10(d) per completed Mission with +Sapphire or a Plautilla patron.",
+          "Choose a Side: End of game: Gain 10(d) per +Amethyst and 10(d) per -Amethyst.",
+          "Guild Ledger: End of game: Gain 10(d) per completed Mission; lose 10(d) per failed or unfinished Mission.",
         ],
         [
           "Army Pay Hike: Legiones gain +2 CP. Each +Ruby gives your Cart +1 CP.",
-          "Divided Tiber: Crossing any of the 5 Tiber Bridges costs a 4d toll, waived with +1 Emerald or Shortcut.",
+          "Divided Tiber: Crossing any of the 5 Tiber Bridges costs a 4(d) toll, waived with +1 Emerald or Shortcut.",
           "Empress Mediator: Exchange +Diamonds 1-for-1 into +Rubies or +Emeralds anytime.",
           "Smuggler's Fence: Fenced cargo sells +1 Scarcity step higher and does not fail the Mission.",
           "Senatorial Privilege: Spend +Amethysts when selling Goods (including Bulk Grain) for +1 Scarcity step per gem.",
-          "Bonded Couriers: Completed Missions pay 2× Denarii; failed or unfinished Missions fine 10d.",
+          "Bonded Couriers: Completed Missions pay 2× Denarii; failed or unfinished Missions fine 10(d).",
         ],
       ],
     },
   },
   {
     id: "symbols",
-    title: "10. Strategy Overlays, Symbol Key, & Hotkeys",
+    title: "10. Complete Symbol Key & Strategy Overlays",
+    paragraphs: [
+      "Use this quick-reference table to decode every symbol on Goods Cards, Encounter Cards, Cart Mats, and Rome Neighborhood Tiles (keyboard shortcuts can be viewed and customized on your Profile page):",
+    ],
     table: {
       headers: ["Feature / Symbol", "Where Shown", "Meaning"],
       rows: [
-        ["Green / Red Bar", "Tile Edge", "Open Street (free movement) / Barricaded Alley (impassable without Shortcut)."],
-        ["2(d) Badge", "Tile Edge", "Road Toll — pay 2 Denarii to cross (unless waived by Shortcut or Pass)."],
-        ["🌊 Tiber / 🌉 Pons", "Rome Map Borders", "Unbridged Tiber borders & river diagonals are impassable; cross only at the 5 Stone Bridges."],
-        ["🌾 Bulk Sell Grain", "Cart & Navigate Panel", "Spend 1 hourly Transaction to sell ALL non-fenced Grain cards in your Cart at once."],
-        ["👁️ Scouted Badge", "Unrevealed Rome Cell", "Hover over any tile you have Scouted (or any face-up tile) to inspect its zoomed street layout."],
-        ["Paid 𐆖X • Net ±𐆖Y", "Loaded Cart Cards & Sell Buttons", "Tracks what you paid for each Good and your exact net profit at the current buyer."],
-        ["Numpad 1–9 / Key N", "Cart Mat & Rome Delivery", "Steer Cart via Numpad (7=NW, 8=N, 9=NE, 4=W, 6=E, 1=SW, 2=S, 3=SE); press 5 or N to toggle Cart Mat / Navigate tab."],
-        ["Hotkeys: S / D / V / E / Esc", "Neighborhood Popup & Delivery", "Scout Tile (S), Scout Deck Card (D), Move To Selected Tile (V or M), End Turn (E), and Close Window (Esc or X)."],
-        ["Hotkeys: M / R / C / B", "Tabletop View", "Toggle Ostia Market (M), Rome Night Board (R), Political Climate Senate Board (C), or All Boards (B)."],
-        ["Hotkeys: Space / Esc", "Overlays & Modals", "Advance settled Dice / AI Turn Replay (Space/Enter) or close active modal/tooltip (Esc or X)."],
+        [
+          "(SELL_SYM) (Bold Green +𐆖)",
+          "Goods Cards & Mission Cargo",
+          "Sell Price Row (or Fence Price Row on Encounter Mission Cargo) — the Denarii you earn when selling that Good at each scarcity level (<< to >>).",
+        ],
+        [
+          "(BUY_SYM) (Italic Red -𐆖)",
+          "Goods & Guards Cards",
+          "Buy / Hire Price Row — the Denarii you pay to purchase that Good at Portus Ostiae / Imperial Forums or to hire/retain a Guard.",
+        ],
+        [
+          "(d) Denarius Symbol",
+          "Treasury, Cards, & Tiles",
+          "Roman Silver Denarius coin — the currency of Night Merchant.",
+        ],
+        [
+          "<<  <  =  >  >>",
+          "Ostia Market & Price Tables",
+          "The 5 Market Scarcity columns: Precious (<<), Rare (<), Uncommon (=), Common (>), and Abundant (>>).",
+        ],
+        [
+          "++  +  =  -  --",
+          "Rome Tiles & Forums",
+          "Neighborhood Buyer / Forum price modifier — shifts the active Scarcity column 1 or 2 steps toward << (+ / ++) or >> (- / --).",
+        ],
+        [
+          "■ Cargo / ▲ Guard Slots",
+          "Goods, Guards, & Cart Mat",
+          "Each ■ occupies 1 Cargo block on your Cart (max 6■); each ▲ occupies 1 Guard seat (max 2▲).",
+        ],
+        [
+          "(R) Roman Die / (M) Move / (T) Tx",
+          "Cards, Tiles, & Rules",
+          "(R) rolls a 6-sided Roman die (0, 0, I, I, II, III); (M) grants/uses a Move step; (T) grants/uses an hourly Transaction.",
+        ],
+        [
+          "(COMBAT_ICON) / ! / ?",
+          "Encounter Reputation Tiers",
+          "(COMBAT_ICON) initiates immediate Combat; ! is a mandatory Demand (comply or fight); ? is an optional Friendly Offer or Gift.",
+        ],
+        [
+          "(QUEST_ICON)! / (QUEST_ICON)?",
+          "Encounter Reputation Tiers",
+          "Ancient Roman Arca Chest — mandatory ((QUEST_ICON)!) or optional ((QUEST_ICON)?) Mission prescribed directly on the Encounter card.",
+        ],
+        [
+          "(DECK_ICON)(QUEST_ICON)! / (DECK_ICON)(QUEST_ICON)?",
+          "Encounter Reputation Tiers",
+          "Fanned Card Deck + Roman Arca Chest — mandatory (!) or optional (?) unseen Mission drawn from the top of the Missiones deck.",
+        ],
+        [
+          "Green / Red Bar",
+          "Tile Edge",
+          "Open Street (free movement) / Barricaded Alley (impassable without Shortcut).",
+        ],
+        [
+          "2(d) Badge",
+          "Tile Edge",
+          "Road Toll — pay 2 Denarii to cross (unless waived by Shortcut or Pass).",
+        ],
+        [
+          "🌊 Tiber / 🌉 Pons",
+          "Rome Map Borders",
+          "Unbridged Tiber borders & river diagonals are impassable; cross only at the 5 Stone Bridges.",
+        ],
+        [
+          "🌾 Bulk Sell Grain",
+          "Cart & Navigate Panel",
+          "Spend 1 hourly Transaction to sell ALL non-fenced Grain cards in your Cart at once.",
+        ],
+        [
+          "👁️ Scouted Badge",
+          "Unrevealed Rome Cell",
+          "Hover over any tile you have Scouted (or click any face-up tile) to inspect its zoomed street layout.",
+        ],
+        [
+          "Paid (d)X • Net ±(d)Y",
+          "Loaded Cart Cards & Sell Buttons",
+          "Tracks what you paid for each Good and your exact net profit at the current buyer.",
+        ],
       ],
     },
   },
 ];
+
+function renderRulebookIconVisualNode(item) {
+  const wrap = el("div", { className: "rulebook-icon-visual" });
+  if (item.symbolType === "sell_sym") {
+    const badge = el("span", { className: "rulebook-symbol-pill rulebook-symbol-pill-sell" });
+    badge.appendChild(createSellPriceSymbolNode(false));
+    wrap.appendChild(badge);
+  } else if (item.symbolType === "buy_sym") {
+    const badge = el("span", { className: "rulebook-symbol-pill rulebook-symbol-pill-buy" });
+    badge.appendChild(createBuyPriceSymbolNode(false));
+    wrap.appendChild(badge);
+  } else if (item.symbolType === "denarius") {
+    const badge = el("span", { className: "rulebook-symbol-pill" });
+    badge.appendChild(createDenariusSvgNode("1.55em"));
+    wrap.appendChild(badge);
+  } else if (item.symbolType === "move_sym") {
+    wrap.appendChild(createMoveActionCircleNode("1.9em"));
+  } else if (item.symbolType === "tx_sym") {
+    wrap.appendChild(createTransactionActionCircleNode("1.9em"));
+  } else if (item.symbolType === "enc_deck_quest") {
+    const badge = el("span", {
+      className: "rulebook-symbol-pill",
+      style: { display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.2rem 0.45rem" },
+    });
+    badge.appendChild(createDeckOfCardsIconNode("1.55em"));
+    badge.appendChild(createAncientRomanChestIconNode("1.55em"));
+    wrap.appendChild(badge);
+  } else if (item.symbolType === "rome_die") {
+    const dieNode = el(
+      "span",
+      {
+        className: "rome-die-box",
+        style: { width: "1.9rem", height: "1.9rem", fontSize: "1.05rem" },
+      },
+      "R"
+    );
+    wrap.appendChild(dieNode);
+  } else if (item.badgeText) {
+    wrap.appendChild(
+      el("span", {
+        className: `rulebook-symbol-badge ${item.badgeClass || ""}`,
+        text: item.badgeText,
+      })
+    );
+  } else if (Array.isArray(item.imgs)) {
+    const multiWrap = el("div", { className: "rulebook-icon-multi" });
+    item.imgs.forEach((src) => {
+      multiWrap.appendChild(
+        el("img", {
+          src,
+          alt: item.title || "Game icon",
+          className: "rulebook-icon-img rulebook-icon-img-sm",
+          loading: "lazy",
+        })
+      );
+    });
+    wrap.appendChild(multiWrap);
+  } else if (item.img) {
+    wrap.appendChild(
+      el("img", {
+        src: item.img,
+        alt: item.title || "Game icon",
+        className: "rulebook-icon-img",
+        loading: "lazy",
+      })
+    );
+  }
+  return wrap;
+}
+
+function renderRulebookFormattedBulletNode(bulletText) {
+  const li = el("li", { className: "rulebook-bullet-item" });
+  const colonIdx = bulletText.indexOf(": ");
+  if (colonIdx > 0 && colonIdx <= 68) {
+    const leadText = bulletText.slice(0, colonIdx + 1);
+    const bodyText = bulletText.slice(colonIdx + 1);
+    const leadStrong = el("strong", { className: "rulebook-bullet-lead" });
+    appendTextWithRomeDice(leadStrong, leadText);
+    li.appendChild(leadStrong);
+    appendTextWithRomeDice(li, bodyText);
+  } else {
+    appendTextWithRomeDice(li, bulletText);
+  }
+  return li;
+}
 
 function buildRulebookSectionNodes(searchQuery) {
   const q = (searchQuery || "").trim().toLowerCase();
@@ -14610,6 +15497,12 @@ function buildRulebookSectionNodes(searchQuery) {
           sec.title.toLowerCase().includes(q) ||
           (sec.paragraphs || []).some((p) => p.toLowerCase().includes(q)) ||
           (sec.bullets || []).some((b) => b.toLowerCase().includes(q)) ||
+          (sec.iconGrid || []).some(
+            (ic) =>
+              (ic.title || "").toLowerCase().includes(q) ||
+              (ic.desc || "").toLowerCase().includes(q) ||
+              (ic.badgeText || "").toLowerCase().includes(q)
+          ) ||
           (sec.table && sec.table.rows.some((r) => r.some((cell) => cell.toLowerCase().includes(q))))
       )
     : RULEBOOK_SECTIONS;
@@ -14619,7 +15512,7 @@ function buildRulebookSectionNodes(searchQuery) {
       el(
         "p",
         { style: { color: "var(--text-muted)", fontStyle: "italic", padding: "0.75rem 0" } },
-        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Grain, Favor, Loan, Curfew, or Winter.`
+        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Grain, Favor,Sell, Buy, Loan, Curfew, or Winter.`
       ),
     ];
   }
@@ -14629,28 +15522,51 @@ function buildRulebookSectionNodes(searchQuery) {
       "section",
       { id: `rulebook-sec-${sec.id}`, className: "rulebook-section" },
       el("h3", { text: sec.title }),
-      ...(sec.paragraphs || []).map((p) => el("p", { text: p })),
+      ...(sec.paragraphs || []).map((p) => el("p", { className: "rulebook-paragraph", text: p })),
+      sec.iconGrid
+        ? el(
+            "div",
+            { className: "rulebook-icon-grid" },
+            ...sec.iconGrid.map((item) =>
+              el(
+                "div",
+                { className: "rulebook-icon-card" },
+                renderRulebookIconVisualNode(item),
+                el(
+                  "div",
+                  { className: "rulebook-icon-copy" },
+                  el("div", { className: "rulebook-icon-title", text: item.title }),
+                  el("div", { className: "rulebook-icon-desc", text: item.desc })
+                )
+              )
+            )
+          )
+        : null,
       sec.bullets
         ? el(
             "ul",
-            {},
-            ...sec.bullets.map((b) => el("li", { text: b }))
+            { className: "rulebook-bullet-list" },
+            ...sec.bullets.map((b) => renderRulebookFormattedBulletNode(b))
           )
         : null,
       sec.table
         ? el(
-            "table",
-            { className: "rulebook-table" },
+            "div",
+            { className: "rulebook-table-wrap" },
             el(
-              "thead",
-              {},
-              el("tr", {}, ...sec.table.headers.map((h) => el("th", { text: h })))
-            ),
-            el(
-              "tbody",
-              {},
-              ...sec.table.rows.map((row) =>
-                el("tr", {}, ...row.map((cellText) => el("td", { text: cellText })))
+              "table",
+              { className: "rulebook-table" },
+              el(
+                "thead",
+                {},
+                el("tr", {}, ...sec.table.headers.map((h) => el("th", { text: h })))
+              ),
+              el(
+                "tbody",
+                {},
+                ...sec.table.rows.map((row) =>
+                  el("tr", {}, ...row.map((cellText) => el("td", { text: cellText })))
+                )
               )
             )
           )
@@ -15587,14 +16503,6 @@ function buildDiceOutcomeCard(ev, isRolling) {
           "div",
           { className: "dice-outcome-actions" },
           el("button", {
-            className: "btn btn-sm",
-            text: "🎲 Replay Animation",
-            onClick: () => {
-              appState.diceRollQueue.unshift(ev);
-              startNextDiceRollAnimation();
-            },
-          }),
-          el("button", {
             className: "dice-continue-btn",
             text: queueRemaining > 0 ? `NEXT ROLL (${queueRemaining}) ▶` : "CLOSE DICE OVERLAY",
             onClick: async () => {
@@ -16310,7 +17218,121 @@ function renderNpcPacingBanner() {
   );
 }
 
+const DELAYED_HOVER_TOOLTIP_MS = 5000;
+let delayedHoverTargetEl = null;
+let delayedHoverTimerId = null;
+let delayedHoverClientX = 0;
+let delayedHoverClientY = 0;
+
+function positionDelayedHoverTooltip(tooltipEl, clientX, clientY) {
+  if (!tooltipEl) return;
+  const pad = 12;
+  const w = tooltipEl.offsetWidth || 220;
+  const h = tooltipEl.offsetHeight || 34;
+  let left = clientX + 14;
+  let top = clientY + 18;
+  if (left + w + pad > window.innerWidth) {
+    left = Math.max(pad, clientX - w - 14);
+  }
+  if (top + h + pad > window.innerHeight) {
+    top = Math.max(pad, clientY - h - 14);
+  }
+  tooltipEl.style.left = `${left}px`;
+  tooltipEl.style.top = `${top}px`;
+}
+
+function showDelayedHoverTooltipNode(text, clientX, clientY) {
+  if (!text) return;
+  let tip = document.getElementById("delayed-hover-tooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "delayed-hover-tooltip";
+    tip.className = "delayed-hover-tooltip";
+    document.body.appendChild(tip);
+  }
+  tip.textContent = text;
+  positionDelayedHoverTooltip(tip, clientX, clientY);
+}
+
+function hideDelayedHoverTooltip() {
+  if (delayedHoverTimerId) {
+    clearTimeout(delayedHoverTimerId);
+    delayedHoverTimerId = null;
+  }
+  delayedHoverTargetEl = null;
+  const tip = document.getElementById("delayed-hover-tooltip");
+  if (tip) tip.remove();
+}
+
+function installDelayedHoverTooltips() {
+  if (appState._delayedHoverInstalled) return;
+  appState._delayedHoverInstalled = true;
+
+  window.addEventListener(
+    "mouseover",
+    (e) => {
+      if (!(e.target instanceof Element)) return;
+      let cur = e.target;
+      while (cur && cur !== document.body) {
+        if (cur.hasAttribute("title")) {
+          const rawT = (cur.getAttribute("title") || "").trim();
+          if (rawT && !cur.hasAttribute("data-hover-title")) {
+            cur.setAttribute("data-hover-title", rawT);
+          }
+          cur.removeAttribute("title");
+        }
+        cur = cur.parentElement;
+      }
+
+      const target = e.target.closest("[data-hover-title]");
+      if (target === delayedHoverTargetEl) {
+        return;
+      }
+      hideDelayedHoverTooltip();
+      if (!target) return;
+      const text = (target.getAttribute("data-hover-title") || "").trim();
+      if (!text) return;
+      delayedHoverTargetEl = target;
+      delayedHoverClientX = e.clientX;
+      delayedHoverClientY = e.clientY;
+      delayedHoverTimerId = setTimeout(() => {
+        delayedHoverTimerId = null;
+        if (delayedHoverTargetEl && document.body.contains(delayedHoverTargetEl)) {
+          showDelayedHoverTooltipNode(text, delayedHoverClientX, delayedHoverClientY);
+        }
+      }, DELAYED_HOVER_TOOLTIP_MS);
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "mousemove",
+    (e) => {
+      delayedHoverClientX = e.clientX;
+      delayedHoverClientY = e.clientY;
+      if (
+        delayedHoverTargetEl &&
+        (!document.body.contains(delayedHoverTargetEl) ||
+          (e.target instanceof Node && !delayedHoverTargetEl.contains(e.target)))
+      ) {
+        hideDelayedHoverTooltip();
+        return;
+      }
+      const tip = document.getElementById("delayed-hover-tooltip");
+      if (tip) {
+        positionDelayedHoverTooltip(tip, e.clientX, e.clientY);
+      }
+    },
+    { passive: true }
+  );
+
+  for (const evName of ["mousedown", "wheel", "keydown", "touchstart", "blur"]) {
+    window.addEventListener(evName, () => hideDelayedHoverTooltip(), { passive: true });
+  }
+}
+
 function hideRomeHoverTooltip() {
+  hideDelayedHoverTooltip();
   const existing = document.getElementById("rome-hover-tooltip");
   if (existing) existing.remove();
   document.querySelectorAll(".compass-btn.is-hovered-dir").forEach((b) => b.classList.remove("is-hovered-dir"));
@@ -16383,40 +17405,45 @@ function installGlobalHotkeys() {
     if (inEditable) return;
 
     const k = e.key.toLowerCase();
+    const hk = getCustomHotkeys();
     const modalRoot = document.getElementById("modal-root");
     const hasOpenModal = Boolean(modalRoot && modalRoot.hasChildNodes());
 
-    // Close window hotkey (X when a modal is open)
-    if (hasOpenModal && k === "x") {
+    // Close window hotkey when a modal is open
+    if (hasOpenModal && hk.closeModal && k === hk.closeModal) {
       e.preventDefault();
       closeModal();
       return;
     }
 
-    // Modal action hotkeys for Scout Tile (S), Scout Deck Card (D), Move To (V / M), and End Turn (E)
+    // Modal action hotkeys for Scout Tile, Scout Deck Card, Move To, and End Turn
     if (hasOpenModal) {
-      if (k === "s") {
+      const interactBtn = document.getElementById("modal-tile-interact-btn");
+      if (interactBtn && (k === hk.scoutTile || k === hk.scoutDeck || k === hk.moveToTile || k === hk.endTurn)) {
+        interactBtn.click();
+      }
+      if (hk.scoutTile && k === hk.scoutTile) {
         const scoutTileBtn = document.getElementById("modal-scout-tile-btn");
         if (scoutTileBtn && !scoutTileBtn.disabled) {
           e.preventDefault();
           scoutTileBtn.click();
           return;
         }
-      } else if (k === "d") {
+      } else if (hk.scoutDeck && k === hk.scoutDeck) {
         const scoutDeckBtn = document.getElementById("modal-scout-deck-btn");
         if (scoutDeckBtn && !scoutDeckBtn.disabled) {
           e.preventDefault();
           scoutDeckBtn.click();
           return;
         }
-      } else if (k === "v" || k === "m") {
+      } else if (hk.moveToTile && k === hk.moveToTile) {
         const moveToBtn = document.getElementById("modal-move-to-btn");
         if (moveToBtn && !moveToBtn.disabled) {
           e.preventDefault();
           moveToBtn.click();
           return;
         }
-      } else if (k === "e") {
+      } else if (hk.endTurn && k === hk.endTurn) {
         const endTurnBtn = document.getElementById("modal-end-turn-btn");
         if (endTurnBtn && !endTurnBtn.disabled) {
           e.preventDefault();
@@ -16505,7 +17532,7 @@ function installGlobalHotkeys() {
           gs.activePlayerIndex === viewer.index &&
           (gs.phase === "delivery" || gs.phase === "delivery_entry") &&
           !gs.pendingEncounter;
-        if (k === "s" && isMyTurn) {
+        if (hk.scoutTile && k === hk.scoutTile && isMyTurn) {
           e.preventDefault();
           if (viewer.scoutedThisTurn) {
             showToast("You have already used your Scout action this turn.", true);
@@ -16520,7 +17547,7 @@ function installGlobalHotkeys() {
           }
           return;
         }
-        if (k === "d" && isMyTurn) {
+        if (hk.scoutDeck && k === hk.scoutDeck && isMyTurn) {
           e.preventDefault();
           if (viewer.scoutedThisTurn) {
             showToast("You have already used your Scout action this turn.", true);
@@ -16529,7 +17556,7 @@ function installGlobalHotkeys() {
           openScoutModal(gs, viewer);
           return;
         }
-        if (k === "v" && isMyTurn) {
+        if (hk.moveToTile && k === hk.moveToTile && isMyTurn) {
           e.preventDefault();
           const targetCoord = appState.inspectedCell || viewer.position || "B1";
           const targetCell = gs.romeBoard && gs.romeBoard[targetCoord];
@@ -16551,30 +17578,30 @@ function installGlobalHotkeys() {
           }
           return;
         }
-        if (k === "e" && gs.phase === "delivery" && gs.activePlayerIndex === viewer.index && !gs.pendingEncounter) {
+        if (hk.endTurn && k === hk.endTurn && gs.phase === "delivery" && gs.activePlayerIndex === viewer.index && !gs.pendingEncounter) {
           e.preventDefault();
           sendGameAction({ type: "delivery_end_turn" });
           return;
         }
       }
 
-      if ((e.code === "Numpad5" || (e.location === 3 && e.key === "5") || k === "n") && !hasOpenModal) {
+      if ((e.code === "Numpad5" || (e.location === 3 && e.key === "5") || (hk.toggleCartNav && k === hk.toggleCartNav)) && !hasOpenModal) {
         e.preventDefault();
         appState.cartPanelTab = appState.cartPanelTab === "navigate" ? "cart" : "navigate";
         renderApp();
-      } else if (k === "m" && !hasOpenModal) {
+      } else if (hk.viewMarketBoard && k === hk.viewMarketBoard && !hasOpenModal) {
         e.preventDefault();
         appState.boardViewMode = appState.boardViewMode === "market" ? "auto" : "market";
         renderApp();
-      } else if (k === "r" && !hasOpenModal) {
+      } else if (hk.viewRomeBoard && k === hk.viewRomeBoard && !hasOpenModal) {
         e.preventDefault();
         appState.boardViewMode = appState.boardViewMode === "rome" ? "auto" : "rome";
         renderApp();
-      } else if (k === "c" && !hasOpenModal) {
+      } else if (hk.viewClimateBoard && k === hk.viewClimateBoard && !hasOpenModal) {
         e.preventDefault();
         appState.boardViewMode = appState.boardViewMode === "climate" ? "auto" : "climate";
         renderApp();
-      } else if (k === "b" && !hasOpenModal) {
+      } else if (hk.viewAllBoards && k === hk.viewAllBoards && !hasOpenModal) {
         e.preventDefault();
         appState.boardViewMode = appState.boardViewMode === "both" ? "auto" : "both";
         renderApp();
@@ -16584,6 +17611,7 @@ function installGlobalHotkeys() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  installDelayedHoverTooltips();
   installGlobalHotkeys();
   bootstrap();
 });

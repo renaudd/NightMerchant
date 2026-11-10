@@ -30,7 +30,7 @@ And the emperors did not heed their father’s directive to be harmonious. They 
    
 The year 211 would be the only year that the two brothers would spend sharing power. On December 26th, Bassianus (Caracalla) called for a parley with Geta at the residence of their mother, Julia Domna, and had Geta ambushed and murdered by centurions.  
 
-Following this event, Caracalla carried out a purge that consumed the lives of more than 20,000 people.  
+Following this event, Caracalla carried out a purge that consumed the lives of more than 20,000 people. *(Even amid the slaughter, personal ties occasionally stayed the Praetorians’ hand: when soldiers sent to kill the brothers’ former tutor, Lucius Fabius Cilo, dragged him from his bath through the streets, Romans were in outcry until Caracalla intervened—“Insult not my father, strike not my tutor!”—and had the arresting officer put to death.)*  
    
 But for now, it is still 211, and few are aware that terror looms.  
    
@@ -317,7 +317,7 @@ After Fall Clean-Up concludes, December 211 arrives and each Player’s final sc
 1) **Unfinished Missions**: Any incomplete Missions fail automatically (counting as Failed Missions, fining **-10(d)** each if *Bonded Couriers* is active, and applying **Hostile Favor Consequences** for incomplete Deck Encounter Missions).
 2) **Unsold Goods Liquidation**: Remaining non-mission Goods in a Player’s Cart liquidate at their **Abundant (`>>`) Sell Price**.
 3) **Unpaid Loans**: Deduct **45(d)** for an unpaid Spring Loan and **60(d)** for an unpaid Summer Loan.
-4) **Enacted Political Climate Settlement**:
+4) ** Political Climate Settlement**:
    - **Step 4a — Elimination FIRST** (*Imperial Proscription*, if active): The Player with **Least** Caracalla Favor is **eliminated immediately** before any other Political Climate awards or penalties resolve. Eliminated Players rank below all survivors, cannot win the game, and are **excluded from all subsequent Most/Least awards, penalties, steals, and percentage bonuses**!
    - **Step 4b — Flat Gem/Mission Reckoning & Penalties**: Among surviving Players, resolve enacted flat per-gem/per-mission modifiers and Least penalties (*Praetorian Backlash*, *Brother’s Grudge*, *Jealous Brothers*, *Court Neutrality*, *Smuggled Dowry*, *Old Senate Purse*, *Choose a Side*, *Master Purveyor*, *Guild Ledger*).
    - **Step 4c — Wealth Steal & Percentage Patronage**: Among surviving Players, resolve *Exile’s Informants* (`15(d)` stolen from the wealthiest surviving rival), followed by *Imperial Patronage* (`+20%` of positive wealth, rounded to nearest Denarius).
@@ -337,3 +337,35 @@ COMBAT BETWEEN PLAYERS
 - **Pre-Roll vs. Post-Roll Combat Influence**: Pre-roll cards (*Mercenary Ambush* `+1®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* zeroing an opponent’s highest die; *Gladiator’s Intervention* `+3 CP`) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
 - **Strictly One Recipient**: Every Most/Least bonus or penalty is awarded to **strictly one Player**. For **Most** awards, the Combat **winner** claims the bonus; for **Least** penalties or elimination, the Combat winner escapes and the Combat **loser** suffers the penalty!  
 - **No Draws**: If a Combat between Players ends in a draw, repeat Combat (any one-shot Influence cards or consumable Weapons used in a previous round remain exhausted) until one side wins by at least **1 CP**!
+
+---
+
+## SYMBOL & ICON REFERENCE
+
+### Goods & Guards Card Symbols
+- **Bold Green `+𐆖` (Sell / Fence Price Row)**: The top row on a Good Card’s price table. Indicates the **Denarii (`𐆖`) you receive** when selling that Good in Rome (or Fencing Encounter Mission Cargo) at each Scarcity column (`<<` to `>>`).
+- **Italic Red `-𐆖` (Buy / Hire Price Row)**: The bottom row on a Good or Guard Card’s price table. Indicates the **Denarii (`𐆖`) you pay** to purchase that Good at Portus Ostiae (or an Imperial Forum) or to hire/retain a Guard.
+- **Denarius (`𐆖` / `(d)`)**: Roman silver coin (`U+10196`) used for all purchases, sales, road tolls, Stadium wagers, Guard upkeep, and final victory scoring.
+- **`<<`  `<`  `=`  `>`  `>>` (5 Scarcity Columns)**:
+  - `<<` **Precious** (`0` cards remaining on that category’s Ostia Market track)
+  - `<` **Rare** (`1` card remaining)
+  - `=` **Uncommon** (`2–3` cards remaining)
+  - `>` **Common** (`4` cards remaining)
+  - `>>` **Abundant** (`5–6` cards remaining)
+- **`■` (Cargo Space Cubes)**: Brown squares indicating how many of your Cart Mat’s **6 Cargo blocks (`6■`)** a Good occupies (`1■`, `2■`, or `3■`).
+- **`▲` (Guard Seat Triangles)**: Gold triangles indicating how many of your Cart Mat’s **2 Guard seats (`2▲`)** a hired Guard occupies (`1▲` or `2▲`).
+
+### Rome Tile, Action, & Encounter Icons
+- **`(M)` (Blue Move Circle)**: Represents **1 Cart Movement** step along an open street edge.
+- **`(T)` (Gold Transaction Circle)**: Represents **1 hourly Transaction** (Sell 1 Good, Bulk-Sell all Grain, Buy 1 Forum Good, or Gamble at a Stadium).
+- **`(R)` / `®` (Roman Numeral Die)**: 6-sided custom Roman die with faces **`0, 0, I, I, II, III`** (average roll = `1.0`).
+- **`++`  `+`  `=`  `-`  `--` (Tile Buyer & Forum Modifiers)**: Shifts the active Market Scarcity column 1 or 2 steps left toward `<<` Precious (`+` / `++`) or right toward `>>` Abundant (`-` / `--`).
+- **Persistent (`⤹`) & Refresh (`↻` / `⤿`) Tile Icons**: Persistent landmark tiles remain face-up across seasons; Refresh tiles discard after their encounter resolves and immediately reveal the next tile.
+- **Encounter Icons**:
+  - **Patricii** (*Senatorial Bust*): Draws from the Patricii deck (aligned with Aurelius, Domna, or Geta).
+  - **Legiones** (*Roman Helmet*): Draws from the Legiones deck (heavily aligned with Caracalla).
+  - **Nefarii** (*Dagger / 3× Daggers*): Draws 1 (or 3) cards from the Nefarii underworld deck (often aligned with Plautilla).
+  - **Angry Mob** (*Torch & Pitchfork*): Roll `1(R)` (`0`: lose Wine; `I`: lose Grain; `II`: lose costliest Good; `III`: safe).
+  - **Theater Troupe** (*Comedy/Tragedy Masks*): Roll `1(R)` (`0`: lose positive Favor; `I`: lose negative Favor; `II`: lose rest of turn & next turn; `III`: draw `1(R)` Influence).
+  - **Soothsayer** (*Augur’s Hand*): Draws a mandatory Soothsayer Mission and seals `1(R)` face-down Influence cards beneath it until fulfilled.
+  - **Stadium Dice**: Spend your hourly Transaction to wager `1(d)–20(d)` and roll `1(R)` to win `Wager × Roll`.
