@@ -3188,6 +3188,33 @@ button, input, select {
   transform: translateY(-1px);
 }
 
+.gis-google-btn-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gis-google-btn-host {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+}
+
+.auth-safari-notice {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.85rem;
+  border-radius: 5px;
+  background: rgba(153, 27, 27, 0.1);
+  border: 1px solid #b91c1c;
+  color: #7f1d1d;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
 .color-swatch-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));

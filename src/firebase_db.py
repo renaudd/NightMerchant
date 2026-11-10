@@ -473,6 +473,31 @@ def verify_and_sync_firebase_id_token(
     return created_u, None
 
 
+def _resolve_or_create_firebase_auth_uid(email_clean: str, display_name: str, fallback_sub: str) -> str:
+    try:
+        from firebase_admin import auth as fb_auth
+
+        user_not_found_cls = getattr(fb_auth, "UserNotFoundError", None)
+        try:
+            fb_u = fb_auth.get_user_by_email(email_clean)
+            return str(fb_u.uid)
+        except Exception as exc:
+            is_not_found = bool(user_not_found_cls and isinstance(exc, user_not_found_cls)) or (
+                "not found" in str(exc).lower()
+            )
+            if not is_not_found:
+                raise
+            fb_u = fb_auth.create_user(
+                email=email_clean,
+                display_name=display_name or None,
+                email_verified=True,
+            )
+            return str(fb_u.uid)
+    except Exception as exc:
+        logger.warning("Could not resolve Firebase Auth UID for Google sign-in (%s).", type(exc).__name__)
+        return f"google:{fallback_sub}"
+
+
 def authenticate_or_create_google_user(
     email: str,
     display_name: str,
@@ -483,20 +508,40 @@ def authenticate_or_create_google_user(
     if not verified_token:
         return None, "Verified Google / Firebase token is required in production."
     fs = _ensure_firebase()
-    email_clean = email.strip().lower()
+    email_clean = email.strip().lower() if isinstance(email, str) else ""
+    email_err = validate_email(email_clean)
+    if email_err:
+        return None, email_err
+
+    disp = (display_name or email_clean.split("@")[0].replace(".", " ").title()).strip()[:40]
+    fb_uid = _resolve_or_create_firebase_auth_uid(email_clean, disp, google_sub)
+
     em_map = fs.collection("nm_emails").document(email_clean).get()
     if em_map.exists:
         uid_int = int(em_map.to_dict()["userId"])
-        u_snap = fs.collection("nm_users").document(str(uid_int)).get()
+        u_ref = fs.collection("nm_users").document(str(uid_int))
+        u_snap = u_ref.get()
         if u_snap.exists:
-            return _format_firestore_user(u_snap.to_dict()), None
+            doc_data = dict(u_snap.to_dict())
+            existing_uid = str(doc_data.get("firebaseUid") or "")
+            if fb_uid and not fb_uid.startswith("google:") and existing_uid != fb_uid:
+                u_ref.update({"firebaseUid": fb_uid})
+                fs.collection("nm_fb_uids").document(fb_uid).set({"userId": uid_int})
+                doc_data["firebaseUid"] = fb_uid
+            elif existing_uid and fb_uid.startswith("google:"):
+                fb_uid = existing_uid
+            csrf = _derive_bearer_csrf(fb_uid) if fb_uid else None
+            out = _format_firestore_user(doc_data, csrf_token=csrf)
+            if fb_uid and not fb_uid.startswith("google:"):
+                custom_tok = _mint_custom_token_str(fb_uid)
+                if custom_tok:
+                    out["_firebaseCustomToken"] = custom_tok
+            return out, None
 
     cand = f"pending_{secrets.token_hex(4)}"
     while fs.collection("nm_usernames").document(cand).get().exists:
         cand = f"pending_{secrets.token_hex(4)}"
-    fb_uid = f"google:{google_sub}"
-    disp = (display_name or email_clean.split("@")[0].replace(".", " ").title()).strip()[:40]
-    return _allocate_and_store_user(
+    created_u, c_err = _allocate_and_store_user(
         fs=fs,
         firebase_uid=fb_uid,
         username_clean=cand,
@@ -506,6 +551,14 @@ def authenticate_or_create_google_user(
         auth_provider="google",
         needs_username_setup=True,
     )
+    if c_err or not created_u:
+        return None, c_err or "Google sign-in failed."
+    if fb_uid and not fb_uid.startswith("google:"):
+        created_u["csrfToken"] = _derive_bearer_csrf(fb_uid)
+        custom_tok = _mint_custom_token_str(fb_uid)
+        if custom_tok:
+            created_u["_firebaseCustomToken"] = custom_tok
+    return created_u, None
 
 
 def set_permanent_username(

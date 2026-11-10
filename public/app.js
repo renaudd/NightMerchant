@@ -45,6 +45,29 @@ function maskEmailClient(rawEmail) {
 let _fbAuthModule = null;
 let _fbAuthInstance = null;
 let _fbInitPromise = null;
+let _gisScriptPromise = null;
+let _gisInitializedClientId = null;
+let _googleSignInInFlight = false;
+
+function isProductionBackendConfigured() {
+  return Boolean(getNightMerchantApiBaseUrl());
+}
+
+function getEffectiveGoogleClientId() {
+  const cfg = getNightMerchantRuntimeConfig();
+  const runtimeVal =
+    typeof appState !== "undefined" && appState && typeof appState.googleClientId === "string"
+      ? appState.googleClientId
+      : "";
+  const cfgVal = cfg && typeof cfg.googleClientId === "string" ? cfg.googleClientId : "";
+  return (runtimeVal || cfgVal).replace(/^[<>"'\s]+|[<>"'\s]+$/g, "");
+}
+
+function isLikelySafariBrowser() {
+  if (typeof navigator === "undefined") return false;
+  const ua = String(navigator.userAgent || "");
+  return /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg|OPR|Android/i.test(ua);
+}
 
 function getEffectiveFirebaseConfig() {
   const cfg = getNightMerchantRuntimeConfig();
@@ -74,6 +97,51 @@ function isFirebaseClientConfigured() {
   return Boolean(fb && typeof fb.apiKey === "string" && fb.apiKey.trim() && typeof fb.projectId === "string" && fb.projectId.trim());
 }
 
+async function setBestFirebasePersistence(auth, authMod, skipIndexedDb = false) {
+  if (!auth || !authMod || typeof authMod.setPersistence !== "function") return null;
+  const candidates = skipIndexedDb
+    ? [authMod.browserLocalPersistence, authMod.browserSessionPersistence, authMod.inMemoryPersistence]
+    : [
+        authMod.indexedDBLocalPersistence,
+        authMod.browserLocalPersistence,
+        authMod.browserSessionPersistence,
+        authMod.inMemoryPersistence,
+      ];
+  for (const persistence of candidates) {
+    if (!persistence) continue;
+    try {
+      await authMod.setPersistence(auth, persistence);
+      return persistence;
+    } catch (_persistErr) {}
+  }
+  return null;
+}
+
+function isStoragePersistenceError(err) {
+  const code = String((err && err.code) || "").toLowerCase();
+  const msg = String((err && err.message) || "").toLowerCase();
+  return (
+    code.includes("web-storage-unsupported") ||
+    msg.includes("indexeddb") ||
+    msg.includes("sessionstorage") ||
+    msg.includes("localstorage") ||
+    msg.includes("quota") ||
+    msg.includes("storage")
+  );
+}
+
+async function runFirebaseAuthOpWithPersistenceFallback(auth, authMod, authOp) {
+  try {
+    return await authOp(auth);
+  } catch (err) {
+    if (!isStoragePersistenceError(err)) {
+      throw err;
+    }
+    await setBestFirebasePersistence(auth, authMod, true);
+    return authOp(auth);
+  }
+}
+
 async function initFirebaseClientIfConfigured() {
   if (!isFirebaseClientConfigured()) return null;
   if (_fbAuthInstance) return _fbAuthInstance;
@@ -89,15 +157,7 @@ async function initFirebaseClientIfConfigured() {
       const existingApps = typeof appMod.getApps === "function" ? appMod.getApps() : [];
       const fbApp = existingApps.length > 0 ? existingApps[0] : appMod.initializeApp(fbCfg);
       const auth = authMod.getAuth(fbApp);
-      if (typeof authMod.indexedDBLocalPersistence !== "undefined" && typeof authMod.setPersistence === "function") {
-        try {
-          await authMod.setPersistence(auth, authMod.indexedDBLocalPersistence);
-        } catch (_persistErr) {
-          if (typeof authMod.inMemoryPersistence !== "undefined") {
-            await authMod.setPersistence(auth, authMod.inMemoryPersistence).catch(() => {});
-          }
-        }
-      }
+      await setBestFirebasePersistence(auth, authMod, false);
       if (typeof auth.authStateReady === "function") {
         await auth.authStateReady();
       }
@@ -105,7 +165,7 @@ async function initFirebaseClientIfConfigured() {
       _fbAuthInstance = auth;
       return auth;
     } catch (err) {
-      console.error("[NightMerchant] Firebase client init failed:", err);
+      console.error("[NightMerchant] Firebase client init failed.");
       _fbInitPromise = null;
       return null;
     }
@@ -129,7 +189,9 @@ async function signInWithFirebaseCustomToken(customToken) {
   if (!customToken || !isFirebaseClientConfigured()) return null;
   const auth = await initFirebaseClientIfConfigured();
   if (!auth || !_fbAuthModule) return null;
-  const cred = await _fbAuthModule.signInWithCustomToken(auth, customToken);
+  const cred = await runFirebaseAuthOpWithPersistenceFallback(auth, _fbAuthModule, (a) =>
+    _fbAuthModule.signInWithCustomToken(a, customToken)
+  );
   return cred && cred.user ? cred.user.getIdToken() : null;
 }
 
@@ -138,28 +200,131 @@ async function signInWithFirebaseEmailPassword(email, password) {
   const auth = await initFirebaseClientIfConfigured();
   if (!auth || !_fbAuthModule || typeof _fbAuthModule.signInWithEmailAndPassword !== "function") return null;
   try {
-    const cred = await _fbAuthModule.signInWithEmailAndPassword(auth, email, password);
+    const cred = await runFirebaseAuthOpWithPersistenceFallback(auth, _fbAuthModule, (a) =>
+      _fbAuthModule.signInWithEmailAndPassword(a, email, password)
+    );
     return cred && cred.user ? cred.user.getIdToken() : null;
   } catch (_err) {
     return null;
   }
 }
 
-async function signInWithFirebaseGooglePopup() {
+async function signInWithFirebaseGoogleCredential(googleIdToken) {
+  if (!googleIdToken || !isFirebaseClientConfigured()) return null;
   const auth = await initFirebaseClientIfConfigured();
-  if (!auth || !_fbAuthModule) {
-    throw new Error("Firebase Google Sign-In is not configured on the server yet.");
+  if (
+    !auth ||
+    !_fbAuthModule ||
+    !_fbAuthModule.GoogleAuthProvider ||
+    typeof _fbAuthModule.GoogleAuthProvider.credential !== "function" ||
+    typeof _fbAuthModule.signInWithCredential !== "function"
+  ) {
+    return null;
   }
-  const provider = new _fbAuthModule.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  const cred = await _fbAuthModule.signInWithPopup(auth, provider);
-  if (!cred || !cred.user) {
-    throw new Error("Google sign-in did not return a user credential.");
+  const oauthCred = _fbAuthModule.GoogleAuthProvider.credential(googleIdToken);
+  const cred = await runFirebaseAuthOpWithPersistenceFallback(auth, _fbAuthModule, (a) =>
+    _fbAuthModule.signInWithCredential(a, oauthCred)
+  );
+  return cred && cred.user ? cred.user.getIdToken() : null;
+}
+
+function signInWithFirebaseGooglePopup() {
+  // Call signInWithPopup synchronously when Firebase Auth is already initialized
+  // so Safari preserves the click user-gesture context for window.open.
+  if (_fbAuthInstance && _fbAuthModule) {
+    const provider = new _fbAuthModule.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    return _fbAuthModule.signInWithPopup(_fbAuthInstance, provider).then((cred) => {
+      if (!cred || !cred.user) {
+        throw new Error("Google sign-in did not return a user credential.");
+      }
+      return cred.user.getIdToken();
+    });
   }
-  return cred.user.getIdToken();
+  return initFirebaseClientIfConfigured().then(async (auth) => {
+    if (!auth || !_fbAuthModule) {
+      throw new Error("Firebase Google Sign-In is not configured on the server yet.");
+    }
+    const provider = new _fbAuthModule.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const cred = await _fbAuthModule.signInWithPopup(auth, provider);
+    if (!cred || !cred.user) {
+      throw new Error("Google sign-in did not return a user credential.");
+    }
+    return cred.user.getIdToken();
+  });
+}
+
+function loadGoogleIdentityServices() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return Promise.resolve(null);
+  }
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    return Promise.resolve(window.google.accounts.id);
+  }
+  if (_gisScriptPromise) return _gisScriptPromise;
+
+  _gisScriptPromise = new Promise((resolve) => {
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    const done = () => {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        resolve(window.google.accounts.id);
+      } else {
+        _gisScriptPromise = null;
+        resolve(null);
+      }
+    };
+    if (existing) {
+      if (existing.dataset.nmLoaded === "1") {
+        done();
+        return;
+      }
+      existing.addEventListener("load", done, { once: true });
+      existing.addEventListener("error", () => {
+        _gisScriptPromise = null;
+        resolve(null);
+      }, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    // Google Identity Services uses a rolling unversioned loader URL (SRI omitted per Google GIS guidance).
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.referrerPolicy = "strict-origin-when-cross-origin";
+    const timer = window.setTimeout(() => {
+      _gisScriptPromise = null;
+      resolve(null);
+    }, 8000);
+    script.addEventListener("load", () => {
+      window.clearTimeout(timer);
+      script.dataset.nmLoaded = "1";
+      done();
+    }, { once: true });
+    script.addEventListener("error", () => {
+      window.clearTimeout(timer);
+      _gisScriptPromise = null;
+      resolve(null);
+    }, { once: true });
+    document.head.appendChild(script);
+  });
+
+  return _gisScriptPromise;
 }
 
 async function signOutFirebaseClient() {
+  if (
+    typeof window !== "undefined" &&
+    window.google &&
+    window.google.accounts &&
+    window.google.accounts.id &&
+    typeof window.google.accounts.id.disableAutoSelect === "function"
+  ) {
+    try {
+      window.google.accounts.id.disableAutoSelect();
+    } catch (_gisErr) {}
+  }
   if (!_fbAuthInstance || !_fbAuthModule) return;
   try {
     await _fbAuthModule.signOut(_fbAuthInstance);
@@ -1300,6 +1465,7 @@ const appState = {
   user: null,
   csrfToken: null,
   googleClientId: "",
+  authErrorBanner: null,
   activeTab: "portal", // "portal" | "tabletop" | "rulebook" | "profile" | "completed_games"
   authMode: "login", // "login" | "register"
   games: [],
@@ -3540,28 +3706,54 @@ function installChronicleViewportScrollWatcher() {
   );
 }
 
+function consumeResumeGameId() {
+  try {
+    if (typeof window.sessionStorage === "undefined") return null;
+    const raw = (window.sessionStorage.getItem("nm_resume_game_id") || "").trim();
+    window.sessionStorage.removeItem("nm_resume_game_id");
+    return /^[a-f0-9]{6,24}$/i.test(raw) ? raw : null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function clearResumeGameId() {
+  try {
+    if (typeof window.sessionStorage !== "undefined") {
+      window.sessionStorage.removeItem("nm_resume_game_id");
+    }
+  } catch (_err) {}
+}
+
+async function hydrateRuntimeAuthConfig() {
+  const me = await apiRequest("/api/auth/me");
+  appState.googleClientId = me.googleClientId || "";
+  if (typeof me.firebaseEnabled === "boolean") {
+    appState.serverFirebaseEnabled = me.firebaseEnabled;
+  }
+  if (me.firebaseConfig && typeof me.firebaseConfig === "object") {
+    appState.runtimeFirebaseConfig = me.firebaseConfig;
+    await initFirebaseClientIfConfigured();
+  }
+  return me;
+}
+
 async function bootstrap() {
   installChronicleViewportScrollWatcher();
+  let hadInviteParam = false;
   try {
     const params = new URLSearchParams(window.location.search || "");
     const rawGameParam = (params.get("game") || "").trim();
     if (rawGameParam && /^[A-Za-z0-9_-]{1,40}$/.test(rawGameParam)) {
       appState.pendingInviteGameId = rawGameParam;
+      hadInviteParam = true;
     }
   } catch (_e) {}
 
   await initFirebaseClientIfConfigured();
 
   try {
-    let me = await apiRequest("/api/auth/me");
-    appState.googleClientId = me.googleClientId || "";
-    if (typeof me.firebaseEnabled === "boolean") {
-      appState.serverFirebaseEnabled = me.firebaseEnabled;
-    }
-    if (me.firebaseConfig && typeof me.firebaseConfig === "object") {
-      appState.runtimeFirebaseConfig = me.firebaseConfig;
-      await initFirebaseClientIfConfigured();
-    }
+    let me = await hydrateRuntimeAuthConfig();
     if (!me.authenticated && me.firebaseEnabled !== false) {
       const existingToken = await getFirebaseIdToken();
       if (existingToken) {
@@ -3580,10 +3772,16 @@ async function bootstrap() {
       if (!me.user.needsUsernameSetup) {
         await refreshPortalOverview();
         await handlePendingInviteDeepLink();
+        const resumeGameId = consumeResumeGameId();
+        if (resumeGameId && !hadInviteParam && !appState.currentGameId) {
+          await openGame(resumeGameId);
+        }
       }
+    } else {
+      clearResumeGameId();
     }
   } catch (err) {
-    console.error(err);
+    console.error("[NightMerchant] Bootstrap error.");
   }
   renderApp();
   startPolling();
@@ -4961,6 +5159,16 @@ function renderApp() {
   }
   root.replaceChildren(...contentNodes);
 
+  if (typeof window !== "undefined") {
+    window.__NM_ACTIVE_GAME_ID__ =
+      appState.user &&
+      !appState.user.needsUsernameSetup &&
+      appState.activeTab === "tabletop" &&
+      appState.currentGameId
+        ? String(appState.currentGameId)
+        : "";
+  }
+
   if (appState.activeTab !== "tabletop") {
     appState.chronicleUserScrolled = false;
     appState.chronicleScrollTop = null;
@@ -5140,8 +5348,11 @@ function renderTopbar() {
             await apiRequest("/api/auth/logout", "POST", {});
           } catch (_e) {}
           await signOutFirebaseClient();
+          clearResumeGameId();
           appState.user = null;
           appState.csrfToken = null;
+          appState.authErrorBanner = null;
+          appState.currentGameId = null;
           appState.gameSummary = null;
           appState.gameState = null;
           appState.completedGames = [];
@@ -5232,26 +5443,195 @@ async function handlePendingInviteDeepLink() {
   }
 }
 
-async function handleGoogleSignInClick() {
-  if (isFirebaseClientConfigured()) {
-    try {
-      const idToken = await signInWithFirebaseGooglePopup();
-      const res = await apiRequest("/api/auth/firebase", "POST", { idToken });
-      appState.user = res.user;
-      appState.csrfToken = res.csrfToken || null;
-      applyUserDefaultBoardView(res.user.settings);
-      appState.activeTab = "portal";
-      if (res.user && res.user.needsUsernameSetup) {
-        showToast("Google account verified! Choose your permanent Collegium username to finish joining.");
-        renderApp();
-        return;
+async function finalizePortalSignIn(res, successToastMessage) {
+  appState.authErrorBanner = null;
+  appState.user = res.user;
+  appState.csrfToken = res.csrfToken || null;
+  applyUserDefaultBoardView(res.user && res.user.settings);
+  appState.activeTab = "portal";
+  if (res.user && res.user.needsUsernameSetup) {
+    showToast("Google account verified! Choose your permanent Collegium username to finish joining.");
+    renderApp();
+    return;
+  }
+  await refreshPortalOverview();
+  showToast(
+    successToastMessage || `Salve, ${res.user.displayName}! Welcome to the Collegium Mercatorum.`
+  );
+  renderApp();
+  await handlePendingInviteDeepLink();
+}
+
+function formatGoogleAuthErrorMessage(err) {
+  const code = String((err && err.code) || "").toLowerCase();
+  const msg = String((err && err.message) || "");
+  const lowerMsg = msg.toLowerCase();
+  if (
+    code.includes("missing-initial-state") ||
+    lowerMsg.includes("missing initial state") ||
+    lowerMsg.includes("sessionstorage") ||
+    lowerMsg.includes("storage-partitioned")
+  ) {
+    return {
+      message:
+        "Safari blocked cross-site browser storage required by Firebase's Google Sign-In popup. Please use Email & Password sign-in below, or disable 'Prevent cross-site tracking' in Safari Settings and retry.",
+      showBanner: true,
+    };
+  }
+  if (code.includes("popup-blocked")) {
+    return {
+      message:
+        "Your browser blocked the Google Sign-In pop-up window. Allow pop-ups for this site or sign in with Email & Password below.",
+      showBanner: true,
+    };
+  }
+  if (code.includes("popup-closed-by-user") || code.includes("cancelled-popup-request")) {
+    if (isLikelySafariBrowser()) {
+      return {
+        message:
+          "Google Sign-In pop-up did not complete in Safari. If you saw a storage or pop-up error, use Email & Password below or allow pop-ups / cross-site tracking for this site.",
+        showBanner: true,
+      };
+    }
+    return { message: "Google sign-in was cancelled.", showBanner: false };
+  }
+  if (code.includes("unauthorized-domain")) {
+    return {
+      message: "This domain is not yet authorized for Firebase Google Sign-In.",
+      showBanner: true,
+    };
+  }
+  return { message: msg || "Google sign-in was cancelled or failed.", showBanner: false };
+}
+
+async function handleGoogleGisCredentialResponse(response) {
+  if (_googleSignInInFlight) return;
+  const credential = response && typeof response.credential === "string" ? response.credential.trim() : "";
+  if (!credential) {
+    showToast("Google sign-in did not return an ID credential.", true);
+    return;
+  }
+  _googleSignInInFlight = true;
+  try {
+    let res = null;
+    if (isFirebaseClientConfigured()) {
+      try {
+        const fbIdToken = await signInWithFirebaseGoogleCredential(credential);
+        if (fbIdToken) {
+          res = await apiRequest("/api/auth/firebase", "POST", { idToken: fbIdToken });
+        }
+      } catch (_fbCredErr) {
+        res = null;
       }
-      await refreshPortalOverview();
-      showToast(`Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`);
-      renderApp();
-      await handlePendingInviteDeepLink();
+    }
+    if (!res) {
+      res = await apiRequest("/api/auth/google", "POST", { credential });
+      if (res && res.firebaseCustomToken && isFirebaseClientConfigured()) {
+        try {
+          await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+        } catch (_tokErr) {}
+      }
+    }
+    await finalizePortalSignIn(
+      res,
+      `Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`
+    );
+  } catch (err) {
+    const formatted = formatGoogleAuthErrorMessage(err);
+    appState.authErrorBanner = formatted.showBanner ? formatted.message : null;
+    showToast(formatted.message, true);
+    if (formatted.showBanner) renderApp();
+  } finally {
+    _googleSignInInFlight = false;
+  }
+}
+
+function mountGoogleSignInControl(hostEl, fallbackBtnEl, googleClientId) {
+  if (!hostEl || !googleClientId) return;
+  const runMount = async () => {
+    if (!hostEl.isConnected) return;
+    const gisId = await loadGoogleIdentityServices();
+    if (!gisId || !hostEl.isConnected) return;
+    try {
+      if (_gisInitializedClientId !== googleClientId) {
+        gisId.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleGisCredentialResponse,
+          ux_mode: "popup",
+          itp_support: true,
+        });
+        _gisInitializedClientId = googleClientId;
+      }
+      const rawWidth = Math.floor(
+        hostEl.clientWidth || (hostEl.parentElement && hostEl.parentElement.clientWidth) || 320
+      );
+      const btnWidth = Math.min(400, Math.max(220, rawWidth));
+      hostEl.replaceChildren();
+      gisId.renderButton(hostEl, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+        width: btnWidth,
+      });
+      if (fallbackBtnEl && hostEl.childElementCount > 0) {
+        fallbackBtnEl.style.display = "none";
+      }
+    } catch (_gisMountErr) {}
+  };
+  queueMicrotask(() => {
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(runMount);
+    } else {
+      runMount();
+    }
+  });
+}
+
+async function handleGoogleSignInClick() {
+  if (_googleSignInInFlight) return;
+
+  if (isFirebaseClientConfigured()) {
+    _googleSignInInFlight = true;
+    appState.authErrorBanner = null;
+    // Start popup flow synchronously before any await so Safari preserves click activation.
+    const idTokenPromise = signInWithFirebaseGooglePopup();
+    try {
+      const idToken = await idTokenPromise;
+      const res = await apiRequest("/api/auth/firebase", "POST", { idToken });
+      await finalizePortalSignIn(
+        res,
+        `Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`
+      );
     } catch (err) {
-      showToast(err.message || "Google sign-in was cancelled or failed.", true);
+      const formatted = formatGoogleAuthErrorMessage(err);
+      if (formatted.showBanner) {
+        appState.authErrorBanner = formatted.message;
+        renderApp();
+      }
+      showToast(formatted.message, true);
+    } finally {
+      _googleSignInInFlight = false;
+    }
+    return;
+  }
+
+  if (isProductionBackendConfigured()) {
+    _googleSignInInFlight = true;
+    try {
+      await hydrateRuntimeAuthConfig();
+      if (getEffectiveGoogleClientId() || isFirebaseClientConfigured()) {
+        renderApp();
+        showToast("Authentication ready — please click Sign in with Google again.");
+      } else {
+        showToast("Google Sign-In is unavailable on the server right now. Use Email & Password below.", true);
+      }
+    } catch (_err) {
+      showToast("Could not reach authentication server — please try again in a moment.", true);
+    } finally {
+      _googleSignInInFlight = false;
     }
     return;
   }
@@ -5276,20 +5656,11 @@ async function handleGoogleSignInClick() {
         displayName: emailVal.split("@")[0].replace(/\./g, " "),
         googleSub: `google_${emailVal.toLowerCase()}`,
       });
-      appState.user = res.user;
-      appState.csrfToken = res.csrfToken;
-      applyUserDefaultBoardView(res.user.settings);
-      appState.activeTab = "portal";
       closeModal();
-      if (res.user && res.user.needsUsernameSetup) {
-        showToast("Google account verified! Choose your permanent Collegium username to finish joining.");
-        renderApp();
-        return;
-      }
-      await refreshPortalOverview();
-      showToast(`Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`);
-      renderApp();
-      await handlePendingInviteDeepLink();
+      await finalizePortalSignIn(
+        res,
+        `Signed in with Google as ${res.user.displayName} (${maskEmailClient(res.user.email)})!`
+      );
     } catch (err) {
       showToast(err.message, true);
     }
@@ -5505,6 +5876,7 @@ function renderAuthView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    appState.authErrorBanner = null;
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const payload = {
@@ -5518,19 +5890,27 @@ function renderAuthView() {
       }
       const res = await apiRequest(endpoint, "POST", payload);
       if (isFirebaseClientConfigured()) {
+        let fbToken = null;
         if (res.firebaseCustomToken) {
-          await signInWithFirebaseCustomToken(res.firebaseCustomToken);
-        } else if (res.user && res.user.email && payload.password) {
-          await signInWithFirebaseEmailPassword(res.user.email, payload.password);
+          try {
+            fbToken = await signInWithFirebaseCustomToken(res.firebaseCustomToken);
+          } catch (_customTokErr) {
+            fbToken = null;
+          }
+        }
+        if (!fbToken && res.user && res.user.email && payload.password) {
+          fbToken = await signInWithFirebaseEmailPassword(res.user.email, payload.password);
+        }
+        if (!fbToken && isProductionBackendConfigured()) {
+          throw new Error(
+            "Unable to establish your browser authentication session. Please refresh and try again."
+          );
         }
       }
-      appState.user = res.user;
-      appState.csrfToken = res.csrfToken || null;
-      applyUserDefaultBoardView(res.user.settings);
-      await refreshPortalOverview();
-      showToast(`Salve, ${res.user.displayName}! Welcome to the Collegium Mercatorum.`);
-      renderApp();
-      await handlePendingInviteDeepLink();
+      await finalizePortalSignIn(
+        res,
+        `Salve, ${res.user.displayName}! Welcome to the Collegium Mercatorum.`
+      );
     } catch (err) {
       showToast(err.message, true);
     }
@@ -5615,6 +5995,24 @@ function renderAuthView() {
     )
   );
 
+  const effectiveGoogleClientId = getEffectiveGoogleClientId();
+  const fallbackGoogleBtn = el(
+    "button",
+    {
+      type: "button",
+      className: "btn-google",
+      onClick: handleGoogleSignInClick,
+    },
+    renderGoogleLogoSvg(),
+    el("span", { text: "Sign in with Google" })
+  );
+  let gisGoogleWrap = null;
+  if (effectiveGoogleClientId) {
+    const gisHost = el("div", { className: "gis-google-btn-host" });
+    gisGoogleWrap = el("div", { className: "gis-google-btn-wrap" }, gisHost);
+    mountGoogleSignInControl(gisHost, fallbackGoogleBtn, effectiveGoogleClientId);
+  }
+
   const authCard = el(
     "div",
     { className: "auth-card landing-auth-card" },
@@ -5638,6 +6036,13 @@ function renderAuthView() {
             text: `✉️ Expedition Invitation (#${appState.pendingInviteGameId}): Sign in with your invited Collegium account to claim your seat.`,
           }
         )
+      : null,
+    appState.authErrorBanner
+      ? el("div", {
+          className: "auth-safari-notice",
+          role: "alert",
+          text: appState.authErrorBanner,
+        })
       : null,
     el("p", {
       style: { color: "var(--text-muted)", fontSize: "0.88rem", marginTop: "0" },
@@ -5665,16 +6070,8 @@ function renderAuthView() {
         },
       })
     ),
-    el(
-      "button",
-      {
-        type: "button",
-        className: "btn-google",
-        onClick: handleGoogleSignInClick,
-      },
-      renderGoogleLogoSvg(),
-      el("span", { text: "Sign in with Google" })
-    ),
+    gisGoogleWrap,
+    fallbackGoogleBtn,
     el("div", { className: "auth-divider", text: "or continue with email & password" }),
     el(
       "form",
@@ -5701,7 +6098,7 @@ function renderAuthView() {
         isLogin ? "Enter the Port of Ostia" : "Register Account & Enter Portal"
       )
     ),
-    !isFirebaseClientConfigured()
+    !isFirebaseClientConfigured() && !isProductionBackendConfigured()
       ? el(
           "div",
           { style: { marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-subtle)", textAlign: "center" } },
@@ -19038,6 +19435,13 @@ function installGlobalHotkeys() {
     }
   });
 }
+
+let _updateAvailableNotified = false;
+window.addEventListener("nightmerchant:update-available", () => {
+  if (_updateAvailableNotified) return;
+  _updateAvailableNotified = true;
+  showToast("A newer version of Night Merchant is available — save your input or refresh to update.");
+});
 
 window.addEventListener("DOMContentLoaded", () => {
   installDelayedHoverTooltips();

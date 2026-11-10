@@ -231,10 +231,10 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             "Content-Security-Policy",
             "default-src 'self'; "
             "img-src 'self' data: https://*.googleusercontent.com; "
-            "style-src 'self' 'unsafe-inline'; "
-            "script-src 'self' https://www.gstatic.com https://apis.google.com; "
-            "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.run.app; "
-            "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com; "
+            "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; "
+            "script-src 'self' https://www.gstatic.com https://apis.google.com https://accounts.google.com/gsi/client; "
+            "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.run.app https://accounts.google.com/gsi/; "
+            "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://accounts.google.com/gsi/; "
             "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
         )
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -406,7 +406,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
 
         ctype, _ = mimetypes.guess_type(candidate)
         if not ctype:
-            ctype = "application/octet-stream"
+            ctype = "application/json" if candidate.endswith(".json") else "application/octet-stream"
         if ctype.startswith("text/") or ctype in ("application/javascript", "application/json"):
             ctype = f"{ctype}; charset=utf-8"
 
@@ -419,8 +419,10 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self._apply_security_headers(is_api=False)
-        if candidate.endswith((".html", ".js", ".css")):
-            self.send_header("Cache-Control", "no-cache")
+        if candidate.endswith(("version.json", ".html")):
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        elif candidate.endswith((".js", ".css")):
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
         else:
             self.send_header("Cache-Control", "public, max-age=86400")
         self.send_header("Content-Type", ctype)
@@ -690,6 +692,15 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                 if iss not in ("accounts.google.com", "https://accounts.google.com") or aud != google_client_id or not email_verified:
                     self._send_json(401, {"ok": False, "error": "Invalid Google authentication claims."})
                     return
+                exp_raw = claims.get("exp")
+                if exp_raw is not None:
+                    try:
+                        if int(exp_raw) <= int(time.time()):
+                            self._send_json(401, {"ok": False, "error": "Expired Google authentication token."})
+                            return
+                    except (TypeError, ValueError):
+                        self._send_json(401, {"ok": False, "error": "Invalid Google authentication claims."})
+                        return
                 email = str(claims.get("email", "")).strip()
                 display_name = str(claims.get("name", "")).strip()
                 google_sub = str(claims.get("sub", "")).strip()
@@ -714,9 +725,14 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             if g_err or not user:
                 self._send_json(400, {"ok": False, "error": g_err or "Google sign-in failed."})
                 return
+            fb_custom_token = user.pop("_firebaseCustomToken", None)
+            user.pop("csrfToken", None)
             raw_token, csrf_token = store.create_session(user["id"])
             cookie_str = self._format_session_cookie(raw_token)
-            self._send_json(200, {"ok": True, "user": user, "csrfToken": csrf_token}, set_cookie=cookie_str)
+            res_payload: Dict[str, Any] = {"ok": True, "user": user, "csrfToken": csrf_token}
+            if fb_custom_token:
+                res_payload["firebaseCustomToken"] = fb_custom_token
+            self._send_json(200, res_payload, set_cookie=cookie_str)
             return
 
         if path == "/api/auth/logout":
