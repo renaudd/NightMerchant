@@ -131,6 +131,65 @@ def get_game_lock(game_id: str) -> threading.Lock:
         return _game_locks[game_id]
 
 
+def _sanitize_for_user(
+    state: Optional[Dict[str, Any]],
+    user_id: Optional[int],
+    summary: Optional[Dict[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
+    if not state or "players" not in state:
+        return None
+    s = summary or {}
+    return game_engine.sanitize_state_for_player(
+        state,
+        user_id,
+        host_user_id=s.get("hostUserId"),
+        speed_mode=s.get("speedMode"),
+        turn_time_limit_minutes=s.get("turnTimeLimitMinutes"),
+        next_timeout_at=s.get("nextTimeoutAt"),
+    )
+
+
+def _apply_fast_timeouts_locked(
+    store_mod: Any,
+    game_id: str,
+    viewer_user: Optional[Dict[str, Any]] = None,
+) -> Optional[Tuple[Dict[str, Any], Dict[str, Any], List[int]]]:
+    full = store_mod.get_game_full(game_id, viewer_user=viewer_user)
+    if not full or not full[0]:
+        return None
+    summary, state = full
+    if not state or "players" not in state or summary.get("status") != "active":
+        return summary, state, []
+    state.setdefault("hostUserId", summary.get("hostUserId"))
+    state["speedMode"] = summary.get("speedMode", state.get("speedMode", "normal"))
+    state["turnTimeLimitMinutes"] = summary.get("turnTimeLimitMinutes", state.get("turnTimeLimitMinutes"))
+    kicked = game_engine.process_fast_timeouts(state)
+    needs_sync_save = (
+        summary.get("speedMode") == "fast"
+        and summary.get("nextTimeoutAt") is None
+        and bool(game_engine.get_blocking_player_indices(state))
+    )
+    if kicked or needs_sync_save:
+        store_mod.save_game_state(game_id, state, was_Already_Finished=False)
+        summary = store_mod.get_game_summary(game_id, viewer_user=viewer_user) or summary
+    return summary, state, kicked
+
+
+def _sweep_due_fast_games(store_mod: Optional[Any] = None) -> None:
+    st = store_mod or storage.get_backend()
+    try:
+        due_ids = st.list_active_fast_game_ids_due()
+    except Exception:
+        return
+    for gid in due_ids:
+        lock = get_game_lock(gid)
+        with lock:
+            try:
+                _apply_fast_timeouts_locked(st, gid, viewer_user=None)
+            except Exception:
+                pass
+
+
 def check_rate_limit(key: str, limit: int, window_sec: float = 60.0) -> bool:
     now = time.time()
     with _rate_lock:
@@ -423,6 +482,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             user = self._require_auth(require_csrf=False)
             if not user:
                 return
+            _sweep_due_fast_games(store)
             games = store.list_games(limit=30, viewer_user=user)
             leaderboard = store.get_leaderboard()
             fresh_user = store.get_user_by_id(user["id"])
@@ -434,6 +494,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                     "games": games,
                     "leaderboard": leaderboard,
                     "botPersonas": game_engine.BOT_PERSONAS,
+                    "botDifficulties": list(game_engine.BOT_DIFFICULTIES),
                     "referenceCatalog": REFERENCE_CATALOG,
                 },
             )
@@ -461,13 +522,14 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             if not user:
                 return
             game_id = m_game.group(1)
-            full = store.get_game_full(game_id, viewer_user=user)
-            if not full:
-                self._send_json(404, {"ok": False, "error": "Game not found."})
-                return
-            summary, state = full
-            sanitized = game_engine.sanitize_state_for_player(state, user["id"]) if state and "players" in state else None
-            self._send_json(200, {"ok": True, "summary": summary, "state": sanitized})
+            with get_game_lock(game_id):
+                resolved = _apply_fast_timeouts_locked(store, game_id, viewer_user=user)
+                if not resolved:
+                    self._send_json(404, {"ok": False, "error": "Game not found."})
+                    return
+                summary, state, _kicked = resolved
+                sanitized = _sanitize_for_user(state, user["id"], summary)
+                self._send_json(200, {"ok": True, "summary": summary, "state": sanitized})
             return
 
         self._send_json(404, {"ok": False, "error": "Unknown API endpoint."})
@@ -739,6 +801,41 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                 self._send_json(400, {"ok": False, "error": "Invalid player or bot count."})
                 return
 
+            raw_speed = body.get("speedMode", "normal")
+            if raw_speed is None or str(raw_speed).strip() == "":
+                speed_mode = "normal"
+            else:
+                cand_speed = str(raw_speed).strip().lower()
+                if cand_speed not in ("normal", "fast"):
+                    self._send_json(400, {"ok": False, "error": "Invalid speed mode. Choose 'normal' or 'fast'."})
+                    return
+                speed_mode = cand_speed
+
+            turn_time_limit_minutes: Optional[int] = None
+            if speed_mode == "fast":
+                raw_limit = (
+                    6
+                    if ("turnTimeLimitMinutes" not in body or body.get("turnTimeLimitMinutes") is None)
+                    else body.get("turnTimeLimitMinutes")
+                )
+                if isinstance(raw_limit, bool):
+                    self._send_json(400, {"ok": False, "error": "Fast game turn limit must be an integer between 1 and 12 minutes."})
+                    return
+                try:
+                    parsed_limit = int(raw_limit)
+                except (TypeError, ValueError):
+                    self._send_json(400, {"ok": False, "error": "Fast game turn limit must be an integer between 1 and 12 minutes."})
+                    return
+                if (isinstance(raw_limit, float) and raw_limit != parsed_limit) or (
+                    isinstance(raw_limit, str) and raw_limit.strip() != str(parsed_limit)
+                ):
+                    self._send_json(400, {"ok": False, "error": "Fast game turn limit must be a whole number of minutes between 1 and 12."})
+                    return
+                if parsed_limit < 1 or parsed_limit > 12:
+                    self._send_json(400, {"ok": False, "error": "Fast game turn limit must be between 1 and 12 minutes."})
+                    return
+                turn_time_limit_minutes = parsed_limit
+
             start_immediately = bool(body.get("startImmediately", False))
             raw_invite_mode = str(body.get("inviteMode", "open")).strip().lower()
             invite_mode = "open" if start_immediately else ("invite_only" if raw_invite_mode == "invite_only" else "open")
@@ -780,6 +877,8 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                 invited_users = resolved_invites
 
             req_strategies = body.get("botStrategies")
+            req_difficulties = body.get("botDifficulties")
+            default_diff = game_engine.normalize_bot_difficulty(body.get("botDifficulty"), "ionic")
             persona_by_strategy = {p["strategy"]: p for p in game_engine.BOT_PERSONAS}
 
             initial_bots = []
@@ -793,6 +892,11 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                     persona = dict(persona_by_strategy[chosen_strat])
                 else:
                     persona = dict(game_engine.BOT_PERSONAS[i % len(game_engine.BOT_PERSONAS)])
+                cand_diff = default_diff
+                if isinstance(req_difficulties, list) and i < len(req_difficulties):
+                    cand_diff = game_engine.normalize_bot_difficulty(req_difficulties[i], default_diff)
+                persona["difficulty"] = cand_diff
+                persona["botDifficulty"] = cand_diff
                 initial_bots.append(persona)
 
             summary = store.create_game_lobby(
@@ -802,6 +906,8 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                 initial_bots,
                 invite_mode=invite_mode,
                 invited_users=invited_users,
+                speed_mode=speed_mode,
+                turn_time_limit_minutes=turn_time_limit_minutes,
             )
             game_id = summary["id"]
 
@@ -813,13 +919,19 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                         "color": s["color"],
                         "isBot": s["isBot"],
                         "botStrategy": s.get("botStrategy") or "balanced",
+                        "botDifficulty": s.get("botDifficulty") or "ionic",
                     }
                     for s in summary["seats"]
                 ]
-                state = game_engine.create_initial_game_state(players_config)
+                state = game_engine.create_initial_game_state(
+                    players_config,
+                    speed_mode=summary.get("speedMode", speed_mode),
+                    turn_time_limit_minutes=summary.get("turnTimeLimitMinutes", turn_time_limit_minutes),
+                )
+                state["hostUserId"] = summary.get("hostUserId", user["id"])
                 store.save_game_state(game_id, state)
                 summary = store.get_game_summary(game_id, viewer_user=user) or summary
-                sanitized = game_engine.sanitize_state_for_player(state, user["id"])
+                sanitized = _sanitize_for_user(state, user["id"], summary)
                 self._send_json(201, {"ok": True, "summary": summary, "state": sanitized})
                 return
 
@@ -839,7 +951,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
             return
 
         m_action = re.match(
-            r"^/api/games/([a-f0-9]{6,24})/(join|invite|add-bot|update-bot|remove-seat|start|action|terminate)$",
+            r"^/api/games/([a-f0-9]{6,24})/(join|invite|add-bot|update-bot|remove-seat|remove-player|chat|start|action|terminate)$",
             path,
         )
         if m_action:
@@ -911,26 +1023,164 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                     else:
                         persona_idx = int(body.get("personaIndex", 0)) % len(game_engine.BOT_PERSONAS)
                         bot_info = dict(game_engine.BOT_PERSONAS[persona_idx])
+                    req_diff = game_engine.normalize_bot_difficulty(
+                        body.get("difficulty") or body.get("botDifficulty"),
+                        "ionic",
+                    )
+                    bot_info["difficulty"] = req_diff
+                    bot_info["botDifficulty"] = req_diff
                     ok, msg = store.add_bot_to_lobby(game_id, user["id"], bot_info)
                     summary = store.get_game_summary(game_id, viewer_user=user)
-                    self._send_json(200 if ok else 400, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
+                    status_code = 200 if ok else (403 if "Only the lobby host" in msg else 400)
+                    self._send_json(status_code, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
                     return
 
                 if subcmd == "update-bot":
-                    seat_idx = int(body.get("seatIndex", -1))
+                    try:
+                        seat_idx = int(body.get("seatIndex", -1))
+                    except (TypeError, ValueError):
+                        seat_idx = -1
                     req_strat = str(body.get("strategy", "balanced")).strip()
                     persona_by_strategy = {p["strategy"]: p for p in game_engine.BOT_PERSONAS}
                     bot_info = dict(persona_by_strategy.get(req_strat, game_engine.BOT_PERSONAS[0]))
+                    req_diff = game_engine.normalize_bot_difficulty(
+                        body.get("difficulty") or body.get("botDifficulty"),
+                        "ionic",
+                    )
+                    bot_info["difficulty"] = req_diff
+                    bot_info["botDifficulty"] = req_diff
                     ok, msg = store.update_lobby_bot_seat(game_id, user["id"], seat_idx, bot_info)
                     summary = store.get_game_summary(game_id, viewer_user=user)
-                    self._send_json(200 if ok else 400, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
+                    status_code = 200 if ok else (403 if "Only the lobby host" in msg else 400)
+                    self._send_json(status_code, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
                     return
 
                 if subcmd == "remove-seat":
-                    seat_idx = int(body.get("seatIndex", -1))
+                    try:
+                        seat_idx = int(body.get("seatIndex", -1))
+                    except (TypeError, ValueError):
+                        seat_idx = -1
                     ok, msg = store.remove_seat_from_lobby(game_id, user["id"], seat_idx)
                     summary = store.get_game_summary(game_id, viewer_user=user)
-                    self._send_json(200 if ok else 400, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
+                    status_code = 200 if ok else (403 if "Only the lobby host" in msg else 400)
+                    self._send_json(status_code, {"ok": ok, "message": msg, "error": None if ok else msg, "summary": summary})
+                    return
+
+                if subcmd == "remove-player":
+                    resolved = _apply_fast_timeouts_locked(store, game_id, viewer_user=user)
+                    if not resolved:
+                        self._send_json(404, {"ok": False, "error": "Game not found."})
+                        return
+                    summary, state, _kicked = resolved
+                    is_creator = summary.get("hostUserId") == user["id"]
+                    is_admin = bool(user.get("isAdmin"))
+                    if not is_creator and not is_admin:
+                        self._send_json(
+                            403,
+                            {"ok": False, "error": "Only the game creator or an administrator can remove players from an active game."},
+                        )
+                        return
+                    if summary.get("status") != "active" or not state or "players" not in state or state.get("phase") == "finished":
+                        self._send_json(400, {"ok": False, "error": "Players can only be replaced mid-game while the match is active."})
+                        return
+
+                    target_idx: Optional[int] = None
+                    if "playerIndex" in body and body.get("playerIndex") is not None:
+                        try:
+                            target_idx = int(body.get("playerIndex"))
+                        except (TypeError, ValueError):
+                            target_idx = None
+                    elif "userId" in body and body.get("userId") is not None:
+                        try:
+                            target_uid = int(body.get("userId"))
+                        except (TypeError, ValueError):
+                            target_uid = None
+                        if target_uid is not None:
+                            for pl in state.get("players", []):
+                                if not pl.get("isBot") and pl.get("userId") == target_uid:
+                                    target_idx = int(pl["index"])
+                                    break
+
+                    if target_idx is None or not (0 <= target_idx < len(state.get("players", []))):
+                        self._send_json(400, {"ok": False, "error": "Valid playerIndex is required."})
+                        return
+
+                    reason = (
+                        "left table to spectate"
+                        if state["players"][target_idx].get("userId") == user["id"]
+                        else "removed by host"
+                    )
+                    ok, msg = game_engine.replace_human_with_ionic_bot(state, target_idx, reason=reason, run_bots=True)
+                    if ok:
+                        store.save_game_state(game_id, state, was_Already_Finished=False)
+                    updated_summary = store.get_game_summary(game_id, viewer_user=user)
+                    sanitized = _sanitize_for_user(state, user["id"], updated_summary)
+                    self._send_json(
+                        200 if ok else 400,
+                        {"ok": ok, "message": msg, "error": None if ok else msg, "summary": updated_summary, "state": sanitized},
+                    )
+                    return
+
+                if subcmd == "chat":
+                    resolved = _apply_fast_timeouts_locked(store, game_id, viewer_user=user)
+                    if not resolved:
+                        self._send_json(404, {"ok": False, "error": "Game not found."})
+                        return
+                    summary, state, _kicked = resolved
+                    if not state or "players" not in state:
+                        self._send_json(400, {"ok": False, "error": "Game chat is available once the match starts."})
+                        return
+
+                    seated_player = next(
+                        (p for p in state.get("players", []) if not p.get("isBot") and p.get("userId") == user["id"]),
+                        None,
+                    )
+                    is_creator = summary.get("hostUserId") == user["id"]
+                    is_admin = bool(user.get("isAdmin"))
+                    if not seated_player and not is_creator and not is_admin:
+                        self._send_json(
+                            403,
+                            {"ok": False, "error": "Only seated players, the game creator, or an administrator may chat in this match."},
+                        )
+                        return
+
+                    raw_msg = body.get("message")
+                    if raw_msg is None:
+                        self._send_json(400, {"ok": False, "error": "Chat message cannot be empty."})
+                        return
+                    cleaned_msg = " ".join(ch for ch in "".join(c for c in str(raw_msg) if ord(c) >= 32 and ord(c) != 127).split()).strip()
+                    if not cleaned_msg:
+                        self._send_json(400, {"ok": False, "error": "Chat message cannot be empty."})
+                        return
+                    if len(cleaned_msg) > 300:
+                        self._send_json(400, {"ok": False, "error": "Chat message must be 300 characters or fewer."})
+                        return
+
+                    if seated_player:
+                        sender_name = str(seated_player.get("name") or user.get("displayName") or "Merchant")
+                        sender_color = seated_player.get("color")
+                        is_spectator = False
+                    else:
+                        sender_name = str(user.get("displayName") or user.get("username") or "Spectator")
+                        sender_color = user.get("preferredColor")
+                        is_spectator = True
+
+                    entry = game_engine.add_chat_log(
+                        state,
+                        sender_name=sender_name,
+                        sender_color=sender_color,
+                        message=cleaned_msg,
+                        is_spectator=is_spectator,
+                        user_id=user["id"],
+                    )
+                    if not entry:
+                        self._send_json(400, {"ok": False, "error": "Chat message cannot be empty."})
+                        return
+
+                    # Persist only state JSON so chat never resets turn inactivity timers
+                    store.update_game_state_json(game_id, state)
+                    sanitized = _sanitize_for_user(state, user["id"], summary)
+                    self._send_json(200, {"ok": True, "chatEntry": entry, "summary": summary, "state": sanitized})
                     return
 
                 if subcmd == "start":
@@ -954,13 +1204,19 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                             "color": s["color"],
                             "isBot": s["isBot"],
                             "botStrategy": s.get("botStrategy") or "balanced",
+                            "botDifficulty": s.get("botDifficulty") or "ionic",
                         }
                         for s in summary["seats"]
                     ]
-                    state = game_engine.create_initial_game_state(players_config)
+                    state = game_engine.create_initial_game_state(
+                        players_config,
+                        speed_mode=summary.get("speedMode", "normal"),
+                        turn_time_limit_minutes=summary.get("turnTimeLimitMinutes"),
+                    )
+                    state["hostUserId"] = summary.get("hostUserId", user["id"])
                     store.save_game_state(game_id, state)
                     updated_summary = store.get_game_summary(game_id, viewer_user=user)
-                    sanitized = game_engine.sanitize_state_for_player(state, user["id"])
+                    sanitized = _sanitize_for_user(state, user["id"], updated_summary)
                     self._send_json(200, {"ok": True, "message": "Match started!", "summary": updated_summary, "state": sanitized})
                     return
 
@@ -974,6 +1230,24 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                         self._send_json(400, {"ok": False, "error": "Game has not started yet."})
                         return
                     was_finished = summary["status"] == "finished"
+                    state.setdefault("hostUserId", summary.get("hostUserId"))
+                    state["speedMode"] = summary.get("speedMode", state.get("speedMode", "normal"))
+                    state["turnTimeLimitMinutes"] = summary.get("turnTimeLimitMinutes", state.get("turnTimeLimitMinutes"))
+
+                    kicked = game_engine.process_fast_timeouts(state) if not was_finished else []
+
+                    if body.get("type") == "spectator_step":
+                        is_creator = summary.get("hostUserId") == user["id"]
+                        is_admin = bool(user.get("isAdmin"))
+                        if not is_creator and not is_admin:
+                            if kicked:
+                                store.save_game_state(game_id, state, was_Already_Finished=was_finished)
+                            self._send_json(
+                                403,
+                                {"ok": False, "error": "Only the game creator or an administrator can advance an all-AI match."},
+                            )
+                            return
+
                     human_uids = [
                         p["userId"]
                         for p in state.get("players", [])
@@ -981,10 +1255,10 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
                     ]
                     allow_undo_map = store.get_users_allow_undo_map(human_uids)
                     ok, msg = game_engine.handle_player_action(state, user["id"], body, allow_undo_map=allow_undo_map)
-                    if ok:
+                    if ok or kicked:
                         store.save_game_state(game_id, state, was_Already_Finished=was_finished)
                     updated_summary = store.get_game_summary(game_id, viewer_user=user)
-                    sanitized = game_engine.sanitize_state_for_player(state, user["id"])
+                    sanitized = _sanitize_for_user(state, user["id"], updated_summary)
                     fresh_user = store.get_user_by_id(user["id"])
                     self._send_json(
                         200 if ok else 400,
@@ -1025,12 +1299,21 @@ def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
     else:
         bind_host = "127.0.0.1"
     httpd = ThreadingHTTPServer((bind_host, port), NightMerchantHandler)
+    stop_event = threading.Event()
+
+    def _fast_timeout_loop() -> None:
+        while not stop_event.wait(5.0):
+            _sweep_due_fast_games(store)
+
+    sweeper = threading.Thread(target=_fast_timeout_loop, name="FastTimeoutSweeper", daemon=True)
+    sweeper.start()
     print(f"Night Merchant: All Roads Lead to Rome (211 A.D.) server listening on http://{bind_host}:{port}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        stop_event.set()
         httpd.server_close()
 
 

@@ -30,6 +30,10 @@ SESSION_TTL_SECONDS = local_helpers.SESSION_TTL_SECONDS
 ALL_CART_COLORS = local_helpers.ALL_CART_COLORS
 DEFAULT_USER_SETTINGS = local_helpers.DEFAULT_USER_SETTINGS
 normalize_cart_color = local_helpers.normalize_cart_color
+normalize_bot_difficulty = local_helpers.normalize_bot_difficulty
+normalize_speed_mode = local_helpers.normalize_speed_mode
+normalize_turn_time_limit_minutes = local_helpers.normalize_turn_time_limit_minutes
+compute_next_timeout_at = local_helpers.compute_next_timeout_at
 validate_email = local_helpers.validate_email
 validate_password_strength = local_helpers.validate_password_strength
 mask_email = local_helpers.mask_email
@@ -793,6 +797,11 @@ def _build_summary_from_game_doc(
             "userId": s.get("userId"),
             "isBot": bool(s.get("isBot")),
             "botStrategy": s.get("botStrategy"),
+            "botDifficulty": (
+                normalize_bot_difficulty(s.get("botDifficulty"), "ionic")
+                if s.get("isBot")
+                else None
+            ),
             "name": str(s.get("name", "")),
             "color": normalize_cart_color(s.get("color"), "Z1"),
             "finalWealth": s.get("finalWealth"),
@@ -801,6 +810,10 @@ def _build_summary_from_game_doc(
     ]
     raw_invites = list(g_data.get("invites") or [])
     invite_mode = str(g_data.get("inviteMode") or "open")
+    speed_mode = normalize_speed_mode(g_data.get("speedMode") or "normal")
+    turn_limit_min = normalize_turn_time_limit_minutes(g_data.get("turnTimeLimitMinutes"), speed_mode)
+    next_timeout_raw = g_data.get("nextTimeoutAt")
+    next_timeout_at = int(next_timeout_raw) if next_timeout_raw is not None else None
     seated_uids = {s["userId"] for s in seats if s.get("userId") is not None}
     invited_uids = {inv.get("userId") for inv in raw_invites if inv.get("userId") is not None}
     invited_unames = {str(inv.get("username") or "").lower() for inv in raw_invites}
@@ -844,6 +857,9 @@ def _build_summary_from_game_doc(
         "hostUserId": g_data.get("hostUserId"),
         "status": str(g_data.get("status", "lobby")),
         "inviteMode": invite_mode,
+        "speedMode": speed_mode,
+        "turnTimeLimitMinutes": turn_limit_min,
+        "nextTimeoutAt": next_timeout_at,
         "invites": invites_out,
         "invitedCount": len(raw_invites),
         "viewerIsInvited": is_invited,
@@ -866,6 +882,8 @@ def create_game_lobby(
     initial_bots: List[Dict[str, Any]],
     invite_mode: str = "open",
     invited_users: Optional[List[Dict[str, Any]]] = None,
+    speed_mode: str = "normal",
+    turn_time_limit_minutes: Optional[int] = None,
 ) -> Dict[str, Any]:
     fs = _ensure_firebase()
     game_id = secrets.token_hex(6)
@@ -873,6 +891,8 @@ def create_game_lobby(
     clean_name = (name.strip() or f"{host_user['displayName']}'s Convivium")[:60]
     max_p = max(2, min(6, int(max_players)))
     clean_mode = "invite_only" if str(invite_mode).strip().lower() == "invite_only" else "open"
+    clean_speed = normalize_speed_mode(speed_mode)
+    clean_limit = normalize_turn_time_limit_minutes(turn_time_limit_minutes, clean_speed)
 
     seats = [
         {
@@ -880,6 +900,7 @@ def create_game_lobby(
             "userId": host_user["id"],
             "isBot": False,
             "botStrategy": None,
+            "botDifficulty": None,
             "name": host_user["displayName"],
             "color": normalize_cart_color(host_user.get("preferredColor"), "Z1"),
             "finalWealth": None,
@@ -893,12 +914,14 @@ def create_game_lobby(
         if not b_color or b_color in used_colors:
             b_color = next((c for c in ALL_CART_COLORS if c not in used_colors), "Z3")
         used_colors.add(b_color)
+        b_diff = normalize_bot_difficulty(b.get("difficulty") or b.get("botDifficulty"), "ionic")
         seats.append(
             {
                 "seatIndex": len(seats),
                 "userId": None,
                 "isBot": True,
                 "botStrategy": b.get("strategy", "balanced"),
+                "botDifficulty": b_diff,
                 "name": b.get("name", f"Bot #{len(seats)}"),
                 "color": b_color,
                 "finalWealth": None,
@@ -926,6 +949,9 @@ def create_game_lobby(
         "hostUserId": host_user["id"],
         "status": "lobby",
         "inviteMode": clean_mode,
+        "speedMode": clean_speed,
+        "turnTimeLimitMinutes": clean_limit,
+        "nextTimeoutAt": None,
         "invites": invites_docs,
         "maxPlayers": max_p,
         "season": "Spring",
@@ -1036,6 +1062,7 @@ def join_game_lobby(game_id: str, user: Dict[str, Any], preferred_color: Optiona
                 "userId": user["id"],
                 "isBot": False,
                 "botStrategy": None,
+                "botDifficulty": None,
                 "name": user["displayName"],
                 "color": chosen_color,
                 "finalWealth": None,
@@ -1125,12 +1152,14 @@ def add_bot_to_lobby(game_id: str, user_id: int, bot_info: Dict[str, Any]) -> Tu
     if b_name in used_names:
         b_name = f"{b_name} ({len(seats) + 1})"
 
+    b_diff = normalize_bot_difficulty(bot_info.get("difficulty") or bot_info.get("botDifficulty"), "ionic")
     seats.append(
         {
             "seatIndex": len(seats),
             "userId": None,
             "isBot": True,
             "botStrategy": bot_info.get("strategy", "balanced"),
+            "botDifficulty": b_diff,
             "name": b_name,
             "color": b_color,
             "finalWealth": None,
@@ -1177,6 +1206,10 @@ def update_lobby_bot_seat(
         b_color = next((c for c in ALL_CART_COLORS if c not in used_colors), "Z3")
 
     target["botStrategy"] = str(bot_info.get("strategy") or target.get("botStrategy") or "balanced").strip().lower()
+    target["botDifficulty"] = normalize_bot_difficulty(
+        bot_info.get("difficulty") or bot_info.get("botDifficulty") or target.get("botDifficulty"),
+        "ionic",
+    )
     target["name"] = b_name
     target["color"] = b_color
     g_ref.update({"seats": seats, "updatedAt": int(time.time())})
@@ -1194,14 +1227,46 @@ def remove_seat_from_lobby(game_id: str, user_id: int, seat_index: int) -> Tuple
         return False, "Cannot remove seats after game has started."
     if g_data.get("hostUserId") != user_id:
         return False, "Only the lobby host can remove seats."
-    if seat_index <= 0:
-        return False, "Cannot remove the host seat."
+    cur_seats = list(g_data.get("seats") or [])
+    if not any(int(s["seatIndex"]) == seat_index for s in cur_seats):
+        return False, "Selected seat was not found."
 
-    seats = [s for s in (g_data.get("seats") or []) if int(s["seatIndex"]) != seat_index]
+    seats = [s for s in cur_seats if int(s["seatIndex"]) != seat_index]
     for idx, s in enumerate(seats):
         s["seatIndex"] = idx
     g_ref.update({"seats": seats, "updatedAt": int(time.time())})
     return True, "Seat removed."
+
+
+def update_game_state_json(game_id: str, state: Dict[str, Any]) -> None:
+    fs = _ensure_firebase()
+    now = int(time.time())
+    g_ref = fs.collection("nm_games").document(game_id)
+    if g_ref.get().exists:
+        g_ref.update(
+            {
+                "stateZlib": _serialize_game_state_zlib(state),
+                "stateJson": "",
+                "updatedAt": now,
+            }
+        )
+
+
+def list_active_fast_game_ids_due(now: Optional[int] = None) -> List[str]:
+    fs = _ensure_firebase()
+    cur_now = int(time.time()) if now is None else int(now)
+    docs = fs.collection("nm_games").where("status", "==", "active").where("speedMode", "==", "fast").stream()
+    due_ids: List[str] = []
+    for d in docs:
+        gd = d.to_dict() or {}
+        nt = gd.get("nextTimeoutAt")
+        if nt is not None:
+            try:
+                if int(nt) <= cur_now:
+                    due_ids.append(str(gd.get("id") or d.id))
+            except (TypeError, ValueError):
+                pass
+    return due_ids
 
 
 def _recompute_firestore_user_stats(fs, user_ids: List[int]) -> None:
@@ -1234,14 +1299,28 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
     g_data = snap.to_dict()
     seats = list(g_data.get("seats") or [])
     players = list(state.get("players") or [])
+    players_by_idx = {int(p["index"]): p for p in players if "index" in p}
 
-    if status == "finished":
-        cash_by_idx = {int(p["index"]): int(p.get("cash", 0)) for p in players if "index" in p}
-        for s in seats:
-            if int(s["seatIndex"]) in cash_by_idx:
-                s["finalWealth"] = cash_by_idx[int(s["seatIndex"])]
-    else:
-        for s in seats:
+    speed_mode = normalize_speed_mode(g_data.get("speedMode") or state.get("speedMode", "normal"))
+    limit_min = normalize_turn_time_limit_minutes(
+        g_data.get("turnTimeLimitMinutes") if g_data.get("turnTimeLimitMinutes") is not None else state.get("turnTimeLimitMinutes"),
+        speed_mode,
+    )
+    next_timeout_at = compute_next_timeout_at(state, speed_mode, limit_min, status=status)
+
+    for s in seats:
+        s_idx = int(s["seatIndex"])
+        p = players_by_idx.get(s_idx)
+        if p:
+            is_b = bool(p.get("isBot"))
+            s["isBot"] = is_b
+            s["userId"] = None if is_b else p.get("userId")
+            s["botStrategy"] = str(p.get("botStrategy") or "balanced") if is_b else None
+            s["botDifficulty"] = normalize_bot_difficulty(p.get("botDifficulty"), "ionic") if is_b else None
+            s["name"] = str(p.get("name") or s.get("name", f"Player {s_idx + 1}"))
+            s["color"] = normalize_cart_color(p.get("color"), s.get("color", "Z3"))
+            s["finalWealth"] = int(p.get("cash", 0)) if status == "finished" else None
+        else:
             s["finalWealth"] = None
 
     g_ref.update(
@@ -1253,12 +1332,13 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
             "stateZlib": _serialize_game_state_zlib(state),
             "stateJson": "",
             "winnerName": winner,
+            "nextTimeoutAt": next_timeout_at,
             "seats": seats,
             "updatedAt": now,
         }
     )
 
-    affected_uids = [int(p["userId"]) for p in players if p.get("userId") is not None]
+    affected_uids = [int(p["userId"]) for p in players if not p.get("isBot") and p.get("userId") is not None]
     cg_ref = fs.collection("nm_completed_games").document(game_id)
 
     if status == "finished":
@@ -1277,13 +1357,15 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
         for i, p in enumerate(players):
             s_idx = int(p.get("index", i))
             is_b = bool(p.get("isBot"))
+            b_diff = normalize_bot_difficulty(p.get("botDifficulty"), "ionic") if is_b else None
             if not is_b:
                 human_cnt += 1
             comp_players.append(
                 {
                     "seatIndex": s_idx,
-                    "userId": int(p["userId"]) if p.get("userId") is not None else None,
+                    "userId": None if is_b else (int(p["userId"]) if p.get("userId") is not None else None),
                     "isBot": is_b,
+                    "botDifficulty": b_diff,
                     "name": str(p.get("name", f"Player {s_idx + 1}")),
                     "color": normalize_cart_color(p.get("color"), "Z3"),
                     "finalScore": int(p.get("cash", 0)),

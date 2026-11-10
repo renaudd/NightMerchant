@@ -548,6 +548,34 @@ BOT_PERSONAS = [
     },
 ]
 
+BOT_DIFFICULTIES: Tuple[str, ...] = ("doric", "ionic", "corinthian")
+
+
+def normalize_bot_difficulty(raw: Any, default: str = "ionic") -> str:
+    val = str(raw or "").strip().lower()
+    if val in ("doric", "easy"):
+        return "doric"
+    if val in ("ionic", "medium"):
+        return "ionic"
+    if val in ("corinthian", "hard"):
+        return "corinthian"
+    return default if default in BOT_DIFFICULTIES else "ionic"
+
+
+def get_bot_difficulty(bot: Optional[Dict[str, Any]]) -> str:
+    if not isinstance(bot, dict):
+        return "ionic"
+    return normalize_bot_difficulty(bot.get("botDifficulty"), "ionic")
+
+
+def _bot_difficulty_tier(bot: Optional[Dict[str, Any]]) -> int:
+    diff = get_bot_difficulty(bot)
+    if diff == "doric":
+        return 0
+    if diff == "corinthian":
+        return 2
+    return 1
+
 
 def roll_rome_die() -> int:
     return secrets.choice(ROME_DIE_FACES)
@@ -885,6 +913,7 @@ def _build_final_standings(state: Dict[str, Any]) -> List[Dict[str, Any]]:
             "color": str(p.get("color", "Z3")),
             "isBot": bool(p.get("isBot", False)),
             "botStrategy": p.get("botStrategy", "balanced"),
+            "botDifficulty": get_bot_difficulty(p) if p.get("isBot") else None,
             "won": won,
             "eliminated": elim,
             "eliminationReason": p.get("eliminationReason"),
@@ -963,8 +992,42 @@ def add_log(state: Dict[str, Any], message: str, category: str = "info") -> None
         "category": category,
         "text": message,
     })
-    if len(state["logs"]) > 150:
-        state["logs"] = state["logs"][-150:]
+    if len(state["logs"]) > 200:
+        state["logs"] = state["logs"][-200:]
+
+
+def add_chat_log(
+    state: Dict[str, Any],
+    sender_name: str,
+    sender_color: Optional[str] = None,
+    message: str = "",
+    is_spectator: bool = False,
+    user_id: Optional[int] = None,
+) -> Optional[Dict[str, Any]]:
+    raw = str(message or "")
+    cleaned = "".join(ch for ch in raw if ord(ch) >= 32 and ord(ch) != 127)
+    cleaned = " ".join(cleaned.split()).strip()[:300]
+    if not cleaned:
+        return None
+    clean_sender = "".join(ch for ch in str(sender_name or "Merchant") if ord(ch) >= 32 and ord(ch) != 127).strip()[:48] or "Merchant"
+    entry: Dict[str, Any] = {
+        "id": secrets.token_hex(4),
+        "ts": int(time.time()),
+        "season": state.get("season", "Spring"),
+        "phase": state.get("phase", ""),
+        "turn": int(state.get("turn", 1) or 1),
+        "category": "chat",
+        "senderName": clean_sender,
+        "senderColor": str(sender_color).strip() if sender_color else None,
+        "isSpectator": bool(is_spectator),
+        "userId": user_id,
+        "text": cleaned,
+    }
+    logs = state.setdefault("logs", [])
+    logs.append(entry)
+    if len(logs) > 200:
+        state["logs"] = logs[-200:]
+    return entry
 
 
 def add_dice_event(
@@ -1014,6 +1077,7 @@ def add_npc_event(
         "playerName": str(bot.get("name", "NPC")),
         "playerColor": str(bot.get("color", "Z3")),
         "botStrategy": str(bot.get("botStrategy", "balanced")),
+        "botDifficulty": get_bot_difficulty(bot),
         "actionType": action_type,
         "summary": summary,
         "cell": normalize_cell_id(cell) if cell else None,
@@ -1175,8 +1239,20 @@ def _pop_distinct_by_name(deck: List[Dict[str, Any]], count: int) -> List[Dict[s
     return hand
 
 
-def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str, Any]:
+def create_initial_game_state(
+    players_config: List[Dict[str, Any]],
+    speed_mode: str = "normal",
+    turn_time_limit_minutes: Optional[int] = None,
+) -> Dict[str, Any]:
     data = load_all_game_data()
+
+    clean_speed = "fast" if str(speed_mode or "").strip().lower() == "fast" else "normal"
+    clean_limit: Optional[int] = None
+    if clean_speed == "fast":
+        try:
+            clean_limit = max(1, min(12, int(turn_time_limit_minutes if turn_time_limit_minutes is not None else 6)))
+        except (TypeError, ValueError):
+            clean_limit = 6
 
     market_deck = crypto_shuffle(data["market"])
     mission_deck = crypto_shuffle(data["missiones"])
@@ -1208,6 +1284,9 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
         "turn": 1,
         "firstPlayerIndex": 0,
         "activePlayerIndex": 0,
+        "speedMode": clean_speed,
+        "turnTimeLimitMinutes": clean_limit,
+        "turnWaitingSince": {},
         "setupDiscardOrder": [],
         "politicalClimate": {
             "activeIds": [],
@@ -1256,14 +1335,16 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
             m["pickedUp"] = False
             m["completed"] = False
         dealt_influence = _pop_distinct_by_name(state["decks"]["influence"], 5)
+        is_bot = bool(pconf.get("isBot", False))
 
         player_obj = {
             "index": idx,
-            "userId": pconf.get("userId"),
+            "userId": None if is_bot else pconf.get("userId"),
             "name": pconf["name"],
             "color": pconf["color"],
-            "isBot": bool(pconf.get("isBot", False)),
+            "isBot": is_bot,
             "botStrategy": pconf.get("botStrategy", "balanced"),
+            "botDifficulty": normalize_bot_difficulty(pconf.get("botDifficulty"), "ionic") if is_bot else None,
             "cash": 12,
             "cart": [],
             "guards": [],
@@ -1293,6 +1374,7 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
             "gambledThisTurn": False,
             "scoutedThisTurn": False,
             "trashedThisTurn": False,
+            "enteredGateTurn1": False,
             "turnEffects": {},
             "scoutedInfo": [],
             "last stolen": None,
@@ -1315,8 +1397,303 @@ def create_initial_game_state(players_config: List[Dict[str, Any]]) -> Dict[str,
             _bot_complete_setup_discard(state, state["players"][b_idx])
         _check_all_setup_discards_done(state)
 
+    sync_turn_activity_timestamps(state)
     _record_turn_start_snapshot(state)
     return state
+
+
+def get_blocking_player_indices(state: Dict[str, Any]) -> List[int]:
+    """Returns seat indices of human players who are currently blocking game progression."""
+    phase = state.get("phase", "")
+    if phase == "finished":
+        return []
+    players = state.get("players", [])
+    n = len(players)
+    if n == 0:
+        return []
+
+    pend_u = state.get("pendingUndoRequest")
+    if isinstance(pend_u, dict):
+        req_uids = set(pend_u.get("requiredUserIds") or [])
+        blockers = [
+            int(p["index"])
+            for p in players
+            if not p.get("isBot") and p.get("userId") in req_uids
+        ]
+        if blockers:
+            return blockers
+
+    prompt_blockers = [
+        int(p["index"])
+        for p in players
+        if not p.get("isBot")
+        and (
+            p.get("pendingCartOverflow")
+            or p.get("pendingMarketReward")
+            or p.get("pendingNpcOffer")
+            or p.get("pendingTop3Reorder")
+        )
+    ]
+    if prompt_blockers:
+        return prompt_blockers
+
+    pend_enc = state.get("pendingEncounter")
+    if isinstance(pend_enc, dict):
+        target_idx = pend_enc.get("interveningPlayerIndex")
+        if target_idx is None:
+            target_idx = pend_enc.get("playerIndex")
+        if target_idx is not None:
+            idx_i = int(target_idx)
+            if 0 <= idx_i < n and not players[idx_i].get("isBot"):
+                return [idx_i]
+        return []
+
+    if phase == "setup_discard":
+        return [
+            int(p["index"])
+            for p in players
+            if not p.get("isBot") and not p.get("setupDiscarded")
+        ]
+    if phase == "cleanup":
+        return [
+            int(p["index"])
+            for p in players
+            if not p.get("isBot") and not p.get("cleanupDone")
+        ]
+
+    act_idx = int(state.get("activePlayerIndex", 0) or 0)
+    if 0 <= act_idx < n and not players[act_idx].get("isBot"):
+        return [act_idx]
+    return []
+
+
+def sync_turn_activity_timestamps(
+    state: Dict[str, Any],
+    now: Optional[int] = None,
+    active_actor_indices: Optional[set] = None,
+) -> Dict[str, int]:
+    """Synchronizes per-blocker waiting timestamps; resets only indices in active_actor_indices."""
+    now_ts = int(now if now is not None else time.time())
+    blockers = get_blocking_player_indices(state)
+    old_map = state.get("turnWaitingSince") if isinstance(state.get("turnWaitingSince"), dict) else {}
+    active_set = {int(x) for x in (active_actor_indices or set())}
+    new_map: Dict[str, int] = {}
+    for idx in blockers:
+        k = str(idx)
+        if idx in active_set:
+            new_map[k] = now_ts
+        elif k in old_map and isinstance(old_map[k], (int, float)):
+            new_map[k] = int(old_map[k])
+        else:
+            new_map[k] = now_ts
+    state["turnWaitingSince"] = new_map
+    return new_map
+
+
+def _resolve_bot_intervenor_step(state: Dict[str, Any]) -> bool:
+    """Auto-resolves a pendingEncounter intervention window if its interveningPlayerIndex is now a bot."""
+    progressed = False
+    for _ in range(12):
+        pend = state.get("pendingEncounter")
+        if not isinstance(pend, dict):
+            break
+        int_idx = pend.get("interveningPlayerIndex")
+        if int_idx is None:
+            break
+        players = state.get("players", [])
+        if not (0 <= int(int_idx) < len(players)):
+            pend["interveningPlayerIndex"] = None
+            break
+        int_p = players[int(int_idx)]
+        if not int_p.get("isBot"):
+            break
+        enc_idx = int(pend.get("playerIndex", 0))
+        enc_p = players[enc_idx]
+        stage = pend.get("stage", "pre_decision")
+        if stage == "pre_decision":
+            passed = pend.setdefault("passedIntervenors", [])
+            if int(int_idx) not in passed:
+                passed.append(int(int_idx))
+            pend["interveningPlayerIndex"] = None
+            if enc_p.get("isBot"):
+                resolve_pending_encounter_choice(state, enc_p, pend, "fight")
+            progressed = True
+            continue
+        stage_fin_map = {
+            "combat_post_roll": "finalize_combat",
+            "driver_fate_post_roll": "finalize_driver_fate",
+            "chart_post_roll": "finalize_chart_roll",
+            "demand_post_roll": "finalize_demand_roll",
+            "gamble_post_roll": "finalize_gamble_roll",
+        }
+        fin_dec = stage_fin_map.get(stage)
+        if not fin_dec:
+            pend["interveningPlayerIndex"] = None
+            progressed = True
+            continue
+        pend["humanModifiedSinceBotCheck"] = True
+        resolve_pending_encounter_choice(state, enc_p, pend, fin_dec)
+        if not state.get("pendingEncounter"):
+            _finish_pending_encounter_continuations(state, enc_p)
+        progressed = True
+    return progressed
+
+
+def _resolve_converted_bot_subprompts(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
+    """Safely clears/resolves human-only sub-prompts on a seat converted to an Ionic AI bot."""
+    if bot.get("pendingTop3Reorder"):
+        bot["pendingTop3Reorder"] = None
+
+    if bot.get("pendingCartOverflow"):
+        for ovf in list(bot.get("pendingCartOverflow") or []):
+            _return_overflow_card_to_origin(state, ovf.get("card") or {}, ovf.get("origin"))
+        bot["pendingCartOverflow"] = []
+
+    if bot.get("pendingMarketReward"):
+        for rwd in list(bot.get("pendingMarketReward") or []):
+            tr_name = rwd.get("track", "Animals")
+            subcat = rwd.get("subcategory")
+            track = state.get("marketBoard", {}).get(tr_name, [])
+            max_b, max_g = get_player_cart_limits(bot)
+            used_b, used_g = get_player_cart_usage(bot)
+            fitting = []
+            for idx_c, card in enumerate(track):
+                if subcat and not matches_category(card, subcat):
+                    continue
+                is_guard = card.get("track") == "Guards" or int(card.get("guards", 0) or 0) > 0
+                if is_guard:
+                    if used_g + int(card.get("guards", 1) or 1) <= max_g + int(card.get("bonusGuards", 0) or 0):
+                        fitting.append((idx_c, card))
+                elif used_b + int(card.get("blocks", 1) or 1) <= max_b:
+                    fitting.append((idx_c, card))
+            if fitting:
+                best_idx, best_card = max(
+                    fitting,
+                    key=lambda pair: int((pair[1].get("sell") or [0])[-1]) + int((pair[1].get("combat") or {}).get("dice", 0)) * 5,
+                )
+                claimed = track.pop(best_idx)
+                note = _award_item_or_enqueue_overflow(
+                    state,
+                    bot,
+                    claimed,
+                    source_label=rwd.get("sourceLabel", "Reward"),
+                    origin={"source": "market", "track": tr_name, "colIndex": best_idx},
+                )
+                add_log(state, f"{bot['name']} claimed {claimed.get('name', 'Market reward')} ({note}).", "action")
+        bot["pendingMarketReward"] = []
+
+    if bot.get("pendingNpcOffer"):
+        bot["pendingNpcOffer"] = None
+
+
+def replace_human_with_ionic_bot(
+    state: Dict[str, Any],
+    player_index: int,
+    reason: str = "removed from match",
+    run_bots: bool = True,
+) -> Tuple[bool, str]:
+    """Converts a human seat in-place into an Ionic AI Bot, preserving assets and resolving pending prompts."""
+    players = state.get("players", [])
+    if not (0 <= int(player_index) < len(players)):
+        return False, "Player seat not found."
+    p = players[int(player_index)]
+    if p.get("isBot"):
+        return False, f"{p.get('name', 'Player')} is already an AI Bot."
+
+    if state.get("phase") == "finished":
+        return False, "Cannot replace players after the match has finished."
+
+    pend_u = state.get("pendingUndoRequest")
+    if isinstance(pend_u, dict):
+        state["pendingUndoRequest"] = None
+        add_log(state, f"Undo Turn request was canceled when {p['name']} left the table.", "info")
+
+    old_name = p["name"]
+    old_uid = p.get("userId")
+    p["isBot"] = True
+    p["userId"] = None
+    p["botStrategy"] = "balanced"
+    p["botDifficulty"] = "ionic"
+    p["removedHumanUserId"] = old_uid
+
+    add_log(
+        state,
+        f"🤖 {old_name} ({reason}) was replaced by an Ionic AI Bot — Cart, Denarii, Favor, and Missions preserved!",
+        "phase",
+    )
+
+    _resolve_converted_bot_subprompts(state, p)
+
+    if state.get("phase") == "setup_discard" and not p.get("setupDiscarded"):
+        _bot_complete_setup_discard(state, p)
+        if all(pl["setupDiscarded"] for pl in players if not pl["isBot"]):
+            for pl_bot in players:
+                if pl_bot["isBot"] and not pl_bot["setupDiscarded"]:
+                    _bot_complete_setup_discard(state, pl_bot)
+        _check_all_setup_discards_done(state)
+    elif state.get("phase") == "cleanup" and not p.get("cleanupDone"):
+        _bot_complete_cleanup(state, p)
+        _check_all_cleanups_done(state)
+    else:
+        _resolve_bot_intervenor_step(state)
+        pend = state.get("pendingEncounter")
+        if isinstance(pend, dict) and pend.get("playerIndex") == p["index"] and pend.get("interveningPlayerIndex") is None:
+            has_humans = any(not pl.get("isBot") for pl in players)
+            if has_humans:
+                run_bots_until_human(state)
+            else:
+                # Resolve the single encounter owned by the newly replaced player so the table isn't stuck on a human sub-stage
+                _execute_single_bot_encounter_step(state)
+        elif not state.get("pendingEncounter"):
+            _finish_pending_encounter_continuations(state, p)
+
+    if run_bots and any(not pl.get("isBot") for pl in players):
+        run_bots_until_human(state)
+
+    sync_turn_activity_timestamps(state)
+    state["turnSeq"] = int(state.get("turnSeq", 1)) + 1
+    state["turnSnapshotHistory"] = []
+    _record_turn_start_snapshot(state)
+    return True, f"{old_name} is now controlled by an Ionic AI Bot."
+
+
+def process_fast_timeouts(state: Dict[str, Any], now: Optional[int] = None) -> List[int]:
+    """Checks a Fast-mode active game for overdue human blockers and converts them to Ionic AI Bots."""
+    if state.get("phase") == "finished":
+        return []
+    if str(state.get("speedMode") or "normal").strip().lower() != "fast":
+        return []
+    try:
+        limit_min = max(1, min(12, int(state.get("turnTimeLimitMinutes") or 6)))
+    except (TypeError, ValueError):
+        limit_min = 6
+    now_ts = int(now if now is not None else time.time())
+    waiting = sync_turn_activity_timestamps(state, now=now_ts)
+    overdue = [
+        idx
+        for idx in get_blocking_player_indices(state)
+        if str(idx) in waiting and int(waiting[str(idx)]) + limit_min * 60 <= now_ts
+    ]
+    if not overdue:
+        return []
+
+    kicked: List[int] = []
+    for idx in overdue:
+        if 0 <= idx < len(state.get("players", [])) and not state["players"][idx].get("isBot"):
+            ok, _ = replace_human_with_ionic_bot(
+                state,
+                idx,
+                reason=f"exceeded {limit_min} min Fast turn limit",
+                run_bots=False,
+            )
+            if ok:
+                kicked.append(idx)
+
+    if kicked:
+        if any(not pl.get("isBot") for pl in state.get("players", [])):
+            run_bots_until_human(state)
+        sync_turn_activity_timestamps(state, now=now_ts)
+    return kicked
 
 
 MAX_UNDO_SNAPSHOTS = 12
@@ -1410,6 +1787,11 @@ def _execute_undo_restore(
         int(state.get("nextMissionEventSeq", 1)),
         int(target_entry["state"].get("nextMissionEventSeq", 1)),
     )
+    prior_chats = [
+        copy.deepcopy(entry)
+        for entry in (state.get("logs") or [])
+        if isinstance(entry, dict) and entry.get("category") == "chat"
+    ]
     restored = copy.deepcopy(target_entry["state"])
     kept_hist = copy.deepcopy(hist[: target_idx + 1])
 
@@ -1421,9 +1803,18 @@ def _execute_undo_restore(
     state["hasActedThisTurn"] = False
     state["pendingUndoRequest"] = None
     state["turnSnapshotHistory"] = kept_hist
+    restored_log_ids = {
+        entry.get("id") for entry in state.get("logs", []) if isinstance(entry, dict)
+    }
+    for ch_entry in prior_chats:
+        if ch_entry.get("id") not in restored_log_ids:
+            state.setdefault("logs", []).append(ch_entry)
+    if len(state.get("logs", [])) > 200:
+        state["logs"] = state["logs"][-200:]
 
     which_str = "beginning of current turn" if target_type == "current_turn" else "beginning of previous turn"
     add_log(state, f"↩️ {requester_name} reverted the game to the {which_str} ({target_label}).", "phase")
+    sync_turn_activity_timestamps(state)
     return target_label
 
 
@@ -1431,9 +1822,26 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
     if player["setupDiscarded"]:
         return
     strat = str(player.get("botStrategy", "balanced"))
+    tier = _bot_difficulty_tier(player)
     missions = player["missions"]
 
+    market_cats = set()
+    faction_counts: Dict[str, int] = {}
+    if tier >= 2:
+        for tr_cards in (state.get("marketBoard") or {}).values():
+            for mc in tr_cards:
+                if mc.get("track"):
+                    market_cats.add(str(mc["track"]))
+                if mc.get("subcategory"):
+                    market_cats.add(str(mc["subcategory"]))
+        for m in missions:
+            for f in (m.get("favor") or []):
+                f_clean = str(f).lstrip("-+")
+                faction_counts[f_clean] = faction_counts.get(f_clean, 0) + 1
+
     def _mission_keep_score(m: Dict[str, Any]) -> int:
+        if tier == 0:
+            return secrets.randbelow(28)
         kind = m.get("kind")
         cat = str(m.get("category", ""))
         sc = 0
@@ -1459,6 +1867,16 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
                 sc += 20
             elif kind == "expose":
                 sc += 14
+        if tier >= 2:
+            if kind == "sell" and cat in market_cats:
+                sc += 12
+            if kind in ("sell", "delivery"):
+                sc += 8
+            if kind == "delivery" and int(m.get("blocks", 1) or 1) <= 2:
+                sc += 6
+            for f in (m.get("favor") or []):
+                if faction_counts.get(str(f).lstrip("-+"), 0) >= 2:
+                    sc += 5
         return sc
 
     missions.sort(key=_mission_keep_score, reverse=True)
@@ -1470,6 +1888,8 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
     inf = player["influence"]
 
     def _inf_keep_score(c: Dict[str, Any]) -> int:
+        if tier == 0:
+            return secrets.randbelow(28)
         nm = str(c.get("name", ""))
         sc = 10
         if "Patron" in nm:
@@ -1482,6 +1902,11 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
             sc += 20
         elif strat == "opportunist" and any(k in nm for k in ("Twist Of Fate", "Make Haste", "Trained Dog", "Plea")):
             sc += 18
+        if tier >= 2:
+            if any(k in nm for k in ("Puffery", "Make Haste", "Shortcut", "Twist Of Fate", "Cartwright")):
+                sc += 14
+            if "Friend In The" in nm or "Thug" in nm:
+                sc += 10
         return sc
 
     inf.sort(key=_inf_keep_score, reverse=True)
@@ -2487,13 +2912,30 @@ def _should_bot_target_adversarially(
     leader_opp = _get_winning_opponent(state, bot)
     if leader_opp is None:
         return False
+    tier = _bot_difficulty_tier(bot)
     target_score = _estimate_player_standing(state, target_player)
     leader_score = _estimate_player_standing(state, leader_opp)
     bot_score = _estimate_player_standing(state, bot)
-    # Prioritize the winning opponent (or a player virtually tied with the leader and ahead of this bot)
+
+    # Doric (Easy): avoids reactive interference unless holding surplus adversarial cards against an extreme leader roll
+    if tier == 0:
+        return bool(
+            is_extreme_luck
+            and target_player["index"] == leader_opp["index"]
+            and _count_bot_adversarial_cards(bot) >= 3
+        )
+
+    # Corinthian (Hard): aggressively pressures leaders and close rivals whenever odds favor an upset
+    if tier >= 2:
+        if target_player["index"] == leader_opp["index"] or target_score >= max(leader_score - 8, bot_score - 3):
+            return True
+        if is_extreme_luck and (_count_bot_adversarial_cards(bot) >= 1 or state.get("seasonIndex", 0) >= 1):
+            return True
+        return False
+
+    # Ionic (Medium): prioritize winning opponent or strong contender; conserve cards on trailing rivals
     if target_player["index"] == leader_opp["index"] or (target_score >= leader_score - 4 and target_score >= bot_score):
         return True
-    # Conserve adversarial cards against trailing players unless the bot has surplus cards on an extreme luck roll
     if is_extreme_luck and (_count_bot_adversarial_cards(bot) >= 2 or (state.get("seasonIndex", 0) == 2 and target_score >= bot_score - 3)):
         return True
     return False
@@ -2689,33 +3131,59 @@ def _get_chart_roll_preview(
     return f"Rolled {r_rom}"
 
 
+def _bot_self_chart_action_kind(player: Dict[str, Any], c_type: str, r: int) -> Optional[str]:
+    tier = _bot_difficulty_tier(player)
+    if tier == 0:
+        return None
+    cart = player.get("cart", [])
+    pos_fav = sum(v for v in (player.get("favor") or {}).values() if v > 0)
+    infs = player.get("influence", [])
+
+    if c_type == "mob":
+        bad_mob = (
+            (r == 0 and any(c.get("track") == "Wine" for c in cart))
+            or (r == 1 and any(c.get("track") == "Grain" for c in cart))
+            or (r == 2 and len(cart) > 0)
+        )
+        if bad_mob and any("Man Of The People" in str(c.get("name", "")) for c in infs):
+            return "man_of_people"
+        if r == 2 and len(cart) > 0 and any("Lucky Break" in str(c.get("name", "")) for c in infs):
+            return "lucky_break"
+        if bad_mob and any("Twist Of Fate" in str(c.get("name", "")) for c in infs):
+            return "twist_of_fate"
+    elif c_type == "theater":
+        bad_th = (r == 0 and pos_fav >= (1 if tier >= 2 else 2)) or (r == 2)
+        if r in (0, 2) and any("Dramaturge" in str(c.get("name", "")) for c in infs):
+            return "dramaturge"
+        if r == 2 and any("Lucky Break" in str(c.get("name", "")) for c in infs):
+            return "lucky_break"
+        if bad_th and any("Twist Of Fate" in str(c.get("name", "")) for c in infs):
+            return "twist_of_fate"
+    elif c_type == "death":
+        if r == 0 and any("Lucky Break" in str(c.get("name", "")) for c in infs):
+            return "lucky_break"
+        bad_death = (
+            (r == 0)
+            or (r == 1 and len(cart) >= (1 if tier >= 2 else 2))
+            or (r == 2 and player.get("cash", 0) >= (10 if tier >= 2 else 16))
+        )
+        if bad_death and any("Twist Of Fate" in str(c.get("name", "")) for c in infs):
+            return "twist_of_fate"
+    elif c_type == "soothsayer":
+        if r == 0 and any("Twist Of Fate" in str(c.get("name", "")) for c in infs):
+            return "twist_of_fate"
+    return None
+
+
 def _does_bot_want_post_chart_intervention(
     state: Dict[str, Any],
     player: Dict[str, Any],
     chart_type: str,
     r: int,
 ) -> bool:
-    # Self-defense if player is a bot
-    if player.get("isBot"):
-        if chart_type == "mob":
-            if (r == 0 and any(c.get("track") == "Wine" for c in player["cart"])) or (
-                r == 1 and any(c.get("track") == "Grain" for c in player["cart"])
-            ) or (r == 2 and len(player["cart"]) > 0):
-                if _get_player_post_chart_influence(player, chart_type, is_self=True):
-                    return True
-        elif chart_type == "theater":
-            pos_fav = sum(v for v in player["favor"].values() if v > 0)
-            if (r == 0 and pos_fav >= 2) or r == 2:
-                if _get_player_post_chart_influence(player, chart_type, is_self=True):
-                    return True
-        elif chart_type == "death":
-            if r == 0 or (r == 1 and len(player["cart"]) >= 2) or (r == 2 and player["cash"] >= 16):
-                if _get_player_post_chart_influence(player, chart_type, is_self=True):
-                    return True
-        elif chart_type == "soothsayer" and r == 0 and _get_player_twist_of_fate_cards(player):
-            return True
+    if player.get("isBot") and _bot_self_chart_action_kind(player, chart_type, r) is not None:
+        return True
 
-    # Adversarial check by opposing bots
     neg_fav = sum(abs(v) for v in player["favor"].values() if v < 0)
     is_lucky_rival = False
     is_extreme = False
@@ -2756,12 +3224,10 @@ def _run_bot_post_chart_interventions(
 
     # 1. Self-defense by bot roller
     if player.get("isBot"):
-        if c_type == "mob" and any("Man Of The People" in str(c.get("name", "")) for c in player["influence"]):
-            bad_mob = (r == 0 and any(c.get("track") == "Wine" for c in player["cart"])) or (
-                r == 1 and any(c.get("track") == "Grain" for c in player["cart"])
-            ) or (r == 2 and len(player["cart"]) > 0)
-            if bad_mob:
-                motp = next(c for c in player["influence"] if "Man Of The People" in str(c.get("name", "")))
+        self_act = _bot_self_chart_action_kind(player, c_type, r)
+        if self_act == "man_of_people":
+            motp = next((c for c in player["influence"] if "Man Of The People" in str(c.get("name", ""))), None)
+            if motp:
                 player["influence"].remove(motp)
                 state["decks"]["influence"].append(motp)
                 state["hourEffects"]["lastInfluencePlayed"] = motp
@@ -2771,21 +3237,20 @@ def _run_bot_post_chart_interventions(
                 chart_state["ignoredBySelfCard"] = "mob"
                 chart_state["botInterventions"] = int(chart_state.get("botInterventions", 0)) + 1
                 return True
-        if c_type == "theater" and r in (0, 2) and any("Dramaturge" in str(c.get("name", "")) for c in player["influence"]):
-            dram = next(c for c in player["influence"] if "Dramaturge" in str(c.get("name", "")))
-            player["influence"].remove(dram)
-            state["decks"]["influence"].append(dram)
-            state["hourEffects"]["lastInfluencePlayed"] = dram
-            _inc_player_stat(player, "influencePlayed", 1)
-            add_log(state, f"{player['name']} played 'Dramaturge' to turn the Theater Troupe into an automatic III result!", "encounter")
-            chart_state["ignoredBySelfCard"] = "theater"
-            chart_state["botInterventions"] = int(chart_state.get("botInterventions", 0)) + 1
-            return True
-        # Lucky Break on self (e.g. Mob II -> III, Theater II -> III, Death 0 -> I)
-        lb = next((c for c in player["influence"] if "Lucky Break" in str(c.get("name", ""))), None)
-        if lb and c_type in ("death", "mob", "theater"):
-            use_lb = (c_type == "mob" and r == 2 and len(player["cart"]) > 0) or (c_type == "theater" and r == 2) or (c_type == "death" and r == 0)
-            if use_lb:
+        elif self_act == "dramaturge":
+            dram = next((c for c in player["influence"] if "Dramaturge" in str(c.get("name", ""))), None)
+            if dram:
+                player["influence"].remove(dram)
+                state["decks"]["influence"].append(dram)
+                state["hourEffects"]["lastInfluencePlayed"] = dram
+                _inc_player_stat(player, "influencePlayed", 1)
+                add_log(state, f"{player['name']} played 'Dramaturge' to turn the Theater Troupe into an automatic III result!", "encounter")
+                chart_state["ignoredBySelfCard"] = "theater"
+                chart_state["botInterventions"] = int(chart_state.get("botInterventions", 0)) + 1
+                return True
+        elif self_act == "lucky_break":
+            lb = next((c for c in player["influence"] if "Lucky Break" in str(c.get("name", ""))), None)
+            if lb:
                 old_r = r
                 new_r = min(3, old_r + 1)
                 player["influence"].remove(lb)
@@ -2799,17 +3264,9 @@ def _run_bot_post_chart_interventions(
                 note = f"{player['name']} played 'Lucky Break' (+1 to Chart Roll: {roman_die_str(old_r)} -> {roman_die_str(new_r)})!"
                 add_log(state, note, "action")
                 return True
-        # Twist Of Fate on self
-        tof_self = next((c for c in player["influence"] if "Twist Of Fate" in str(c.get("name", ""))), None)
-        if tof_self:
-            pos_fav = sum(v for v in player["favor"].values() if v > 0)
-            bad_self = (
-                (c_type == "mob" and ((r == 0 and any(c.get("track") == "Wine" for c in player["cart"])) or (r == 1 and any(c.get("track") == "Grain" for c in player["cart"])) or (r == 2 and len(player["cart"]) > 0)))
-                or (c_type == "theater" and ((r == 0 and pos_fav >= 2) or r == 2))
-                or (c_type == "death" and (r == 0 or (r == 1 and len(player["cart"]) >= 2) or (r == 2 and player["cash"] >= 16)))
-                or (c_type == "soothsayer" and r == 0)
-            )
-            if bad_self:
+        elif self_act == "twist_of_fate":
+            tof_self = next((c for c in player["influence"] if "Twist Of Fate" in str(c.get("name", ""))), None)
+            if tof_self:
                 old_r = r
                 new_r = roll_rome_die()
                 new_rom = roman_die_str(new_r)
@@ -4096,24 +4553,31 @@ def _run_bot_pre_combat_interventions(
     x_count: int,
 ) -> None:
     # 1. Self-help if the fighting merchant is a bot facing dangerous combat
-    if player.get("isBot") and (x_count >= 2 or len(player.get("cart", [])) >= 2):
-        merc_self = next((c for c in player["influence"] if "Mercenary" in str(c.get("name", ""))), None)
-        if merc_self:
-            player["influence"].remove(merc_self)
-            state["decks"]["influence"].append(merc_self)
-            state["hourEffects"]["lastInfluencePlayed"] = merc_self
-            _inc_player_stat(player, "influencePlayed", 1)
-            player["turnEffects"]["combatDiceBonus"] = player["turnEffects"].get("combatDiceBonus", 0) + 2
-            add_log(state, f"{player['name']} played '{merc_self['name']}' (+2® CP in combat against {card['name']})!", "action")
-        else:
-            dist_self = next((c for c in player["influence"] if "Distraction" in str(c.get("name", ""))), None)
-            if dist_self:
-                player["influence"].remove(dist_self)
-                state["decks"]["influence"].append(dist_self)
-                state["hourEffects"]["lastInfluencePlayed"] = dist_self
+    if player.get("isBot"):
+        self_tier = _bot_difficulty_tier(player)
+        danger = (
+            (x_count >= 3)
+            if self_tier == 0
+            else ((x_count >= 1 or len(player.get("cart", [])) >= 1) if self_tier >= 2 else (x_count >= 2 or len(player.get("cart", [])) >= 2))
+        )
+        if danger:
+            merc_self = next((c for c in player["influence"] if "Mercenary" in str(c.get("name", ""))), None)
+            if merc_self:
+                player["influence"].remove(merc_self)
+                state["decks"]["influence"].append(merc_self)
+                state["hourEffects"]["lastInfluencePlayed"] = merc_self
                 _inc_player_stat(player, "influencePlayed", 1)
-                player["turnEffects"]["oppDiceMod"] = player["turnEffects"].get("oppDiceMod", 0) - 1
-                add_log(state, f"{player['name']} played 'Distraction' (-1® from {card['name']} in combat)!", "action")
+                player["turnEffects"]["combatDiceBonus"] = player["turnEffects"].get("combatDiceBonus", 0) + 2
+                add_log(state, f"{player['name']} played '{merc_self['name']}' (+2® CP in combat against {card['name']})!", "action")
+            else:
+                dist_self = next((c for c in player["influence"] if "Distraction" in str(c.get("name", ""))), None)
+                if dist_self:
+                    player["influence"].remove(dist_self)
+                    state["decks"]["influence"].append(dist_self)
+                    state["hourEffects"]["lastInfluencePlayed"] = dist_self
+                    _inc_player_stat(player, "influencePlayed", 1)
+                    player["turnEffects"]["oppDiceMod"] = player["turnEffects"].get("oppDiceMod", 0) - 1
+                    add_log(state, f"{player['name']} played 'Distraction' (-1® from {card['name']} in combat)!", "action")
 
     # 2. Adversarial pre-combat play by opposing bots when the target is winning and has meaningful stakes
     meaningful_stakes = len(player.get("cart", [])) > 0 or player.get("cash", 0) >= 16 or x_count >= 2
@@ -4154,8 +4618,18 @@ def _run_bot_post_combat_interventions(
     p_cp = int(combat_state["playerCP"])
     o_cp = int(combat_state["oppCP"])
 
-    # 1. Self-defense by bot merchant if losing combat with unblocked wound risk
-    if player.get("isBot") and p_cp < o_cp and int(combat_state.get("netWoundsAfterArmor", 0)) > len(player.get("guards", [])):
+    # 1. Self-defense by bot merchant if losing combat
+    self_tier = _bot_difficulty_tier(player) if player.get("isBot") else 0
+    needs_self_save = (
+        player.get("isBot")
+        and self_tier >= 1
+        and p_cp < o_cp
+        and (
+            int(combat_state.get("netWoundsAfterArmor", 0)) > len(player.get("guards", []))
+            or (self_tier >= 2 and int(combat_state.get("netWoundsAfterArmor", 0)) > 0)
+        )
+    )
+    if needs_self_save:
         pot_self = next((c for c in player["influence"] if "Flying Chamber Pot" in str(c.get("name", ""))), None)
         if pot_self and o_cp - p_cp == 1:
             player["influence"].remove(pot_self)
@@ -4194,7 +4668,8 @@ def _run_bot_post_combat_interventions(
             return True
         tof_self = next((c for c in player["influence"] if "Twist Of Fate" in str(c.get("name", ""))), None)
         if tof_self:
-            opp_high_idx = next((i for i, d in enumerate(combat_state["oppDiceObjs"]) if int(d.get("value", 0)) >= 3), None)
+            min_opp_reroll = 2 if self_tier >= 2 else 3
+            opp_high_idx = next((i for i, d in enumerate(combat_state["oppDiceObjs"]) if int(d.get("value", 0)) >= min_opp_reroll), None)
             own_zero_idx = next((i for i, d in enumerate(combat_state["playerDiceObjs"]) if int(d.get("sign", 1)) > 0 and int(d.get("value", 0)) == 0), None)
             if opp_high_idx is not None or own_zero_idx is not None:
                 player["influence"].remove(tof_self)
@@ -5256,21 +5731,33 @@ def _get_demand_roll_preview(player: Dict[str, Any], card: Dict[str, Any], deman
     return f"Rolled {r_rom} ({amt}d demanded) → {player['name']} only has {cash}(d) (cannot pay, suffers {h_part})."
 
 
+def _bot_wants_self_demand_tof(player: Dict[str, Any], d_kind: str, r: int, mult: int) -> bool:
+    tier = _bot_difficulty_tier(player)
+    if tier == 0:
+        return False
+    inf_cnt = len(player.get("influence", []))
+    cash = int(player.get("cash", 0))
+    if d_kind == "influence":
+        if tier >= 2:
+            return inf_cnt > 1 and r >= 2
+        return inf_cnt > 1 and r == 3
+    if d_kind == "cash":
+        return r >= 2 and cash >= (max(4, mult // 2) if tier >= 2 else mult)
+    return False
+
+
 def _does_bot_want_post_demand_intervention(state: Dict[str, Any], player: Dict[str, Any], demand_state: Dict[str, Any]) -> bool:
     r = int(demand_state.get("demandRoll", 0))
     d_kind = demand_state.get("demandKind", "influence")
     mult = int(demand_state.get("cashMultiplier", 4))
 
-    # Self-defense by bot roller on a painful III (or II if it wipes out cards/cash)
-    if player.get("isBot") and _get_player_twist_of_fate_cards(player):
-        if d_kind == "influence" and len(player.get("influence", [])) > 1 and r == 3:
-            return True
-        if d_kind == "cash" and r >= 2 and player.get("cash", 0) >= mult:
-            return True
+    # Self-defense by bot roller on a painful III (or II if Corinthian / wipes out cash)
+    if player.get("isBot") and _get_player_twist_of_fate_cards(player) and _bot_wants_self_demand_tof(player, d_kind, r, mult):
+        return True
 
     # Adversarial check by opposing bots when target rolled 0 (or I with meaningful holdings)
     meaningful = (
-        (d_kind == "influence" and (len(player.get("influence", [])) >= 1 or bool(card_fav := (demand_state.get("card") or {}).get("friendlyFavor"))))
+        (d_kind == "influence" and (len(player.get("influence", [])) >= 1 or bool((demand_state.get("card") or {}).get("friendlyFavor"))))
         or (d_kind == "cash" and player.get("cash", 0) >= mult)
     )
     if meaningful and r in (0, 1):
@@ -5296,11 +5783,7 @@ def _run_bot_post_demand_interventions(state: Dict[str, Any], player: Dict[str, 
     # 1. Self-defense by bot roller
     if player.get("isBot"):
         tof_self = next((c for c in player["influence"] if "Twist Of Fate" in str(c.get("name", ""))), None)
-        if tof_self:
-            bad_self = (d_kind == "influence" and len(player["influence"]) > 1 and r == 3) or (
-                d_kind == "cash" and r >= 2 and player["cash"] >= mult
-            )
-            if bad_self:
+        if tof_self and _bot_wants_self_demand_tof(player, d_kind, r, mult):
                 old_r = r
                 new_r = roll_rome_die()
                 new_rom = roman_die_str(new_r)
@@ -5512,11 +5995,19 @@ def _get_gamble_roll_preview(player: Dict[str, Any], gamble_state: Dict[str, Any
     return f"Wager {bet}(d) • Rolled {rom_list} ({mult}×) → Payout {payout}(d) ({'+' if net >= 0 else ''}{net}d net)!"
 
 
+def _bot_wants_self_gamble_tof(player: Dict[str, Any], rolls: List[int], bet: int) -> bool:
+    tier = _bot_difficulty_tier(player)
+    if tier == 0:
+        return False
+    min_bet = 2 if tier >= 2 else 3
+    return sum(rolls) == 0 and bet >= min_bet
+
+
 def _does_bot_want_post_gamble_intervention(state: Dict[str, Any], player: Dict[str, Any], gamble_state: Dict[str, Any]) -> bool:
     rolls = [int(x) for x in (gamble_state.get("gambleRolls") or [0])]
     bet = int(gamble_state.get("bet", 0))
     max_r = max(rolls) if rolls else 0
-    if player.get("isBot") and sum(rolls) == 0 and bet >= 3 and _get_player_twist_of_fate_cards(player):
+    if player.get("isBot") and _get_player_twist_of_fate_cards(player) and _bot_wants_self_gamble_tof(player, rolls, bet):
         return True
     if (max_r >= 3 and bet >= 3) or (max_r >= 2 and bet >= 5):
         is_extreme = (max_r >= 3 and bet >= 4) or (bet * sum(rolls) >= 12)
@@ -5533,7 +6024,7 @@ def _run_bot_post_gamble_interventions(state: Dict[str, Any], player: Dict[str, 
     bet = int(gamble_state.get("bet", 0))
     cell = gamble_state.get("cell", "Stadium")
 
-    if player.get("isBot") and sum(rolls) == 0 and bet >= 3:
+    if player.get("isBot") and _bot_wants_self_gamble_tof(player, rolls, bet):
         tof_self = next((c for c in player["influence"] if "Twist Of Fate" in str(c.get("name", ""))), None)
         if tof_self:
             player["influence"].remove(tof_self)
@@ -6716,12 +7207,15 @@ def advance_market_turn(state: Dict[str, Any]) -> None:
         state["firstPlayerIndex"] = (state["firstPlayerIndex"] + 1) % n
         state["activePlayerIndex"] = state["firstPlayerIndex"]
         state["phase"] = "delivery_entry"
+        state["turn"] = 1
         for p in state["players"]:
             p["position"] = None
             p["previousPosition"] = None
             p["exitedRome"] = False
             p["nightEnded"] = False
             p["skipTurns"] = 0
+            p["movesRemaining"] = 1
+            p["transactedThisTurn"] = False
             p["scoutedThisTurn"] = False
             p["gambledThisTurn"] = False
             p["enteredGateTurn1"] = False
@@ -6916,7 +7410,7 @@ def get_guard_upkeep_cost(state: Dict[str, Any], guard: Dict[str, Any]) -> int:
     guards_on_mkt = len(state["marketBoard"].get("Guards", []))
     slot_col = min(5, guards_on_mkt)
     price_idx = COL_TO_PRICE_INDEX[slot_col]
-    buy_table = guard.get("buy") or [10, 8, 4, 3, 2]
+    buy_table = guard.get("buy") or [17, 14, 10, 8, 6]
     return int(buy_table[price_idx])
 
 
@@ -6937,10 +7431,17 @@ def _bot_complete_cleanup(state: Dict[str, Any], player: Dict[str, Any]) -> None
     if player["cleanupDone"]:
         return
     strategy = player.get("botStrategy", "balanced")
+    tier = _bot_difficulty_tier(player)
     season_key = state["season"].lower()
 
-    # Consider taking a Loan if cash-poor in Spring or Summer (especially Luxury / Aggressive personas)
-    loan_cash_thresh = 10 if strategy in ("luxury", "aggressive") else 5
+    # Consider taking a Loan if cash-poor in Spring or Summer (scaled by difficulty tier & persona)
+    if tier == 0:
+        loan_cash_thresh = 2
+    elif tier >= 2:
+        loan_cash_thresh = 14 if strategy in ("luxury", "aggressive") else 10
+    else:
+        loan_cash_thresh = 10 if strategy in ("luxury", "aggressive") else 5
+
     if season_key == "spring" and not player["loans"].get("spring") and player["cash"] <= loan_cash_thresh:
         player["loans"]["spring"] = True
         player["cash"] += 20
@@ -6954,7 +7455,12 @@ def _bot_complete_cleanup(state: Dict[str, Any], player: Dict[str, Any]) -> None
 
     # Pay guards if affordable
     kept_guards = []
-    guard_buffer = 3 if strategy == "aggressive" else 6
+    if tier == 0:
+        guard_buffer = 8
+    elif tier >= 2:
+        guard_buffer = 2 if strategy == "aggressive" else 3
+    else:
+        guard_buffer = 3 if strategy == "aggressive" else 6
     for g in player["guards"]:
         cost = get_guard_upkeep_cost(state, g)
         if player["cash"] >= cost + guard_buffer:
@@ -6964,21 +7470,23 @@ def _bot_complete_cleanup(state: Dict[str, Any], player: Dict[str, Any]) -> None
             state["decks"]["market"].append(g)
     player["guards"] = kept_guards
 
-    # Buy 1 influence card if cheap
+    # Buy 1 influence card if affordable
     inf_cost = get_influence_buy_price(player)
-    if state["season"] != "Fall" and player["cash"] >= inf_cost + 8 and state["decks"]["influence"]:
+    inf_buffer = 14 if tier == 0 else (5 if tier >= 2 else 8)
+    if state["season"] != "Fall" and player["cash"] >= inf_cost + inf_buffer and state["decks"]["influence"]:
         player["cash"] -= inf_cost
         player["influence"].append(state["decks"]["influence"].pop(0))
 
-    # Repay loans when holding ample Denarii
+    # Repay loans when holding sufficient Denarii (Corinthian repays strictly at par to avoid Winter penalties)
     if player["loans"].get("spring"):
         sp_cost = 30 if season_key == "summer" else 45
-        if player["cash"] >= sp_cost + (10 if season_key == "summer" else 0):
+        sp_buf = (14 if tier == 0 else (6 if tier >= 2 else 10)) if season_key == "summer" else (4 if tier == 0 else 0)
+        if player["cash"] >= sp_cost + sp_buf:
             player["cash"] -= sp_cost
             player["loans"]["spring"] = False
             add_log(state, f"{player['name']} repaid their Spring Loan for {sp_cost}(d).", "action")
             add_npc_event(state, player, "loan", f"Repaid Spring Loan ({sp_cost}d)")
-    if season_key == "fall" and player["loans"].get("summer") and player["cash"] >= 60:
+    if season_key == "fall" and player["loans"].get("summer") and player["cash"] >= (64 if tier == 0 else 60):
         player["cash"] -= 60
         player["loans"]["summer"] = False
         add_log(state, f"{player['name']} repaid their Summer Loan for 60(d).", "action")
@@ -7807,15 +8315,30 @@ def handle_player_action(
     action: Dict[str, Any],
     allow_undo_map: Optional[Dict[int, bool]] = None,
 ) -> Tuple[bool, str]:
-    """Validates and executes a player action, including Undo Turn requests/approvals, then runs AI bots until the next human decision."""
+    """Validates and executes a player action, including Undo Turn requests/approvals and Spectator stepping."""
     _normalize_state_encounter_cards(state)
     act_type = action.get("type", "")
     allow_undo_map = allow_undo_map or {}
 
     human_players = [p for p in state.get("players", []) if not p.get("isBot")]
     req_player = next((p for p in human_players if p.get("userId") == user_id), None)
-    if not req_player and len(human_players) == 1:
+    if not req_player and user_id is None and len(human_players) == 1:
         req_player = human_players[0]
+
+    # --- SPECTATOR STEP PLAYBACK FOR ALL-BOT GAMES ---
+    if act_type == "spectator_step":
+        if human_players:
+            return False, "Step-by-step bot playback is only available when watching an all-AI game."
+        if state.get("phase") == "finished":
+            return False, "This game has already finished."
+        state["pendingUndoRequest"] = None
+        prev_turn_seq = int(state.get("turnSeq", 1))
+        ok_step, msg_step = step_single_bot_action(state)
+        if ok_step:
+            if int(state.get("turnSeq", 1)) != prev_turn_seq:
+                _record_turn_start_snapshot(state)
+            sync_turn_activity_timestamps(state)
+        return ok_step, msg_step
 
     # --- UNDO TURN ACTIONS ---
     if act_type == "request_undo_turn":
@@ -7873,6 +8396,7 @@ def handle_player_action(
             f"↩️ {req_player['name']} requested to Undo Turn back to the {which_desc} ({target_label}). Waiting for approval from {', '.join(required_names)}.",
             "info",
         )
+        sync_turn_activity_timestamps(state, active_actor_indices={req_player["index"]})
         return True, f"Undo requested — waiting for {', '.join(required_names)} to approve."
 
     if act_type == "respond_undo_turn":
@@ -7886,6 +8410,7 @@ def handle_player_action(
         if decision == "reject":
             state["pendingUndoRequest"] = None
             add_log(state, f"✕ {req_player['name']} declined {pend_u['requesterName']}'s Undo Turn request.", "info")
+            sync_turn_activity_timestamps(state, active_actor_indices={req_player["index"]})
             return True, f"Declined {pend_u['requesterName']}'s Undo Turn request."
         if uid_val not in pend_u.get("requiredUserIds", []):
             return False, "You have already approved this Undo request (or your approval is not pending)."
@@ -7906,6 +8431,7 @@ def handle_player_action(
             )
             return True, f"All players approved! Reverted to {restored_lbl}."
         add_log(state, f"✓ {req_player['name']} approved {pend_u['requesterName']}'s Undo request.", "info")
+        sync_turn_activity_timestamps(state, active_actor_indices={req_player["index"]})
         return True, f"Approved Undo request ({len(pend_u['requiredUserIds'])} player(s) still pending)."
 
     if act_type == "cancel_undo_turn":
@@ -7916,11 +8442,15 @@ def handle_player_action(
             return False, "Only the player who requested the Undo may cancel it."
         state["pendingUndoRequest"] = None
         add_log(state, f"{req_player['name']} canceled their Undo Turn request.", "info")
+        sync_turn_activity_timestamps(state, active_actor_indices={req_player["index"]})
         return True, "Undo Turn request canceled."
 
     if state.get("pendingUndoRequest"):
         pend_u = state["pendingUndoRequest"]
         return False, f"Game is paused while {pend_u['requesterName']}'s Undo Turn request awaits approval."
+
+    if user_id is not None and not req_player:
+        return False, "Spectators and removed players cannot perform player actions."
 
     # Backfill initial turn snapshot for pre-existing games loaded from DB
     if not state.get("turnSnapshotHistory"):
@@ -7928,6 +8458,7 @@ def handle_player_action(
         state.setdefault("hasActedThisTurn", False)
         _record_turn_start_snapshot(state)
 
+    actor_idx = req_player["index"] if req_player else None
     prev_turn_seq = int(state.get("turnSeq", 1))
     ok, msg = _execute_player_action_inner(state, user_id, action)
     if ok:
@@ -7936,7 +8467,65 @@ def handle_player_action(
             _record_turn_start_snapshot(state)
         else:
             state["hasActedThisTurn"] = True
+        sync_turn_activity_timestamps(
+            state,
+            active_actor_indices={actor_idx} if actor_idx is not None else None,
+        )
     return ok, msg
+
+
+def _resolve_pending_prompt_player(
+    state: Dict[str, Any],
+    user_id: Optional[int],
+    predicate: Any,
+) -> Optional[Dict[str, Any]]:
+    """Finds the authorized non-bot player for a pending sub-prompt action."""
+    if user_id is not None:
+        return next(
+            (p for p in state["players"] if not p["isBot"] and p.get("userId") == user_id),
+            None,
+        )
+    target_p = next(
+        (p for p in state["players"] if not p["isBot"] and predicate(p)),
+        None,
+    )
+    if not target_p:
+        target_p = state["players"][state["activePlayerIndex"]]
+    return None if target_p.get("isBot") else target_p
+
+
+def _resolve_mission_action_player(
+    state: Dict[str, Any],
+    user_id: Optional[int],
+    mission_id: str,
+    err_other: str,
+) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Finds the authorized non-bot owner for a player mission action."""
+    if user_id is not None:
+        own_p = next(
+            (p for p in state["players"] if not p["isBot"] and p.get("userId") == user_id),
+            None,
+        )
+        if not own_p:
+            return None, err_other
+        if any(m.get("id") == mission_id for m in own_p.get("missions", [])):
+            return own_p, ""
+        if any(
+            any(m.get("id") == mission_id for m in p.get("missions", []))
+            for p in state["players"]
+            if p["index"] != own_p["index"]
+        ):
+            return None, err_other
+        return own_p, ""
+    target_p = next(
+        (p for p in state["players"] if not p["isBot"] and any(m.get("id") == mission_id for m in p.get("missions", []))),
+        None,
+    )
+    if not target_p:
+        target_p = state["players"][state["activePlayerIndex"]]
+    if target_p.get("isBot"):
+        return None, err_other
+    return target_p, ""
 
 
 def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], action: Dict[str, Any]) -> Tuple[bool, str]:
@@ -7949,18 +8538,13 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     # 0. Resolve Pending Cart / Guard Overflow (from Mission, Combat, or Patron rewards)
     if act_type == "resolve_cart_overflow":
         ovf_id = action.get("overflowId")
-        target_p = next(
-            (
-                p for p in state["players"]
-                if not p["isBot"]
-                and p.get("pendingCartOverflow")
-                and (not ovf_id or any(o.get("id") == ovf_id for o in p.get("pendingCartOverflow", [])))
-            ),
-            None,
+        target_p = _resolve_pending_prompt_player(
+            state,
+            user_id,
+            lambda p: bool(p.get("pendingCartOverflow"))
+            and (not ovf_id or any(o.get("id") == ovf_id for o in p.get("pendingCartOverflow", []))),
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
             return False, "Not authorized."
         queue = target_p.get("pendingCartOverflow") or []
         if not queue:
@@ -8035,18 +8619,13 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     # 0B. Resolve Pending Market Board Reward Choice (e.g. Vigilante -> Any Meat Animal on Market)
     if act_type == "resolve_market_reward":
         rwd_id = action.get("rewardId")
-        target_p = next(
-            (
-                p for p in state["players"]
-                if not p["isBot"]
-                and p.get("pendingMarketReward")
-                and (not rwd_id or any(r.get("id") == rwd_id for r in p.get("pendingMarketReward", [])))
-            ),
-            None,
+        target_p = _resolve_pending_prompt_player(
+            state,
+            user_id,
+            lambda p: bool(p.get("pendingMarketReward"))
+            and (not rwd_id or any(r.get("id") == rwd_id for r in p.get("pendingMarketReward", []))),
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
             return False, "Not authorized."
         queue = target_p.get("pendingMarketReward") or []
         if not queue:
@@ -8147,8 +8726,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # 1. Setup discard phase (can be submitted by any human player who hasn't discarded yet)
     if state["phase"] == "setup_discard":
-        player = next((p for p in state["players"] if p.get("userId") == user_id and not p["setupDiscarded"]), None)
-        if not player and human_count == 1:
+        player = next(
+            (p for p in state["players"] if not p["isBot"] and p.get("userId") == user_id and not p["setupDiscarded"]),
+            None,
+        )
+        if not player and user_id is None and human_count == 1:
             player = next((p for p in state["players"] if not p["isBot"] and not p["setupDiscarded"]), None)
         if not player:
             return False, "Setup discard already completed or not authorized."
@@ -8189,9 +8771,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         if act_type != "select_climate_option":
             return False, "Please finish selecting the game's Political Climate options before starting Ostia Market."
         player = state["players"][state["activePlayerIndex"]]
-        if not player["isBot"] and player.get("userId") is not None and user_id != player.get("userId"):
-            if human_count != 1:
-                return False, f"Waiting for {player['name']} to choose a Political Climate option."
+        if player["isBot"]:
+            return False, f"Waiting for {player['name']} (AI) to choose a Political Climate option."
+        if user_id is not None and player.get("userId") != user_id:
+            return False, f"Waiting for {player['name']} to choose a Political Climate option."
         option_id = str(action.get("optionId", "")).strip()
         ok_pick, msg_pick = _apply_climate_option_pick(state, player, option_id)
         if not ok_pick:
@@ -8204,7 +8787,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         if not has_climate_modifier(state, "domna_3"):
             return False, "Empress Mediator is not active in this game's Political Climate."
         ex_player = next((p for p in state["players"] if not p["isBot"] and p.get("userId") == user_id), None)
-        if not ex_player and human_count == 1:
+        if not ex_player and user_id is None and human_count == 1:
             ex_player = next((p for p in state["players"] if not p["isBot"]), None)
         if not ex_player:
             return False, "Not authorized to exchange Diamonds."
@@ -8259,17 +8842,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     # 1B. Step 4 Delivery cargo loading & mission delivery (allowed BEFORE resolving a Step 5 pendingEncounter!)
     if state["phase"] == "delivery" and act_type == "delivery_load_cargo":
         mission_id = action.get("missionId", "")
-        target_p = next(
-            (
-                p for p in state["players"]
-                if not p["isBot"] and any(m.get("id") == mission_id for m in p.get("missions", []))
-            ),
-            None,
+        target_p, err_owner = _resolve_mission_action_player(
+            state, user_id, mission_id, "You can only load cargo onto your own Cart."
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
-            return False, "You can only load cargo onto your own Cart."
+            return False, err_owner
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
@@ -8277,6 +8854,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return False, "This mission does not have loadable cargo."
         if m.get("pickedUp"):
             return False, "Cargo for this mission is already loaded onto your Cart."
+        if int(state.get("turn", 1)) == 1 and not target_p.get("enteredGateTurn1"):
+            return False, "You must enter Rome through a Via Gate on Turn 1 before loading cargo."
         curr_cell = normalize_cell_id(target_p.get("position"))
         pickup_cell = normalize_cell_id(m.get("pickupCell"))
         if not curr_cell or curr_cell != pickup_cell:
@@ -8306,17 +8885,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     if state["phase"] == "delivery" and act_type == "delivery_complete_mission":
         mission_id = action.get("missionId", "")
-        target_p = next(
-            (
-                p for p in state["players"]
-                if not p["isBot"] and any(m.get("id") == mission_id for m in p.get("missions", []))
-            ),
-            None,
+        target_p, err_owner = _resolve_mission_action_player(
+            state, user_id, mission_id, "You can only complete your own Mission."
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
-            return False, "You can only complete your own Mission."
+            return False, err_owner
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
@@ -8331,6 +8904,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return False, "This mission cannot be completed with this action."
         if not m.get("pickedUp"):
             return False, f"You must first pick up {m.get('item', 'the cargo')} in {normalize_cell_id(m.get('pickupCell'))}."
+        if int(state.get("turn", 1)) == 1 and not target_p.get("enteredGateTurn1"):
+            return False, "You must enter Rome through a Via Gate on Turn 1 before delivering cargo."
         curr_cell = normalize_cell_id(target_p.get("position"))
         deliver_cell = normalize_cell_id(m.get("deliverCell"))
         if not curr_cell or curr_cell != deliver_cell:
@@ -8344,12 +8919,12 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         enc_player = state["players"][pend["playerIndex"]]
         intervenor_idx = pend.get("interveningPlayerIndex")
         acting_player = state["players"][intervenor_idx] if intervenor_idx is not None else enc_player
-        if not acting_player["isBot"] and acting_player.get("userId") is not None and user_id != acting_player.get("userId"):
+        if acting_player["isBot"] or (user_id is not None and acting_player.get("userId") != user_id):
             return False, "Waiting for the active player to resolve their encounter."
         if act_type == "play_influence":
             card_id = action.get("cardId")
             card = next((c for c in acting_player["influence"] if c["id"] == card_id), None)
-            if not card and acting_player["index"] != enc_player["index"]:
+            if not card and acting_player["index"] != enc_player["index"] and user_id is None and not enc_player["isBot"]:
                 card = next((c for c in enc_player["influence"] if c["id"] == card_id), None)
                 if card:
                     acting_player = enc_player
@@ -8405,8 +8980,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # 3. Cleanup Phase actions
     if state["phase"] == "cleanup":
-        player = next((p for p in state["players"] if p.get("userId") == user_id and not p["cleanupDone"]), None)
-        if not player and human_count == 1:
+        player = next(
+            (p for p in state["players"] if not p["isBot"] and p.get("userId") == user_id and not p["cleanupDone"]),
+            None,
+        )
+        if not player and user_id is None and human_count == 1:
             player = next((p for p in state["players"] if not p["isBot"] and not p["cleanupDone"]), None)
         if not player:
             return False, "Clean-up already completed for this season or not authorized."
@@ -8486,17 +9064,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     # Voluntary Mission Cancellation (Starting: no penalty; Encounter: Hostile Favor penalty; Soothsayer: only if >5 active Soothsayer missions)
     if act_type == "cancel_mission":
         mission_id = action.get("missionId", "")
-        target_p = next(
-            (
-                p for p in state["players"]
-                if not p["isBot"] and any(m.get("id") == mission_id for m in p.get("missions", []))
-            ),
-            None,
+        target_p, err_owner = _resolve_mission_action_player(
+            state, user_id, mission_id, "You can only cancel your own Missions."
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
-            return False, "You can only cancel your own Missions."
+            return False, err_owner
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
@@ -8519,13 +9091,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # Confirm Top 3 Reorder from Informants ("Look at the top three cards of any deck or the top three tiles of any stack...")
     if act_type == "reorder_top_3":
-        target_p = next(
-            (p for p in state["players"] if not p["isBot"] and p.get("pendingTop3Reorder")),
-            None,
+        target_p = _resolve_pending_prompt_player(
+            state, user_id, lambda p: bool(p.get("pendingTop3Reorder"))
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
             return False, "Not authorized."
         pend_r = target_p.get("pendingTop3Reorder")
         if not pend_r:
@@ -8580,13 +9149,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # Confirm or Decline NPC Purchase/Sale Offer ("?: Will Sell..." / "?: Will Buy...")
     if act_type == "resolve_npc_offer":
-        target_p = next(
-            (p for p in state["players"] if not p["isBot"] and p.get("pendingNpcOffer")),
-            None,
+        target_p = _resolve_pending_prompt_player(
+            state, user_id, lambda p: bool(p.get("pendingNpcOffer"))
         )
         if not target_p:
-            target_p = state["players"][state["activePlayerIndex"]]
-        if not target_p["isBot"] and target_p.get("userId") is not None and user_id != target_p.get("userId"):
             return False, "Not authorized."
         offer = target_p.get("pendingNpcOffer")
         if not offer:
@@ -8696,7 +9262,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
 
     # All turn-based actions require activePlayerIndex
     player = state["players"][state["activePlayerIndex"]]
-    if not player["isBot"] and player.get("userId") is not None and user_id != player.get("userId"):
+    if player["isBot"] or (user_id is not None and player.get("userId") != user_id):
         return False, f"It is currently {player['name']}'s turn."
 
     # Play Influence Card (can be played anytime on turn)
@@ -9002,6 +9568,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return True, f"Moved to {target_cell}."
 
         if act_type == "delivery_sell":
+            if int(state.get("turn", 1)) == 1 and not player.get("enteredGateTurn1"):
+                return False, "You must enter Rome through a Via Gate on Turn 1 before transacting."
             if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
                 return False, "Already completed your Transaction for this turn."
             curr_cell = normalize_cell_id(player.get("position"))
@@ -9162,6 +9730,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return True, f"Sold {lead_item['name']} for {total_price}(d)."
 
         if act_type == "delivery_forum_buy":
+            if int(state.get("turn", 1)) == 1 and not player.get("enteredGateTurn1"):
+                return False, "You must enter Rome through a Via Gate on Turn 1 before transacting."
             if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
                 return False, "Already completed your Transaction for this turn."
             curr_cell = normalize_cell_id(player.get("position"))
@@ -9210,6 +9780,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return True, f"{'Hired' if is_guard else 'Bought'} {bought['name']} for {price}(d)."
 
         if act_type == "delivery_gamble":
+            if int(state.get("turn", 1)) == 1 and not player.get("enteredGateTurn1"):
+                return False, "You must enter Rome through a Via Gate on Turn 1 before gambling."
             if player.get("gambledThisTurn"):
                 return False, "You can only gamble once per turn."
             if player.get("transactedThisTurn"):
@@ -10114,46 +10686,185 @@ def _bot_distance_to_exit(cell: str, state: Optional[Dict[str, Any]] = None) -> 
     return min((_bot_grid_distance(c, g, state) + 1 for g in GATE_CELLS), default=4)
 
 
+def _clear_any_bot_subprompts(state: Dict[str, Any]) -> bool:
+    """Clears any dangling human-style subprompts on bot seats and returns True if any were resolved."""
+    changed = False
+    for pl in state.get("players", []):
+        if pl.get("isBot") and (
+            pl.get("pendingTop3Reorder")
+            or pl.get("pendingCartOverflow")
+            or pl.get("pendingMarketReward")
+            or pl.get("pendingNpcOffer")
+        ):
+            _resolve_converted_bot_subprompts(state, pl)
+            if not state.get("pendingEncounter"):
+                _finish_pending_encounter_continuations(state, pl)
+            changed = True
+    return changed
+
+
+def _execute_single_bot_encounter_step(state: Dict[str, Any]) -> bool:
+    """Executes one step of a pendingEncounter belonging to an AI bot."""
+    pend = state.get("pendingEncounter")
+    if not isinstance(pend, dict):
+        return False
+    if pend.get("interveningPlayerIndex") is not None:
+        return _resolve_bot_intervenor_step(state)
+    p_enc = state["players"][pend["playerIndex"]]
+    if not p_enc.get("isBot"):
+        return False
+
+    stage = pend.get("stage", "pre_decision")
+    stage_decisions = {
+        "event_pre_resolve": "resolve_event",
+        "chart_pre_roll": "roll_chart_encounter",
+        "driver_fate_pre_roll": "roll_driver_fate",
+        "combat_post_roll": "finalize_combat",
+        "driver_fate_post_roll": "finalize_driver_fate",
+        "chart_post_roll": "finalize_chart_roll",
+        "demand_post_roll": "finalize_demand_roll",
+        "gamble_post_roll": "finalize_gamble_roll",
+    }
+    if stage in stage_decisions:
+        ok, _ = resolve_pending_encounter_choice(state, p_enc, pend, stage_decisions[stage])
+        if ok and not state.get("pendingEncounter"):
+            _clear_any_bot_subprompts(state)
+            _finish_pending_encounter_continuations(state, p_enc)
+        return bool(ok)
+
+    if stage == "combat_consumable_pre_roll":
+        tier = _bot_difficulty_tier(p_enc)
+        chosen_ids: List[str] = []
+        if tier >= 2:
+            cands = pend.get("consumableItems") or []
+            opp_cp = int((pend.get("card") or {}).get("combat", {}).get("cp", 4) or 4) * int(pend.get("xCount", 1) or 1)
+            party_est = 2 + len(p_enc.get("guards", []))
+            if cands and (tier == 3 or opp_cp >= party_est):
+                chosen_ids = [str(cands[0]["id"])]
+        ok, _ = resolve_pending_encounter_choice(
+            state, p_enc, pend, "confirm_consumables_and_roll", use_consumable_ids=chosen_ids
+        )
+        if ok and not state.get("pendingEncounter"):
+            _clear_any_bot_subprompts(state)
+            _finish_pending_encounter_continuations(state, p_enc)
+        return bool(ok)
+
+    c_enc = pend.get("card") or {}
+    deck_k = pend.get("deck", (c_enc.get("deck") or "patricii").lower())
+    r_type = pend.get("reaction") or pend.get("reactionType") or ""
+    tier = _bot_difficulty_tier(p_enc)
+    action_low = str(c_enc.get("actionText") or "").lower()
+    m_raw = c_enc.get("mission") or {}
+    is_mission_or_offer = bool(m_raw or not str(c_enc.get("actionText") or "").strip())
+
+    decision = "fulfill"
+    if bot_should_initiate_combat(state, p_enc, pend, c_enc, deck_k):
+        if not pend.get("canInitiateCombat") and pend.get("hasCasusBelliCard"):
+            decision = "use_casus_belli"
+        else:
+            decision = "fight"
+    elif (
+        r_type in ("mission_offer", "deck_quest_offer", "quest_optional")
+        and (
+            (state.get("season") == "Fall" and int(state.get("turn", 1)) >= (6 if tier == 3 else 7))
+            or len(p_enc.get("missions", [])) >= (3 if tier == 3 else 4)
+        )
+    ):
+        decision = "refuse"
+    elif (
+        not pend.get("combatMandatory")
+        and not is_mission_or_offer
+        and r_type in ("demand", "demand_strict")
+        and tier >= 2
+    ):
+        has_dog = any("Trained Dog" in str(c.get("name", "")) for c in p_enc.get("influence", []))
+        has_plea = any("Plea" in str(c.get("name", "")) for c in p_enc.get("influence", []))
+        is_cash_demand = "(d)" in action_low or "cash" in action_low
+        if has_dog and is_cash_demand and (p_enc.get("cash", 0) >= 4 or r_type == "demand_strict"):
+            decision = "use_dog"
+        elif has_plea and not is_cash_demand and "influence" not in action_low and p_enc.get("cart"):
+            decision = "use_plea"
+
+    ok, _ = resolve_pending_encounter_choice(state, p_enc, pend, decision)
+    if not ok and decision != "fulfill":
+        ok, _ = resolve_pending_encounter_choice(state, p_enc, pend, "fulfill")
+    if not state.get("pendingEncounter"):
+        _clear_any_bot_subprompts(state)
+        _finish_pending_encounter_continuations(state, p_enc)
+    return True
+
+
+def step_single_bot_action(state: Dict[str, Any]) -> Tuple[bool, str]:
+    """Executes exactly one AI bot action/decision for Spectator playback in all-bot matches."""
+    if state.get("phase") == "finished":
+        return False, "This game has already finished."
+    if _clear_any_bot_subprompts(state):
+        return True, "Resolved pending AI decision."
+    if state.get("pendingEncounter"):
+        if _execute_single_bot_encounter_step(state):
+            return True, "AI resolved encounter step."
+        return False, "Pending encounter is awaiting a human decision."
+
+    phase = state.get("phase", "")
+    if phase == "setup_discard":
+        bot_p = next((p for p in state["players"] if p.get("isBot") and not p.get("setupDiscarded")), None)
+        if bot_p:
+            _bot_complete_setup_discard(state, bot_p)
+            _check_all_setup_discards_done(state)
+            return True, f"{bot_p['name']} selected starting Missions & Influence."
+        _check_all_setup_discards_done(state)
+        return True, "Advanced setup."
+
+    if phase == "cleanup":
+        bot_p = next((p for p in state["players"] if p.get("isBot") and not p.get("cleanupDone")), None)
+        if bot_p:
+            _bot_complete_cleanup(state, bot_p)
+            _check_all_cleanups_done(state)
+            return True, f"{bot_p['name']} completed Clean-Up."
+        _check_all_cleanups_done(state)
+        return True, "Advanced Clean-Up."
+
+    active_p = state["players"][state["activePlayerIndex"]]
+    if not active_p.get("isBot"):
+        return False, f"It is {active_p['name']}'s turn."
+
+    if phase == "setup_climate":
+        _run_bot_climate_pick(state, active_p)
+        return True, f"{active_p['name']} picked a Political Climate option."
+    if phase == "market":
+        _run_bot_market_turn(state, active_p)
+        return True, f"{active_p['name']} acted in Ostia Market."
+    if phase == "delivery_entry":
+        _run_bot_entry_turn(state, active_p)
+        return True, f"{active_p['name']} positioned at a Rome Gate."
+    if phase == "delivery":
+        _run_bot_delivery_turn(state, active_p)
+        _clear_any_bot_subprompts(state)
+        return True, f"{active_p['name']} acted in Rome."
+    return False, f"No steppable action in phase '{phase}'."
+
+
 def run_bots_until_human(state: Dict[str, Any]) -> None:
-    """Executes AI bot turns automatically until it is a human player's turn or the game ends."""
+    """Executes AI bot turns automatically until a human player decision is needed or the game ends."""
+    # Never auto-simulate all-AI spectator tables to completion in a single request
+    if not any(not p.get("isBot") for p in state.get("players", [])):
+        return
     safety = 0
     while safety < 250:
         safety += 1
         if state["phase"] in ("finished", "setup_discard", "cleanup"):
             break
+        _clear_any_bot_subprompts(state)
         if any(
-            p.get("pendingNpcOffer") or p.get("pendingCartOverflow") or p.get("pendingMarketReward")
+            p.get("pendingNpcOffer") or p.get("pendingCartOverflow") or p.get("pendingMarketReward") or p.get("pendingTop3Reorder")
             for p in state["players"]
             if not p.get("isBot")
         ):
             break
         if state.get("pendingEncounter"):
-            pend = state["pendingEncounter"]
-            if pend.get("interveningPlayerIndex") is not None:
-                break
-            p_enc = state["players"][pend["playerIndex"]]
-            if p_enc["isBot"]:
-                c_enc = pend.get("card") or {}
-                deck_k = pend.get("deck", (c_enc.get("deck") or "patricii").lower())
-                decision = "fulfill"
-                r_type = pend.get("reaction") or pend.get("reactionType") or ""
-                if (
-                    pend.get("stage", "pre_decision") == "pre_decision"
-                    and bot_should_initiate_combat(state, p_enc, pend, c_enc, deck_k)
-                ):
-                    decision = "fight"
-                elif (
-                    pend.get("stage", "pre_decision") == "pre_decision"
-                    and r_type in ("mission_offer", "deck_quest_offer", "quest_optional")
-                    and (
-                        (state.get("season") == "Fall" and int(state.get("turn", 1)) >= 7)
-                        or len(p_enc.get("missions", [])) >= 4
-                    )
-                ):
-                    decision = "refuse"
-                resolve_pending_encounter_choice(state, p_enc, pend, decision)
-                if not state.get("pendingEncounter"):
-                    _finish_pending_encounter_continuations(state, p_enc)
+            if _resolve_bot_intervenor_step(state):
+                continue
+            if _execute_single_bot_encounter_step(state):
                 continue
             break
 
@@ -10182,12 +10893,21 @@ def _run_bot_climate_pick(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         return
 
     strat = str(bot.get("botStrategy", "balanced"))
+    tier = _bot_difficulty_tier(bot)
     mission_favors = [f for m in bot.get("missions", []) for f in (m.get("favor") or [])]
 
     def _score_opt(opt: Dict[str, Any]) -> int:
         oid = opt["id"]
         fac = opt["factor"]
-        sc = 10 + secrets.randbelow(5)
+        if tier == 1:
+            sc = 10 + secrets.randbelow(16)
+            if strat == "aggressive" and oid.startswith("caracalla"):
+                sc += 6
+            elif strat == "missions" and oid.startswith("missions"):
+                sc += 6
+            return sc
+
+        sc = 10 + secrets.randbelow(2 if tier == 3 else 5)
         pos_m = sum(1 for f in mission_favors if f == fac)
         neg_m = sum(1 for f in mission_favors if f == f"-{fac}")
 
@@ -10208,9 +10928,11 @@ def _run_bot_climate_pick(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 sc += 14
 
         if pos_m > 0 and oid in ("domna_1", "plautilla_1", "plautilla_2", "aurelius_1", "aurelius_2", "aurelius_3", "geta_2", "geta_3", "caracalla_3", "domna_3"):
-            sc += 8 * pos_m
+            sc += (11 if tier == 3 else 8) * pos_m
         if neg_m > 0 and oid in ("caracalla_2", "aurelius_2"):
-            sc += 10 * neg_m
+            sc += (12 if tier == 3 else 10) * neg_m
+        if tier == 3 and oid in ("missions_3", "domna_3", "aurelius_3", "geta_2"):
+            sc += 6
         return sc
 
     chosen = max(candidates, key=_score_opt)
@@ -10230,17 +10952,37 @@ def bot_should_initiate_combat(
     eff_deck = deck_key if deck_key is not None else str(pend.get("deck") or "patricii")
     if not pend.get("canInitiateCombat") and not pend.get("hasCasusBelliCard"):
         return False
+    tier = _bot_difficulty_tier(bot)
     combat_m = _find_combat_mission_for_encounter(bot, eff_card, eff_deck)
     party_strength = 1 + len(bot.get("guards", [])) + sum(
         1 for c in bot.get("cart", []) if (c.get("combat") or {}).get("dice", 0) > 0 or (c.get("combat") or {}).get("flat", 0) > 0
     )
-    if combat_m is not None and party_strength >= int(pend.get("xCount", 1)):
+    x_cnt = int(pend.get("xCount", 1) or 1)
+    if tier == 1:
+        if combat_m is not None:
+            return party_strength >= max(1, x_cnt - 1)
+        if pend.get("canInitiateCombat") and pend.get("combatThreatened") and bot.get("botStrategy") == "aggressive":
+            return secrets.randbelow(2) == 0
+        return False
+
+    if tier == 3:
+        opp_cp = int((eff_card.get("combat") or {}).get("cp", 4) or 4) * x_cnt
+        exp_player_cp = party_strength * 1.5
+        if combat_m is not None and (exp_player_cp >= opp_cp or party_strength >= x_cnt):
+            return True
+        if pend.get("combatThreatened") and exp_player_cp >= opp_cp + 1.5:
+            return True
+        if pend.get("hasCasusBelliCard") and eff_deck in ("nefarii", "legiones") and exp_player_cp >= opp_cp + 2.0:
+            return True
+        return False
+
+    if combat_m is not None and party_strength >= x_cnt:
         return True
     if (
         bot.get("botStrategy") == "aggressive"
         and pend.get("canInitiateCombat")
         and pend.get("combatThreatened")
-        and party_strength >= int(pend.get("xCount", 1)) + 1
+        and party_strength >= x_cnt + 1
     ):
         return True
     return False
@@ -10248,8 +10990,10 @@ def bot_should_initiate_combat(
 
 def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     strategy = bot.get("botStrategy", "balanced")
+    tier = _bot_difficulty_tier(bot)
     # Play cash-generating Influence cards (Patron / Favor) in Ostia if cash is low
-    if bot["cash"] <= 6:
+    cash_Inf_thresh = 8 if tier == 3 else 6
+    if tier >= 2 and bot["cash"] <= cash_Inf_thresh:
         for inf_c in list(bot.get("influence", [])):
             nm = str(inf_c.get("name", ""))
             if "Patron" in nm or ("Favor" in nm and (inf_c.get("favorGain") or {}).get("faction") != "Geta"):
@@ -10260,9 +11004,17 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     max_b, max_g = get_player_cart_limits(bot)
     used_b, used_g = get_player_cart_usage(bot)
 
-    # Persona-aware Guard recruitment
-    want_guards = 2 if strategy == "aggressive" else (0 if strategy == "opportunist" else 1)
-    guard_cash_buffer = 2 if strategy == "aggressive" else 4
+    # Tier & Persona-aware Guard recruitment
+    if tier == 1:
+        want_guards = 1 if strategy == "aggressive" else 0
+        guard_cash_buffer = 6
+    elif tier == 3:
+        want_guards = 2 if strategy in ("aggressive", "balanced") else (1 if strategy != "opportunist" else 0)
+        guard_cash_buffer = 2 if strategy == "aggressive" else 3
+    else:
+        want_guards = 2 if strategy == "aggressive" else (0 if strategy == "opportunist" else 1)
+        guard_cash_buffer = 2 if strategy == "aggressive" else 4
+
     if used_g < want_guards and state["marketBoard"]["Guards"]:
         guards_track = state["marketBoard"]["Guards"]
         col_idx = len(guards_track) - 1
@@ -10294,7 +11046,7 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
             advance_market_turn(state)
             return
 
-    # Reserve Cart blocks for unpicked Delivery Mission cargo if Courier ('missions') or already carrying goods
+    # Reserve Cart blocks for unpicked Delivery Mission cargo
     delivery_blocks_needed = max(
         (
             int(m.get("blocks", 1))
@@ -10304,13 +11056,21 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         default=0,
     )
     eff_max_b = max_b
-    if strategy == "missions" and delivery_blocks_needed > 0:
-        eff_max_b = max(2, max_b - min(3, delivery_blocks_needed))
-    elif delivery_blocks_needed > 0 and len(bot.get("cart", [])) >= 1:
-        eff_max_b = max(3, max_b - min(2, delivery_blocks_needed))
+    if tier >= 2:
+        if tier == 3 and delivery_blocks_needed > 0 and delivery_blocks_needed <= max_b - 1:
+            eff_max_b = max(2, max_b - min(3, delivery_blocks_needed))
+        elif strategy == "missions" and delivery_blocks_needed > 0:
+            eff_max_b = max(2, max_b - min(3, delivery_blocks_needed))
+        elif delivery_blocks_needed > 0 and len(bot.get("cart", [])) >= 1:
+            eff_max_b = max(3, max_b - min(2, delivery_blocks_needed))
 
     mission_cats = [m.get("category", "") for m in bot["missions"] if m.get("kind") == "sell" and not m.get("completed")]
-    toll_reserve = 0 if strategy in ("luxury", "aggressive") else (2 if bot["cash"] >= 6 else 0)
+    if tier == 1:
+        toll_reserve = 0
+    elif tier == 3:
+        toll_reserve = 3 if bot["cash"] >= 7 else 0
+    else:
+        toll_reserve = 0 if strategy in ("luxury", "aggressive") else (2 if bot["cash"] >= 6 else 0)
 
     def _find_best_market_good(reserve_amt: int) -> Optional[Tuple[str, int, int, float]]:
         best_c = None
@@ -10320,6 +11080,8 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         )
         for track_name in ("Marble", "Wine", "Animals", "Weapons", "Grain"):
             track = state["marketBoard"].get(track_name, [])
+            shift = state.get("seasonTrackShifts", {}).get(track_name, 0) if tier == 3 else 0
+            sc_idx = get_track_scarcity_index(track, shift)
             for col_idx, card in enumerate(track):
                 blocks = int(card.get("blocks", 1) or 1)
                 if used_b + blocks > eff_max_b:
@@ -10327,22 +11089,29 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 price = int(card["buy"][COL_TO_PRICE_INDEX[col_idx]])
                 if price > bot["cash"] - reserve_amt:
                     continue
-                expected_sell = int(card["sell"][get_track_scarcity_index(track)])
+                expected_sell = int(card["sell"][sc_idx])
                 profit = expected_sell - price
                 bonus = 0.0
-                if any(matches_category(card, mc) for mc in mission_cats):
-                    bonus += 13.0 if strategy == "missions" else 9.0
-                if track_name == "Grain" and existing_grain_cnt >= 1 and profit >= 2:
-                    # Bulk Grain Sale synergy: additional Grain cards sell in the same single hourly Transaction!
-                    bonus += 3.0
-                if strategy == "luxury" and (track_name == "Marble" or card.get("subcategory") == "Fine Wine"):
-                    bonus += 4.5
-                elif strategy == "aggressive" and (track_name == "Weapons" or card.get("subcategory") == "Exotic Animals"):
-                    bonus += 4.0
-                elif strategy == "opportunist" and blocks == 1:
-                    bonus += 2.5
+                if tier == 1:
+                    if any(matches_category(card, mc) for mc in mission_cats):
+                        bonus += 4.0
+                    bonus += float(secrets.randbelow(5) - 2)
+                else:
+                    if any(matches_category(card, mc) for mc in mission_cats):
+                        bonus += 15.0 if tier == 3 else (13.0 if strategy == "missions" else 9.0)
+                    if track_name == "Grain" and existing_grain_cnt >= 1 and profit >= 2:
+                        bonus += 4.5 if tier == 3 else 3.0
+                    if strategy == "luxury" and (track_name == "Marble" or card.get("subcategory") == "Fine Wine"):
+                        bonus += 4.5
+                    elif strategy == "aggressive" and (track_name == "Weapons" or card.get("subcategory") == "Exotic Animals"):
+                        bonus += 4.0
+                    elif strategy == "opportunist" and blocks == 1:
+                        bonus += 2.5
+                    if tier == 3 and blocks == 1 and profit >= 3:
+                        bonus += 2.0
                 score = (profit + bonus) / max(1, blocks)
-                if score > best_sc and (profit >= 1 or bonus >= 4.0):
+                min_ok = (profit >= 0) if tier == 1 else (profit >= 1 or bonus >= 4.0)
+                if score > best_sc and min_ok:
                     best_sc = score
                     best_c = (track_name, col_idx, price, score)
         return best_c
@@ -10389,9 +11158,17 @@ def _compute_bot_goal_cells(state: Dict[str, Any], bot: Dict[str, Any]) -> List[
     max_b, _ = get_player_cart_limits(bot)
     used_b, _ = get_player_cart_usage(bot)
     turn_num = int(state.get("turn", 1))
+    turns_left = max(0, 10 - turn_num)
+    curr_pos = normalize_cell_id(bot.get("position"))
     strategy = bot.get("botStrategy", "balanced")
+    tier = _bot_difficulty_tier(bot)
 
     sellable_items = [c for c in bot.get("cart", []) if not c.get("isMissionCargo")]
+
+    def _is_reachable(cell_id: str) -> bool:
+        if tier < 3 or not curr_pos:
+            return True
+        return (_bot_grid_distance(curr_pos, cell_id, state) + _bot_distance_to_exit(cell_id, state)) <= turns_left + 1
 
     for m in bot.get("missions", []):
         if m.get("completed"):
@@ -10401,39 +11178,44 @@ def _compute_bot_goal_cells(state: Dict[str, Any], bot: Dict[str, Any]) -> List[
             d_cell = normalize_cell_id(m.get("deliverCell"))
             p_cell = normalize_cell_id(m.get("pickupCell"))
             if m.get("pickedUp") and d_cell:
-                goals.append((d_cell, 100))
-            elif not m.get("pickedUp") and p_cell and used_b + int(m.get("blocks", 1)) <= max_b and turn_num <= 7:
-                goals.append((p_cell, 85 if strategy == "missions" else 70))
+                goals.append((d_cell, 110 if tier == 3 else 100))
+            elif not m.get("pickedUp") and p_cell and used_b + int(m.get("blocks", 1)) <= max_b and turn_num <= (8 if tier == 1 else 7) and _is_reachable(p_cell):
+                w_p = 60 if tier == 1 else (90 if tier == 3 else (85 if strategy == "missions" else 70))
+                goals.append((p_cell, w_p))
         elif mkind == "sell":
             s_cell = normalize_cell_id(m.get("cell"))
-            if s_cell and any(matches_category(c, m.get("category", "")) for c in sellable_items):
-                goals.append((s_cell, 90))
-        elif mkind == "kill" and strategy == "aggressive" and turn_num <= 7:
+            if s_cell and any(matches_category(c, m.get("category", "")) for c in sellable_items) and _is_reachable(s_cell):
+                goals.append((s_cell, 95 if tier == 3 else 90))
+        elif mkind == "kill" and (strategy == "aggressive" or tier == 3) and turn_num <= 7:
             t_deck = str(m.get("targetDeck") or "").lower()
             for coord, c_st in state["romeBoard"].items():
                 rev = c_st.get("revealed")
-                if rev and str(rev.get("encounter") or "").lower().startswith(t_deck):
-                    goals.append((coord, 65))
+                if rev and str(rev.get("encounter") or "").lower().startswith(t_deck) and _is_reachable(coord):
+                    goals.append((coord, 70 if tier == 3 else 65))
 
     # Add revealed tiles that buy any of our sellable cart items profitably
     if sellable_items:
         for coord, c_st in state["romeBoard"].items():
             rev = c_st.get("revealed")
-            if not rev:
+            if not rev or not _is_reachable(coord):
                 continue
             for ts in rev.get("sells", []):
                 matching = [c for c in sellable_items if matches_category(c, ts["category"])]
                 if matching:
-                    if ts["category"] == "Grain" and len(matching) > 1:
+                    if tier >= 2 and ts["category"] == "Grain" and len(matching) > 1:
                         total_pr = sum(compute_sell_price(state, bot, c, ts["modifier"])[0] for c in matching)
                         total_cost = sum(int(c.get("purchasePrice", 0) or 0) for c in matching)
                         if total_pr >= total_cost or turn_num >= 6:
-                            goals.append((coord, 40 + max(0, total_pr - total_cost) * 3))
+                            goals.append((coord, 45 + max(0, total_pr - total_cost) * 3))
                     else:
-                        best_pr = max(compute_sell_price(state, bot, c, ts["modifier"])[0] for c in matching)
-                        cost_b = int(matching[0].get("purchasePrice", 0) or 0)
-                        if best_pr >= cost_b or turn_num >= 6:
-                            goals.append((coord, 40 + max(0, best_pr - cost_b) * 3))
+                        lead_c = max(matching, key=lambda c: compute_sell_price(state, bot, c, ts["modifier"])[0])
+                        if tier == 3:
+                            _, best_pr, _ = _bot_pick_amethyst_boost(state, bot, lead_c, ts["modifier"])
+                        else:
+                            best_pr = compute_sell_price(state, bot, lead_c, ts["modifier"])[0]
+                        cost_b = int(lead_c.get("purchasePrice", 0) or 0)
+                        if best_pr >= cost_b or turn_num >= 6 or tier == 1:
+                            goals.append((coord, 40 + max(0, best_pr - cost_b) * (4 if tier == 3 else 3)))
         # If no revealed buyers exist yet, explore central unrevealed neighborhoods to uncover buyers
         if not any(w >= 40 for _, w in goals):
             for hub in ("C3", "D3", "C4", "D4", "B3", "C2", "D5", "E4"):
@@ -10441,10 +11223,10 @@ def _compute_bot_goal_cells(state: Dict[str, Any], bot: Dict[str, Any]) -> List[
                     goals.append((hub, 30))
 
     # Opportunist seeks revealed Stadiums when flush with Denarii
-    if strategy == "opportunist" and bot.get("cash", 0) >= 6 and turn_num <= 6 and not bot.get("transactedThisTurn"):
+    if tier >= 2 and strategy == "opportunist" and bot.get("cash", 0) >= (10 if tier == 3 else 6) and turn_num <= 6 and not bot.get("transactedThisTurn"):
         for coord, c_st in state["romeBoard"].items():
             rev = c_st.get("revealed")
-            if rev and rev.get("gamble"):
+            if rev and rev.get("gamble") and _is_reachable(coord):
                 goals.append((coord, 45))
 
     return goals
@@ -10482,6 +11264,8 @@ def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]
     """Plays beneficial non-reactive Influence cards in Rome (Patron, Thug, Wine Forger, Cartwright, Friend In The City Guard)."""
     if state.get("pendingEncounter") or not bot.get("influence"):
         return
+    tier = _bot_difficulty_tier(bot)
+    turn_num = int(state.get("turn", 1))
     max_b, max_g = get_player_cart_limits(bot)
     used_b, used_g = get_player_cart_usage(bot)
     for c in list(bot.get("influence", [])):
@@ -10492,21 +11276,23 @@ def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]
         elif "Favor" in nm and (c.get("favorGain") or {}).get("faction") != "Geta":
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", f"Played '{nm}'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": f"🃏 {nm}"})
-        elif "Thug" in nm and used_g + 1 <= max_g:
+        elif tier >= 2 and "Thug" in nm and used_g + 1 <= max_g:
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", "Deployed Free Guard 'Thug'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛡️ Thug (+1 CP)"})
             _, used_g = get_player_cart_usage(bot)
-        elif "Cartwright" in nm and used_b >= max_b - 1:
+        elif tier >= 2 and "Cartwright" in nm and used_b >= max_b - 1:
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", "Played 'Cartwright' (+2■)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛒 +2■ Space"})
             max_b, _ = get_player_cart_limits(bot)
-        elif "Wine Forger" in nm and used_b + 1 <= max_b and int(state.get("turn", 1)) <= 7:
+        elif tier >= 2 and "Wine Forger" in nm and used_b + 1 <= max_b and turn_num <= (6 if tier == 3 else 7):
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", "Played 'Wine Forger'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🍷 Wine Forger"})
             used_b, _ = get_player_cart_usage(bot)
-        elif "Friend In The City Guard" in nm and not bot.get("friendInGuard") and int(state.get("turn", 1)) >= 6:
-            _execute_influence_card(state, bot, c, {})
-            add_npc_event(state, bot, "influence", "Played 'Friend In The City Guard'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛡️ Free Tolls"})
+        elif tier >= 2 and "Friend In The City Guard" in nm and not bot.get("friendInGuard"):
+            should_friend = (turn_num >= 4 and (bot.get("cash", 0) <= 8 or turn_num >= 5)) if tier == 3 else (turn_num >= 6)
+            if should_friend:
+                _execute_influence_card(state, bot, c, {})
+                add_npc_event(state, bot, "influence", "Played 'Friend In The City Guard'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛡️ Free Tolls"})
 
 
 def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
@@ -10516,6 +11302,7 @@ def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, An
     leader = _get_winning_opponent(state, bot)
     if not leader or not _should_bot_target_adversarially(state, bot, leader, is_extreme_luck=False):
         return
+    tier = _bot_difficulty_tier(bot)
 
     # 1. Surprise Shipment: depress scarcity on a Goods category heavily held on the leader's Cart (and not held by this bot)
     ss_card = next((c for c in bot["influence"] if "Surprise Shipment" in str(c.get("name", ""))), None)
@@ -10546,7 +11333,7 @@ def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, An
 
     # 2. Prophecy: saddle the winning player with a Soothsayer encounter when their mission slate is crowded or night is late
     proph_card = next((c for c in bot["influence"] if "Prophecy" in str(c.get("name", ""))), None)
-    if proph_card and (int(state.get("turn", 1)) >= 5 or len(leader.get("missions", [])) >= 3):
+    if proph_card and (int(state.get("turn", 1)) >= (4 if tier == 3 else 5) or len(leader.get("missions", [])) >= (2 if tier == 3 else 3)):
         _execute_influence_card(state, bot, proph_card, {"targetPlayerIndex": leader["index"]})
         add_npc_event(state, bot, "influence", f"Played 'Prophecy' on {leader['name']}", cell=bot.get("position"), visual={"kind": "influence", "cardName": "Prophecy", "outcomeLabel": f"🔮 → {leader['name']}"})
 
@@ -10613,10 +11400,17 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 break
 
         goals = _compute_bot_goal_cells(state, bot)
-        turns_left = max(0, 10 - int(state.get("turn", 1)))
+        turn_num = int(state.get("turn", 1))
+        turns_left = max(0, 10 - turn_num)
         dist_exit = _bot_distance_to_exit(curr_cell, state)
         has_cargo_or_goals = bool(bot.get("cart")) or bool(goals)
-        should_exit = (dist_exit >= turns_left + 1) or (int(state.get("turn", 1)) >= 9) or (not has_cargo_or_goals and int(state.get("turn", 1)) >= 3)
+        tier = _bot_difficulty_tier(bot)
+        if tier == 1:
+            should_exit = (dist_exit >= turns_left) or (turn_num >= 10)
+        elif tier == 3:
+            should_exit = (dist_exit >= turns_left + 1) or (turn_num >= 9) or (not has_cargo_or_goals and turn_num >= 2)
+        else:
+            should_exit = (dist_exit >= turns_left + 1) or (turn_num >= 9) or (not has_cargo_or_goals and turn_num >= 3)
 
         chosen_dir, chosen_val = passable[0]
         if should_exit:
@@ -10642,6 +11436,8 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
             non_egress = [(d, v) for d, v in passable if get_target_cell(curr_cell, d) is not None]
             cand_pool = non_egress if non_egress else passable
             best_move_score = -9999.0
+            enc_pen = 0.5 if tier == 1 else ((1.5 if len(bot.get("guards", [])) >= 2 else 3.5) if tier == 3 else 2.5)
+            toll_pen = 0.5 if tier == 1 else 1.5
             for d, v in cand_pool:
                 tcell = get_target_cell(curr_cell, d)
                 if not tcell:
@@ -10655,15 +11451,17 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                     # Explore toward central neighborhoods
                     best_g_val = 25.0 - 6.0 * _bot_grid_distance(tcell, "C3", state)
                 if tcell == bot.get("previousPosition"):
-                    best_g_val -= 8.0
+                    best_g_val -= 10.0 if tier == 3 else 8.0
                 if v == "green":
                     best_g_val += 3.0
                 elif parse_edge_toll(v) is not None:
-                    best_g_val -= 1.5
+                    best_g_val -= toll_pen
                 else:
-                    best_g_val -= 2.5
+                    best_g_val -= enc_pen
                 if div_tiber_active and get_tiber_bridge_name(curr_cell, tcell) and not bot_has_emerald and not used_shortcut:
-                    best_g_val -= 4.0
+                    best_g_val -= 5.0 if tier == 3 else 4.0
+                if tier == 1:
+                    best_g_val += float(secrets.randbelow(7) - 3)
                 if best_g_val > best_move_score:
                     best_move_score = best_g_val
                     chosen_dir, chosen_val = d, v
@@ -10757,18 +11555,22 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
 
 def _bot_pick_amethyst_boost(state: Dict[str, Any], bot: Dict[str, Any], item: Dict[str, Any], modifier: str) -> Tuple[int, int, str]:
     base_p, base_sym = compute_sell_price(state, bot, item, modifier, spend_amethysts=0)
-    if not has_climate_modifier(state, "aurelius_3") or state.get("hourEffects", {}).get("priceEdict"):
+    tier = _bot_difficulty_tier(bot)
+    if tier == 1 or not has_climate_modifier(state, "aurelius_3") or state.get("hourEffects", {}).get("priceEdict"):
         return 0, base_p, base_sym
     avail_am = max(0, int((bot.get("favor") or {}).get("Aurelius", 0)))
     cur_idx = SCARCITY_SYMBOLS.index(base_sym) if base_sym in SCARCITY_SYMBOLS else 2
     max_s = min(avail_am, cur_idx)
+    if tier == 3:
+        min_gain = 3 if (state.get("season") == "Fall" and int(state.get("turn", 1)) >= 7) else 4
+    else:
+        min_gain = 5
     best_spend = 0
     best_p = base_p
     best_sym = base_sym
     for k in range(1, max_s + 1):
         cand_p, cand_sym = compute_sell_price(state, bot, item, modifier, spend_amethysts=k)
-        # Spend Amethysts when marginal gain is at least 5(d) per spent Amethyst
-        if cand_p - base_p >= 5 * k and (cand_p - best_p >= 5):
+        if cand_p - base_p >= min_gain * k and (cand_p - best_p >= min_gain):
             best_spend = k
             best_p = cand_p
             best_sym = cand_sym
@@ -10778,6 +11580,7 @@ def _bot_pick_amethyst_boost(state: Dict[str, Any], bot: Dict[str, Any], item: D
 def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     if bot.get("transactedThisTurn") or bot.get("gambledThisTurn") or not bot.get("position") or bot["exitedRome"] or bot["nightEnded"]:
         return
+    tier = _bot_difficulty_tier(bot)
     curr_cell = bot["position"]
     rev_tile = state["romeBoard"][curr_cell].get("revealed") or {}
     tile_sells = rev_tile.get("sells", [])
@@ -10792,9 +11595,9 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         matching = [c for c in sellable_cart if matches_category(c, m["category"])]
         if matching:
             puff = next((inf for inf in bot.get("influence", []) if "Puffery" in str(inf.get("name", ""))), None)
-            if puff and not bot.get("turnEffects", {}).get("puffery"):
+            if tier >= 2 and puff and not bot.get("turnEffects", {}).get("puffery"):
                 _execute_influence_card(state, bot, puff, {})
-            if m["category"] == "Grain" and len(matching) > 1:
+            if tier >= 2 and m["category"] == "Grain" and len(matching) > 1:
                 other_grain_m = sum(
                     1
                     for om in bot.get("missions", [])
@@ -10804,7 +11607,7 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 keep_cnt = min(other_grain_m, len(ordered_g) - 1)
                 items_sold = ordered_g[: len(ordered_g) - keep_cnt]
             else:
-                items_sold = [max(matching, key=lambda c: compute_sell_price(state, bot, c, m["modifier"])[0])]
+                items_sold = [matching[0]] if tier == 1 else [max(matching, key=lambda c: compute_sell_price(state, bot, c, m["modifier"])[0])]
             lead_item = items_sold[0]
             spend_am, _, sym = _bot_pick_amethyst_boost(state, bot, lead_item, m["modifier"])
             total_p = sum(compute_sell_price(state, bot, it_s, m["modifier"], spend_amethysts=spend_am)[0] for it_s in items_sold)
@@ -10867,11 +11670,16 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
             return
 
     # 2. Sell non-mission good on tile (bulk-selling all eligible Grain in 1 hour; 1 Good per hour for other categories)
-    reserved_mission_cats = [
-        m.get("category", "")
-        for m in bot.get("missions", [])
-        if not m.get("completed") and m.get("kind") == "sell" and int(state.get("turn", 1)) <= 7
-    ]
+    reserve_until = 8 if tier == 3 else 7
+    reserved_mission_cats = (
+        [
+            m.get("category", "")
+            for m in bot.get("missions", [])
+            if not m.get("completed") and m.get("kind") == "sell" and int(state.get("turn", 1)) <= reserve_until
+        ]
+        if tier >= 2
+        else []
+    )
     for s in tile_sells:
         matching = []
         for c in sellable_cart:
@@ -10881,21 +11689,21 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 continue
             p_cand, _ = compute_sell_price(state, bot, c, s["modifier"])
             cost_b = int(c.get("purchasePrice", 0) or 0)
-            if int(state.get("turn", 1)) < 7 and p_cand < cost_b:
+            if tier >= 2 and int(state.get("turn", 1)) < 7 and p_cand < cost_b:
                 continue
             matching.append(c)
         if matching:
             puff = next((inf for inf in bot.get("influence", []) if "Puffery" in str(inf.get("name", ""))), None)
-            if puff and not bot.get("turnEffects", {}).get("puffery"):
+            if tier >= 2 and puff and not bot.get("turnEffects", {}).get("puffery"):
                 _execute_influence_card(state, bot, puff, {})
-            if s["category"] == "Grain" and len(matching) > 1:
+            if tier >= 2 and s["category"] == "Grain" and len(matching) > 1:
                 items_sold = sorted(
                     matching,
                     key=lambda c: compute_sell_price(state, bot, c, s["modifier"])[0] - int(c.get("purchasePrice", 0) or 0),
                     reverse=True,
                 )
             else:
-                items_sold = [
+                items_sold = [matching[0]] if tier == 1 else [
                     max(
                         matching,
                         key=lambda c: compute_sell_price(state, bot, c, s["modifier"])[0] - int(c.get("purchasePrice", 0) or 0),
@@ -10939,8 +11747,9 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
 
     # 3. Opportunist Stadium Gambling (especially with Match Fixing)
     mf = next((inf for inf in bot.get("influence", []) if "Match Fixing" in str(inf.get("name", ""))), None)
-    if rev_tile.get("gamble") and bot["cash"] >= 6 and (bot.get("botStrategy") == "opportunist" or mf is not None):
-        if mf is not None and not bot.get("turnEffects", {}).get("matchFixing"):
+    can_gamble_strat = (mf is not None and tier >= 2) or (bot.get("botStrategy") == "opportunist" and (tier != 3 or bot["cash"] >= 10)) or (tier == 1 and bot.get("botStrategy") == "opportunist")
+    if rev_tile.get("gamble") and bot["cash"] >= 6 and can_gamble_strat:
+        if tier >= 2 and mf is not None and not bot.get("turnEffects", {}).get("matchFixing"):
             _execute_influence_card(state, bot, mf, {})
         bet = min(MAX_GAMBLE_WAGER, max(2, bot["cash"] // (3 if bot.get("turnEffects", {}).get("matchFixing") else 5)))
         if bet > 0:
@@ -11005,11 +11814,18 @@ def _format_mission_text(m: Dict[str, Any]) -> str:
     return _normalize_relative_scarcity_text(str(m.get("description") or "Complete special objective in Rome."))
 
 
-def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> Dict[str, Any]:
-    """Returns a client-ready view of the game state with hidden unrevealed stacks/decks and enriched UI metadata."""
+def sanitize_state_for_player(
+    state: Dict[str, Any],
+    user_id: Optional[int],
+    host_user_id: Optional[int] = None,
+    speed_mode: Optional[str] = None,
+    turn_time_limit_minutes: Optional[int] = None,
+    next_timeout_at: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Returns a client-ready view of the game state with hidden unrevealed stacks/decks, Spectator redaction, and enriched UI metadata."""
     _normalize_state_encounter_cards(state)
     human_players = [p for p in state["players"] if not p["isBot"]]
-    single_human = len(human_players) <= 1
+    single_human = (user_id is None) and (len(human_players) == 1)
 
     # Enrich marketBoard with live prices and track scarcity metadata
     market_meta = {}
@@ -11146,6 +11962,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
         p_copy["gambledThisTurn"] = bool(p.get("gambledThisTurn", False))
         p_copy["eliminated"] = bool(p.get("eliminated", False))
         p_copy["eliminationReason"] = p.get("eliminationReason")
+        p_copy["botDifficulty"] = get_bot_difficulty(p) if p.get("isBot") else None
         p_copy["maxBlocks"] = max_b
         p_copy["maxGuards"] = max_g
         p_copy["usedBlocks"] = used_b
@@ -11175,6 +11992,8 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
         can_transact_now = (
             state["phase"] == "delivery"
             and state["activePlayerIndex"] == p["index"]
+            and bool(curr_cell)
+            and not (int(state.get("turn", 1)) == 1 and not p.get("enteredGateTurn1"))
             and not p.get("transactedThisTurn")
             and not p.get("gambledThisTurn")
             and not pend_live
@@ -11319,7 +12138,13 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             can_sell_this = (not item.get("isMissionCargo")) or (
                 item.get("missionSource") == "encounter" and bool(item.get("sell"))
             )
-            if is_owner and can_sell_this:
+            if (
+                is_owner
+                and can_sell_this
+                and state["phase"] == "delivery"
+                and bool(curr_cell)
+                and not (int(state.get("turn", 1)) == 1 and not p.get("enteredGateTurn1"))
+            ):
                 for ms in mission_sells:
                     if matches_category(item, ms["category"]):
                         pr, sym = compute_sell_price(state, p, item, ms["modifier"])
@@ -11409,13 +12234,12 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             p_copy["pendingMarketReward"] = []
         players_view.append(p_copy)
 
-    if viewer_player_index is None:
-        viewer_player_index = state["activePlayerIndex"]
+    is_spectator = viewer_player_index is None
 
-    # Redact opponent secret information on pendingEncounter and diceEvents
+    # Redact opponent and Spectator secret information on pendingEncounter and diceEvents
     pend_view = copy.deepcopy(state.get("pendingEncounter"))
     if isinstance(pend_view, dict) and state.get("phase") != "finished":
-        if pend_view.get("soothsayerMission") and pend_view.get("playerIndex") != viewer_player_index:
+        if pend_view.get("soothsayerMission") and (viewer_player_index is None or pend_view.get("playerIndex") != viewer_player_index):
             pend_view["soothsayerMission"] = {"name": "Hidden Soothsayer Prophecy", "redacted": True}
             if pend_view.get("chartType") == "soothsayer" and pend_view.get("previewText"):
                 r_c = max(0, min(3, int(pend_view.get("chartRoll", 0))))
@@ -11428,7 +12252,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
         sec_actor = ev.pop("secretIntervenorName", None)
         if sec_idx is not None and sec_names:
             base_msg = ev.get("outcomeMessage", "")
-            if viewer_player_index == sec_idx:
+            if viewer_player_index is not None and viewer_player_index == sec_idx:
                 priv_msg = f"{base_msg} — You hold {sec_names} and may play an Influence card before confirming!"
             else:
                 actor_lbl = sec_actor or "Another merchant"
@@ -11450,6 +12274,33 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
 
     undo_idx, undo_type, undo_lbl = _get_undo_target_info(state)
     human_count = sum(1 for p in state.get("players", []) if not p.get("isBot"))
+
+    eff_speed = str(speed_mode or state.get("speedMode") or "normal").strip().lower()
+    eff_speed = "fast" if eff_speed == "fast" else "normal"
+    raw_lim = turn_time_limit_minutes if turn_time_limit_minutes is not None else state.get("turnTimeLimitMinutes")
+    eff_limit: Optional[int] = None
+    if eff_speed == "fast":
+        try:
+            eff_limit = max(1, min(12, int(raw_lim if raw_lim is not None else 6)))
+        except (TypeError, ValueError):
+            eff_limit = 6
+    waiting_map = (
+        dict(state.get("turnWaitingSince") or {})
+        if isinstance(state.get("turnWaitingSince"), dict)
+        else {}
+    )
+    blockers = get_blocking_player_indices(state)
+    eff_next_timeout = next_timeout_at
+    if eff_next_timeout is None and eff_speed == "fast" and eff_limit is not None and state.get("phase") != "finished":
+        deadlines = [
+            int(waiting_map[str(idx)]) + eff_limit * 60
+            for idx in blockers
+            if str(idx) in waiting_map and isinstance(waiting_map[str(idx)], (int, float))
+        ]
+        if deadlines:
+            eff_next_timeout = min(deadlines)
+    if state.get("phase") == "finished" or eff_speed != "fast":
+        eff_next_timeout = None
 
     final_standings = None
     if state.get("phase") == "finished":
@@ -11477,6 +12328,13 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
         "firstPlayerIndex": state["firstPlayerIndex"],
         "activePlayerIndex": state["activePlayerIndex"],
         "viewerPlayerIndex": viewer_player_index,
+        "isSpectator": is_spectator,
+        "hostUserId": host_user_id,
+        "speedMode": eff_speed,
+        "turnTimeLimitMinutes": eff_limit,
+        "nextTimeoutAt": eff_next_timeout,
+        "turnWaitingSince": waiting_map,
+        "blockingPlayerIndices": blockers,
         "setupDiscardOrder": list(state.get("setupDiscardOrder") or []),
         "politicalClimate": pc_view,
         "marketConsecutivePasses": state["marketConsecutivePasses"],
@@ -11491,7 +12349,7 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
         "players": players_view,
         "pendingEncounter": pend_view,
         "hasActedThisTurn": bool(state.get("hasActedThisTurn", False)),
-        "canUndoTurn": undo_idx is not None and state.get("pendingUndoRequest") is None,
+        "canUndoTurn": bool(undo_idx is not None and state.get("pendingUndoRequest") is None and not is_spectator),
         "undoTargetType": undo_type,
         "undoTargetLabel": undo_lbl,
         "humanPlayerCount": human_count,
@@ -11505,9 +12363,10 @@ def sanitize_state_for_player(state: Dict[str, Any], user_id: Optional[int]) -> 
             default=max(0, int(state.get("nextMissionEventSeq", 1)) - 1),
         ),
         "missionEvents": state.get("missionEvents", [])[-15:],
-        "logs": state.get("logs", [])[-80:],
+        "logs": state.get("logs", [])[-120:],
         "winner": state.get("winner"),
         "finalStandings": final_standings,
     }
+
 
 

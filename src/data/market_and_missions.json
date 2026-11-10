@@ -1167,18 +1167,18 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        17,
-        13,
+        23,
+        18,
+        14,
         10,
-        7,
-        5
+        8
       ],
       "buy": [
-        8,
+        12,
+        9,
+        7,
         6,
-        5,
-        4,
-        3
+        5
       ],
       "combatText": "No combat bonus",
       "combat": null
@@ -1193,18 +1193,18 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        12,
+        19,
+        16,
+        11,
         9,
-        7,
-        5,
-        4
+        7
       ],
       "buy": [
+        17,
+        14,
         10,
         8,
-        6,
-        4,
-        3
+        6
       ],
       "combatText": "Ignore (R) Wounds",
       "combat": {
@@ -1224,18 +1224,18 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        12,
-        9,
-        6,
-        5,
-        3
+        18,
+        15,
+        10,
+        8,
+        7
       ],
       "buy": [
+        16,
+        13,
         9,
         7,
-        5,
-        4,
-        3
+        6
       ],
       "combatText": "2 -1(R) CP",
       "combat": {
@@ -1254,18 +1254,18 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        16,
+        21,
+        17,
         12,
-        9,
-        6,
-        5
+        10,
+        8
       ],
       "buy": [
-        13,
-        10,
-        7,
-        5,
-        4
+        19,
+        15,
+        11,
+        9,
+        7
       ],
       "combatText": "1(R) CP",
       "combat": {
@@ -1284,18 +1284,18 @@
       "blocks": 3,
       "guards": 0,
       "sell": [
-        25,
+        32,
+        24,
         19,
         14,
-        11,
-        7
+        12
       ],
       "buy": [
-        21,
-        16,
-        12,
-        9,
-        6
+        29,
+        22,
+        17,
+        13,
+        11
       ],
       "combatText": "2(R) CP",
       "combat": {
@@ -1314,18 +1314,18 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        20,
-        16,
-        11,
-        8,
-        6
-      ],
-      "buy": [
+        30,
+        23,
         18,
         14,
-        10,
-        7,
-        5
+        11
+      ],
+      "buy": [
+        27,
+        21,
+        16,
+        13,
+        10
       ],
       "combatText": "1(R) +1 CP",
       "combat": {
@@ -1344,18 +1344,18 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        17,
-        13,
-        10,
-        7,
-        5
+        20,
+        16,
+        11,
+        9,
+        8
       ],
       "buy": [
-        15,
-        12,
-        9,
-        6,
-        4
+        18,
+        14,
+        10,
+        8,
+        7
       ],
       "combatText": "Ignore 1 Wound",
       "combat": {
@@ -1375,18 +1375,18 @@
       "blocks": 1,
       "guards": 0,
       "sell": [
-        24,
-        18,
+        28,
+        22,
+        17,
         13,
-        10,
-        7
+        10
       ],
       "buy": [
-        21,
-        16,
+        25,
+        20,
+        15,
         12,
-        9,
-        6
+        9
       ],
       "combatText": "Ignore 2 Wounds",
       "combat": {
@@ -1407,17 +1407,17 @@
       "guards": 0,
       "sell": [
         22,
-        17,
+        18,
         13,
-        9,
-        6
+        10,
+        9
       ],
       "buy": [
-        19,
-        15,
-        11,
-        8,
-        5
+        20,
+        16,
+        12,
+        9,
+        8
       ],
       "combatText": "2(R) -1 CP",
       "combat": {
@@ -1436,18 +1436,18 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        14,
-        11,
-        8,
-        6,
-        4
+        22,
+        18,
+        13,
+        10,
+        8
       ],
       "buy": [
-        11,
-        8,
-        6,
-        4,
-        3
+        16,
+        13,
+        9,
+        7,
+        6
       ],
       "combatText": "1 CP (destroyed if used)",
       "combat": {
@@ -1467,18 +1467,18 @@
       "blocks": 2,
       "guards": 0,
       "sell": [
-        14,
-        11,
-        8,
-        6,
-        4
+        22,
+        18,
+        13,
+        10,
+        8
       ],
       "buy": [
-        11,
-        8,
-        6,
-        4,
-        3
+        16,
+        13,
+        9,
+        7,
+        6
       ],
       "combatText": "1 CP (destroyed if used)",
       "combat": {
@@ -1499,17 +1499,17 @@
       "guards": 0,
       "sell": [
         36,
-        27,
-        20,
-        15,
-        11
+        28,
+        21,
+        16,
+        13
       ],
       "buy": [
         17,
-        13,
+        14,
         10,
         8,
-        6
+        7
       ],
       "combatText": "0 CP (Crated Armor Cargo)",
       "combat": null
@@ -1800,11 +1800,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
+        25,
+        20,
+        15,
         12,
-        9,
-        5,
-        4,
-        4
+        9
       ],
       "combatText": "(R) CP & +■■ Cart Space",
       "combat": {
@@ -1825,11 +1825,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
+        24,
+        19,
         14,
         11,
-        6,
-        5,
-        4
+        9
       ],
       "combatText": "(R) CP & +▲ Cart Space",
       "combat": {
@@ -1850,11 +1850,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        10,
-        8,
-        4,
-        3,
-        3
+        20,
+        16,
+        12,
+        9,
+        8
       ],
       "combatText": "1 CP & Cheap Wines Sell at +1 Rarity",
       "combat": {
@@ -1874,11 +1874,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        13,
-        10,
-        5,
-        5,
-        4
+        26,
+        20,
+        15,
+        12,
+        10
       ],
       "combatText": "2 CP",
       "combat": {
@@ -1897,11 +1897,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
+        26,
+        21,
+        15,
         12,
-        10,
-        5,
-        4,
-        4
+        10
       ],
       "combatText": "(R) CP & Ignore 1 Wound",
       "combat": {
@@ -1921,11 +1921,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        6,
-        5,
-        3,
-        2,
-        2
+        17,
+        14,
+        10,
+        8,
+        6
       ],
       "combatText": "1 CP",
       "combat": {
@@ -1944,11 +1944,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        11,
-        8,
-        4,
-        4,
-        3
+        20,
+        16,
+        12,
+        9,
+        8
       ],
       "combatText": "2(R) - 1 CP",
       "combat": {
@@ -1967,11 +1967,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        8,
-        6,
-        4,
-        3,
-        2
+        19,
+        15,
+        11,
+        9,
+        7
       ],
       "combatText": "(R) CP",
       "combat": {
@@ -1990,11 +1990,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        16,
-        12,
-        8,
-        7,
-        6
+        29,
+        22,
+        17,
+        13,
+        11
       ],
       "combatText": "2(R) CP",
       "combat": {
@@ -2013,11 +2013,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        15,
-        12,
-        7,
-        6,
-        5
+        27,
+        21,
+        16,
+        13,
+        10
       ],
       "combatText": "(R) + 1 CP",
       "combat": {
@@ -2036,11 +2036,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        11,
-        9,
-        5,
-        4,
-        3
+        22,
+        18,
+        13,
+        10,
+        8
       ],
       "combatText": "(R) CP & Meat Animals Sell at +1 Rarity",
       "combat": {
@@ -2060,11 +2060,11 @@
       "guards": 1,
       "sell": null,
       "buy": [
-        8,
-        6,
-        4,
-        3,
-        3
+        19,
+        15,
+        11,
+        9,
+        7
       ],
       "combatText": "(R) CP",
       "combat": {

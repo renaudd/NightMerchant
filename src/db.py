@@ -131,6 +131,61 @@ def normalize_cart_color(color: Optional[str], default: str = "Ruby") -> str:
     return LEGACY_COLOR_MAP.get(color, default)
 
 
+BOT_DIFFICULTIES: Tuple[str, ...] = ("doric", "ionic", "corinthian")
+
+
+def normalize_bot_difficulty(raw: Any, default: str = "ionic") -> str:
+    val = str(raw or "").strip().lower()
+    if val in ("doric", "easy"):
+        return "doric"
+    if val in ("ionic", "medium"):
+        return "ionic"
+    if val in ("corinthian", "hard"):
+        return "corinthian"
+    return default if default in BOT_DIFFICULTIES else "ionic"
+
+
+def normalize_speed_mode(raw: Any) -> str:
+    val = str(raw or "").strip().lower()
+    return "fast" if val == "fast" else "normal"
+
+
+def normalize_turn_time_limit_minutes(raw: Any, speed_mode: str = "normal") -> Optional[int]:
+    if normalize_speed_mode(speed_mode) != "fast":
+        return None
+    if raw is None or raw == "":
+        return 6
+    try:
+        val = int(raw)
+    except (TypeError, ValueError):
+        return 6
+    return max(1, min(12, val))
+
+
+def compute_next_timeout_at(
+    state: Dict[str, Any],
+    speed_mode: str,
+    limit_minutes: Optional[int],
+    status: str = "active",
+) -> Optional[int]:
+    if status != "active" or normalize_speed_mode(speed_mode) != "fast":
+        return None
+    lim = normalize_turn_time_limit_minutes(limit_minutes, "fast")
+    if not lim:
+        return None
+    waiting = state.get("turnWaitingSince")
+    if not isinstance(waiting, dict) or not waiting:
+        return None
+    deadlines: List[int] = []
+    for ts in waiting.values():
+        if ts is not None:
+            try:
+                deadlines.append(int(ts) + lim * 60)
+            except (TypeError, ValueError):
+                pass
+    return min(deadlines) if deadlines else None
+
+
 def validate_email(email: str) -> Optional[str]:
     if not isinstance(email, str):
         return "Email address is required."
@@ -356,6 +411,9 @@ def init_db() -> None:
                     host_user_id INTEGER NOT NULL,
                     status TEXT NOT NULL DEFAULT 'lobby',
                     invite_mode TEXT NOT NULL DEFAULT 'open',
+                    speed_mode TEXT NOT NULL DEFAULT 'normal',
+                    turn_time_limit_minutes INTEGER,
+                    next_timeout_at INTEGER,
                     max_players INTEGER NOT NULL DEFAULT 4,
                     season TEXT NOT NULL DEFAULT 'Spring',
                     phase TEXT NOT NULL DEFAULT 'Setup',
@@ -373,6 +431,12 @@ def init_db() -> None:
             }
             if "invite_mode" not in game_cols:
                 conn.execute("ALTER TABLE games ADD COLUMN invite_mode TEXT NOT NULL DEFAULT 'open'")
+            if "speed_mode" not in game_cols:
+                conn.execute("ALTER TABLE games ADD COLUMN speed_mode TEXT NOT NULL DEFAULT 'normal'")
+            if "turn_time_limit_minutes" not in game_cols:
+                conn.execute("ALTER TABLE games ADD COLUMN turn_time_limit_minutes INTEGER")
+            if "next_timeout_at" not in game_cols:
+                conn.execute("ALTER TABLE games ADD COLUMN next_timeout_at INTEGER")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS game_invites (
@@ -396,6 +460,7 @@ def init_db() -> None:
                     user_id INTEGER,
                     is_bot INTEGER NOT NULL DEFAULT 0,
                     bot_strategy TEXT,
+                    bot_difficulty TEXT,
                     player_name TEXT NOT NULL,
                     player_color TEXT NOT NULL,
                     final_wealth INTEGER,
@@ -405,6 +470,12 @@ def init_db() -> None:
                 )
                 """
             )
+            gp_cols = {
+                r["name"] for r in conn.execute("PRAGMA table_info(game_players)").fetchall()
+            }
+            if "bot_difficulty" not in gp_cols:
+                conn.execute("ALTER TABLE game_players ADD COLUMN bot_difficulty TEXT")
+                conn.execute("UPDATE game_players SET bot_difficulty = 'ionic' WHERE is_bot = 1 AND bot_difficulty IS NULL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS completed_games (
@@ -424,6 +495,7 @@ def init_db() -> None:
                     seat_index INTEGER NOT NULL,
                     user_id INTEGER,
                     is_bot INTEGER NOT NULL DEFAULT 0,
+                    bot_difficulty TEXT,
                     player_name TEXT NOT NULL,
                     player_color TEXT NOT NULL,
                     final_wealth INTEGER NOT NULL DEFAULT 0,
@@ -435,6 +507,12 @@ def init_db() -> None:
                 )
                 """
             )
+            cgp_cols = {
+                r["name"] for r in conn.execute("PRAGMA table_info(completed_game_players)").fetchall()
+            }
+            if "bot_difficulty" not in cgp_cols:
+                conn.execute("ALTER TABLE completed_game_players ADD COLUMN bot_difficulty TEXT")
+                conn.execute("UPDATE completed_game_players SET bot_difficulty = 'ionic' WHERE is_bot = 1 AND bot_difficulty IS NULL")
             # Migrate any legacy faction-gem color names to the 12 Aravt Zodiac colors
             for old_c, new_c in LEGACY_COLOR_MAP.items():
                 conn.execute("UPDATE users SET preferred_color = ? WHERE preferred_color = ?", (new_c, old_c))
@@ -576,6 +654,8 @@ def _upsert_completed_game(
         uid = p.get("userId")
         if uid is not None:
             affected_uids.append(int(uid))
+        is_bot = bool(p.get("isBot"))
+        bot_diff = normalize_bot_difficulty(p.get("botDifficulty"), "ionic") if is_bot else None
         p_color = normalize_cart_color(p.get("color"), "Z3")
         c_val = int(p.get("cash", 0))
         rk = rank_by_index.get(seat_idx, i + 1)
@@ -583,15 +663,16 @@ def _upsert_completed_game(
         conn.execute(
             """
             INSERT INTO completed_game_players (
-                game_id, seat_index, user_id, is_bot, player_name, player_color, final_wealth, rank, won
+                game_id, seat_index, user_id, is_bot, bot_difficulty, player_name, player_color, final_wealth, rank, won
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 game_id,
                 seat_idx,
                 int(uid) if uid is not None else None,
-                1 if p.get("isBot") else 0,
+                1 if is_bot else 0,
+                bot_diff,
                 str(p.get("name", f"Player {seat_idx + 1}")),
                 p_color,
                 c_val,
@@ -1255,6 +1336,11 @@ def get_user_completed_games(user_id: int) -> List[Dict[str, Any]]:
                         "seatIndex": int(r["seat_index"]),
                         "userId": r["user_id"],
                         "isBot": bool(r["is_bot"]),
+                        "botDifficulty": (
+                            normalize_bot_difficulty(r["bot_difficulty"], "ionic")
+                            if "bot_difficulty" in r.keys() and r["is_bot"]
+                            else ("ionic" if r["is_bot"] else None)
+                        ),
                         "name": r["player_name"],
                         "color": r["player_color"],
                         "finalScore": int(r["final_wealth"] or 0),
@@ -1321,12 +1407,16 @@ def create_game_lobby(
     initial_bots: List[Dict[str, Any]],
     invite_mode: str = "open",
     invited_users: Optional[List[Dict[str, Any]]] = None,
+    speed_mode: str = "normal",
+    turn_time_limit_minutes: Optional[int] = None,
 ) -> Dict[str, Any]:
     game_id = secrets.token_hex(6)
     now = int(time.time())
     clean_name = (name.strip() or f"{host_user['displayName']}'s Convivium")[:60]
     max_p = max(2, min(6, int(max_players)))
     clean_mode = "invite_only" if str(invite_mode).strip().lower() == "invite_only" else "open"
+    clean_speed = normalize_speed_mode(speed_mode)
+    clean_limit = normalize_turn_time_limit_minutes(turn_time_limit_minutes, clean_speed)
     invites_list = list(invited_users or [])
 
     seats = [
@@ -1335,6 +1425,7 @@ def create_game_lobby(
             "userId": host_user["id"],
             "isBot": False,
             "botStrategy": None,
+            "botDifficulty": None,
             "name": host_user["displayName"],
             "color": normalize_cart_color(host_user.get("preferredColor"), "Z1"),
         }
@@ -1349,11 +1440,13 @@ def create_game_lobby(
         if not b_color or b_color in used_colors:
             b_color = next((c for c in all_colors if c not in used_colors), "Z3")
         used_colors.add(b_color)
+        b_diff = normalize_bot_difficulty(b.get("difficulty") or b.get("botDifficulty"), "ionic")
         seats.append({
             "seatIndex": len(seats),
             "userId": None,
             "isBot": True,
             "botStrategy": b.get("strategy", "balanced"),
+            "botDifficulty": b_diff,
             "name": b.get("name", f"Bot #{len(seats)}"),
             "color": b_color,
         })
@@ -1363,16 +1456,21 @@ def create_game_lobby(
         with conn:
             conn.execute(
                 """
-                INSERT INTO games (id, name, host_user_id, status, invite_mode, max_players, season, phase, turn, state_json, created_at, updated_at)
-                VALUES (?, ?, ?, 'lobby', ?, ?, 'Spring', 'lobby', 1, '{}', ?, ?)
+                INSERT INTO games (
+                    id, name, host_user_id, status, invite_mode, speed_mode, turn_time_limit_minutes,
+                    max_players, season, phase, turn, state_json, created_at, updated_at
+                )
+                VALUES (?, ?, ?, 'lobby', ?, ?, ?, ?, 'Spring', 'lobby', 1, '{}', ?, ?)
                 """,
-                (game_id, clean_name, host_user["id"], clean_mode, max_p, now, now),
+                (game_id, clean_name, host_user["id"], clean_mode, clean_speed, clean_limit, max_p, now, now),
             )
             for s in seats:
                 conn.execute(
                     """
-                    INSERT INTO game_players (game_id, seat_index, user_id, is_bot, bot_strategy, player_name, player_color)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO game_players (
+                        game_id, seat_index, user_id, is_bot, bot_strategy, bot_difficulty, player_name, player_color
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         game_id,
@@ -1380,6 +1478,7 @@ def create_game_lobby(
                         s["userId"],
                         1 if s["isBot"] else 0,
                         s["botStrategy"],
+                        s["botDifficulty"],
                         s["name"],
                         s["color"],
                     ),
@@ -1424,6 +1523,11 @@ def get_game_summary(game_id: str, viewer_user: Optional[Dict[str, Any]] = None)
                 "userId": r["user_id"],
                 "isBot": bool(r["is_bot"]),
                 "botStrategy": r["bot_strategy"],
+                "botDifficulty": (
+                    normalize_bot_difficulty(r["bot_difficulty"], "ionic")
+                    if "bot_difficulty" in r.keys() and r["is_bot"]
+                    else ("ionic" if r["is_bot"] else None)
+                ),
                 "name": r["player_name"],
                 "color": normalize_cart_color(r["player_color"], "Z1"),
                 "finalWealth": r["final_wealth"],
@@ -1432,6 +1536,17 @@ def get_game_summary(game_id: str, viewer_user: Optional[Dict[str, Any]] = None)
         ]
         row_keys = row.keys()
         invite_mode = row["invite_mode"] if "invite_mode" in row_keys and row["invite_mode"] else "open"
+        speed_mode = normalize_speed_mode(row["speed_mode"] if "speed_mode" in row_keys else "normal")
+        turn_limit_min = (
+            normalize_turn_time_limit_minutes(row["turn_time_limit_minutes"], "fast")
+            if "turn_time_limit_minutes" in row_keys and speed_mode == "fast"
+            else None
+        )
+        next_timeout_at = (
+            int(row["next_timeout_at"])
+            if "next_timeout_at" in row_keys and row["next_timeout_at"] is not None
+            else None
+        )
         seated_uids = {s["userId"] for s in seats if s["userId"] is not None}
         invited_uids = {r["user_id"] for r in inv_rows}
         invited_unames = {str(r["username"]).lower() for r in inv_rows}
@@ -1475,6 +1590,9 @@ def get_game_summary(game_id: str, viewer_user: Optional[Dict[str, Any]] = None)
             "hostUserId": row["host_user_id"],
             "status": row["status"],
             "inviteMode": invite_mode,
+            "speedMode": speed_mode,
+            "turnTimeLimitMinutes": turn_limit_min,
+            "nextTimeoutAt": next_timeout_at,
             "invites": invites,
             "invitedCount": len(inv_rows),
             "viewerIsInvited": is_invited,
@@ -1655,16 +1773,19 @@ def add_bot_to_lobby(game_id: str, user_id: int, bot_info: Dict[str, Any]) -> Tu
     if b_name in used_names:
         b_name = f"{b_name} ({len(seats) + 1})"
 
+    b_diff = normalize_bot_difficulty(bot_info.get("difficulty") or bot_info.get("botDifficulty"), "ionic")
     now = int(time.time())
     conn = get_connection()
     try:
         with conn:
             conn.execute(
                 """
-                INSERT INTO game_players (game_id, seat_index, user_id, is_bot, bot_strategy, player_name, player_color)
-                VALUES (?, ?, NULL, 1, ?, ?, ?)
+                INSERT INTO game_players (
+                    game_id, seat_index, user_id, is_bot, bot_strategy, bot_difficulty, player_name, player_color
+                )
+                VALUES (?, ?, NULL, 1, ?, ?, ?, ?)
                 """,
-                (game_id, len(seats), bot_info.get("strategy", "balanced"), b_name, b_color),
+                (game_id, len(seats), bot_info.get("strategy", "balanced"), b_diff, b_name, b_color),
             )
             conn.execute("UPDATE games SET updated_at = ? WHERE id = ?", (now, game_id))
         return True, f"Added AI bot {b_name}."
@@ -1705,6 +1826,10 @@ def update_lobby_bot_seat(
         b_color = next((c for c in ALL_CART_COLORS if c not in used_colors), "Z3")
 
     b_strategy = str(bot_info.get("strategy") or target.get("botStrategy") or "balanced").strip().lower()
+    b_diff = normalize_bot_difficulty(
+        bot_info.get("difficulty") or bot_info.get("botDifficulty") or target.get("botDifficulty"),
+        "ionic",
+    )
     now = int(time.time())
     conn = get_connection()
     try:
@@ -1712,10 +1837,10 @@ def update_lobby_bot_seat(
             conn.execute(
                 """
                 UPDATE game_players
-                SET bot_strategy = ?, player_name = ?, player_color = ?
+                SET bot_strategy = ?, bot_difficulty = ?, player_name = ?, player_color = ?
                 WHERE game_id = ? AND seat_index = ? AND is_bot = 1
                 """,
-                (b_strategy, b_name, b_color, game_id, seat_index),
+                (b_strategy, b_diff, b_name, b_color, game_id, seat_index),
             )
             conn.execute("UPDATE games SET updated_at = ? WHERE id = ?", (now, game_id))
         return True, f"Updated AI seat #{seat_index + 1} to {b_name}."
@@ -1731,8 +1856,8 @@ def remove_seat_from_lobby(game_id: str, user_id: int, seat_index: int) -> Tuple
         return False, "Cannot remove seats after game has started."
     if summary["hostUserId"] != user_id:
         return False, "Only the lobby host can remove seats."
-    if seat_index <= 0:
-        return False, "Cannot remove the host seat."
+    if not any(s["seatIndex"] == seat_index for s in summary["seats"]):
+        return False, "Selected seat was not found."
 
     seats = [s for s in summary["seats"] if s["seatIndex"] != seat_index]
     now = int(time.time())
@@ -1741,23 +1866,61 @@ def remove_seat_from_lobby(game_id: str, user_id: int, seat_index: int) -> Tuple
         with conn:
             conn.execute("DELETE FROM game_players WHERE game_id = ?", (game_id,))
             for idx, s in enumerate(seats):
+                is_bot = bool(s.get("isBot"))
+                b_diff = normalize_bot_difficulty(s.get("botDifficulty"), "ionic") if is_bot else None
                 conn.execute(
                     """
-                    INSERT INTO game_players (game_id, seat_index, user_id, is_bot, bot_strategy, player_name, player_color)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO game_players (
+                        game_id, seat_index, user_id, is_bot, bot_strategy, bot_difficulty, player_name, player_color
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         game_id,
                         idx,
                         s["userId"],
-                        1 if s["isBot"] else 0,
-                        s["botStrategy"],
+                        1 if is_bot else 0,
+                        s.get("botStrategy"),
+                        b_diff,
                         s["name"],
                         s["color"],
                     ),
                 )
             conn.execute("UPDATE games SET updated_at = ? WHERE id = ?", (now, game_id))
         return True, "Seat removed."
+    finally:
+        conn.close()
+
+
+def update_game_state_json(game_id: str, state: Dict[str, Any]) -> None:
+    """Lightweight update for non-turn state updates such as chat messages."""
+    now = int(time.time())
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute(
+                "UPDATE games SET state_json = ?, updated_at = ? WHERE id = ?",
+                (json.dumps(state), now, game_id),
+            )
+    finally:
+        conn.close()
+
+
+def list_active_fast_game_ids_due(now: Optional[int] = None) -> List[str]:
+    cur_now = int(time.time()) if now is None else int(now)
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id FROM games
+            WHERE status = 'active'
+              AND speed_mode = 'fast'
+              AND next_timeout_at IS NOT NULL
+              AND next_timeout_at <= ?
+            """,
+            (cur_now,),
+        ).fetchall()
+        return [str(r["id"]) for r in rows]
     finally:
         conn.close()
 
@@ -1769,12 +1932,24 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
     conn = get_connection()
     try:
         with conn:
-            g_row = conn.execute("SELECT name FROM games WHERE id = ?", (game_id,)).fetchone()
+            g_row = conn.execute(
+                "SELECT name, speed_mode, turn_time_limit_minutes FROM games WHERE id = ?",
+                (game_id,),
+            ).fetchone()
+            g_keys = g_row.keys() if g_row else []
             game_name = str(g_row["name"]) if g_row and g_row["name"] else f"Convivium {game_id}"
+            speed_mode = normalize_speed_mode(
+                g_row["speed_mode"] if g_row and "speed_mode" in g_keys else state.get("speedMode", "normal")
+            )
+            limit_min = normalize_turn_time_limit_minutes(
+                g_row["turn_time_limit_minutes"] if g_row and "turn_time_limit_minutes" in g_keys else state.get("turnTimeLimitMinutes"),
+                speed_mode,
+            )
+            next_timeout_at = compute_next_timeout_at(state, speed_mode, limit_min, status=status)
             conn.execute(
                 """
                 UPDATE games
-                SET status = ?, season = ?, phase = ?, turn = ?, state_json = ?, winner_name = ?, updated_at = ?
+                SET status = ?, season = ?, phase = ?, turn = ?, state_json = ?, winner_name = ?, next_timeout_at = ?, updated_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -1784,21 +1959,44 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
                     int(state.get("turn", 1)),
                     json.dumps(state),
                     winner,
+                    next_timeout_at,
                     now,
                     game_id,
                 ),
             )
+            for p in state.get("players", []):
+                p_idx = int(p.get("index", 0))
+                p_is_bot = 1 if p.get("isBot") else 0
+                p_uid = None if p_is_bot else p.get("userId")
+                p_strat = str(p.get("botStrategy") or "balanced") if p_is_bot else None
+                p_diff = normalize_bot_difficulty(p.get("botDifficulty"), "ionic") if p_is_bot else None
+                p_name = str(p.get("name") or f"Player {p_idx + 1}")
+                p_color = normalize_cart_color(p.get("color"), "Z3")
+                conn.execute(
+                    """
+                    UPDATE game_players
+                    SET user_id = ?, is_bot = ?, bot_strategy = ?, bot_difficulty = ?, player_name = ?, player_color = ?,
+                        final_wealth = ?
+                    WHERE game_id = ? AND seat_index = ?
+                    """,
+                    (
+                        p_uid,
+                        p_is_bot,
+                        p_strat,
+                        p_diff,
+                        p_name,
+                        p_color,
+                        int(p.get("cash", 0)) if status == "finished" else None,
+                        game_id,
+                        p_idx,
+                    ),
+                )
             affected_uids = [
                 int(p["userId"])
                 for p in state.get("players", [])
-                if p.get("userId") is not None
+                if not p.get("isBot") and p.get("userId") is not None
             ]
             if status == "finished":
-                for p in state.get("players", []):
-                    conn.execute(
-                        "UPDATE game_players SET final_wealth = ? WHERE game_id = ? AND seat_index = ?",
-                        (int(p.get("cash", 0)), game_id, int(p["index"])),
-                    )
                 upserted_uids = _upsert_completed_game(
                     conn,
                     game_id=game_id,
@@ -1815,7 +2013,6 @@ def save_game_state(game_id: str, state: Dict[str, Any], was_Already_Finished: b
                 if prev_comp or was_Already_Finished:
                     prev_uids = [int(r["user_id"]) for r in prev_comp if r["user_id"] is not None]
                     conn.execute("DELETE FROM completed_games WHERE game_id = ?", (game_id,))
-                    conn.execute("UPDATE game_players SET final_wealth = NULL WHERE game_id = ?", (game_id,))
                     _recompute_user_stats(conn, affected_uids + prev_uids)
     finally:
         conn.close()
