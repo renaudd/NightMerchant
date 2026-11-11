@@ -3521,7 +3521,7 @@
     {
       "id": "inf_58",
       "name": "Casus Belli",
-      "effectText": "Initiate combat in an encounter where combat is not being threatened (can be played after encounter is revealed)",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
       "effectCode": "casus_belli",
       "favorGain": null,
       "sellTable": null
@@ -3529,7 +3529,7 @@
     {
       "id": "inf_59",
       "name": "Casus Belli",
-      "effectText": "Initiate combat in an encounter where combat is not being threatened (can be played after encounter is revealed)",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
       "effectCode": "casus_belli",
       "favorGain": null,
       "sellTable": null
@@ -3537,7 +3537,7 @@
     {
       "id": "inf_60",
       "name": "Casus Belli",
-      "effectText": "Initiate combat in an encounter where combat is not being threatened (can be played after encounter is revealed)",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
       "effectCode": "casus_belli",
       "favorGain": null,
       "sellTable": null

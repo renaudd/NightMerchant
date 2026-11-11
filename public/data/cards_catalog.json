@@ -1,0 +1,6741 @@
+{
+  "market": [
+    {
+      "id": "grn_1",
+      "name": "Spelt",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        9,
+        7,
+        5,
+        4,
+        3
+      ],
+      "buy": [
+        6,
+        4,
+        3,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_2",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_3",
+      "name": "Millet",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        4,
+        3,
+        2,
+        2,
+        1
+      ],
+      "buy": [
+        3,
+        2,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "grn_4",
+      "name": "Rye",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        12,
+        9,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_5",
+      "name": "Barley",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        13,
+        10,
+        7,
+        5,
+        4
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_6",
+      "name": "Oats",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "buy": [
+        4,
+        3,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "grn_7",
+      "name": "Spelt",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        13,
+        9,
+        7,
+        5,
+        3
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_8",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        14,
+        10,
+        7,
+        5,
+        4
+      ],
+      "buy": [
+        8,
+        6,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_9",
+      "name": "Barley",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        5,
+        4,
+        4,
+        3,
+        2
+      ],
+      "buy": [
+        4,
+        3,
+        3,
+        2,
+        1
+      ]
+    },
+    {
+      "id": "grn_10",
+      "name": "Oats",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        11,
+        8,
+        6,
+        5,
+        3
+      ],
+      "buy": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "grn_11",
+      "name": "Rye",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        8,
+        6,
+        4,
+        3,
+        2
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        2,
+        2
+      ]
+    },
+    {
+      "id": "grn_12",
+      "name": "Durum",
+      "category": "Grain",
+      "subcategory": "Grain",
+      "track": "Grain",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ],
+      "buy": [
+        5,
+        4,
+        3,
+        3,
+        2
+      ]
+    },
+    {
+      "id": "cw_1",
+      "name": "Cretan",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        28,
+        21,
+        16,
+        12,
+        9
+      ],
+      "buy": [
+        14,
+        11,
+        8,
+        6,
+        5
+      ]
+    },
+    {
+      "id": "cw_2",
+      "name": "Caeretanum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        26,
+        20,
+        15,
+        11,
+        8
+      ],
+      "buy": [
+        13,
+        10,
+        8,
+        6,
+        5
+      ]
+    },
+    {
+      "id": "cw_3",
+      "name": "Passum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        15,
+        12,
+        9,
+        7,
+        5
+      ],
+      "buy": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ]
+    },
+    {
+      "id": "cw_4",
+      "name": "Massicum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        22,
+        17,
+        13,
+        9,
+        7
+      ],
+      "buy": [
+        11,
+        9,
+        7,
+        5,
+        4
+      ]
+    },
+    {
+      "id": "cw_5",
+      "name": "Vienna",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        24,
+        18,
+        14,
+        10,
+        7
+      ],
+      "buy": [
+        12,
+        9,
+        7,
+        6,
+        5
+      ]
+    },
+    {
+      "id": "cw_6",
+      "name": "Posca",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        14,
+        11,
+        8,
+        6,
+        4
+      ],
+      "buy": [
+        7,
+        6,
+        4,
+        3,
+        3
+      ]
+    },
+    {
+      "id": "cw_7",
+      "name": "Carenum",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        16,
+        12,
+        9,
+        7,
+        5
+      ],
+      "buy": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ]
+    },
+    {
+      "id": "cw_8",
+      "name": "Narbo",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        19,
+        14,
+        11,
+        8,
+        6
+      ],
+      "buy": [
+        10,
+        8,
+        6,
+        5,
+        4
+      ]
+    },
+    {
+      "id": "cw_9",
+      "name": "Massalia",
+      "category": "Wine",
+      "subcategory": "Cheap Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        21,
+        16,
+        12,
+        9,
+        6
+      ],
+      "buy": [
+        11,
+        8,
+        6,
+        5,
+        4
+      ]
+    },
+    {
+      "id": "fw_1",
+      "name": "Pompeian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        48,
+        37,
+        28,
+        21,
+        15
+      ],
+      "buy": [
+        23,
+        18,
+        14,
+        11,
+        9
+      ]
+    },
+    {
+      "id": "fw_2",
+      "name": "Lunense",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        50,
+        38,
+        29,
+        22,
+        16
+      ],
+      "buy": [
+        24,
+        19,
+        15,
+        12,
+        9
+      ]
+    },
+    {
+      "id": "fw_3",
+      "name": "Praetutium",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        53,
+        41,
+        31,
+        23,
+        17
+      ],
+      "buy": [
+        25,
+        20,
+        15,
+        12,
+        10
+      ]
+    },
+    {
+      "id": "fw_4",
+      "name": "Rhaeticum",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        56,
+        43,
+        33,
+        25,
+        18
+      ],
+      "buy": [
+        27,
+        21,
+        16,
+        13,
+        10
+      ]
+    },
+    {
+      "id": "fw_5",
+      "name": "Hadrianum",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        59,
+        45,
+        34,
+        26,
+        19
+      ],
+      "buy": [
+        28,
+        22,
+        17,
+        14,
+        11
+      ]
+    },
+    {
+      "id": "fw_6",
+      "name": "Alban",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        62,
+        48,
+        36,
+        27,
+        20
+      ],
+      "buy": [
+        29,
+        23,
+        18,
+        14,
+        11
+      ]
+    },
+    {
+      "id": "fw_7",
+      "name": "Falernian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        65,
+        50,
+        38,
+        29,
+        21
+      ],
+      "buy": [
+        31,
+        24,
+        19,
+        15,
+        12
+      ]
+    },
+    {
+      "id": "fw_8",
+      "name": "Caecuban",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        68,
+        52,
+        40,
+        30,
+        22
+      ],
+      "buy": [
+        32,
+        25,
+        20,
+        16,
+        12
+      ]
+    },
+    {
+      "id": "fw_9",
+      "name": "Opimian",
+      "category": "Wine",
+      "subcategory": "Fine Wine",
+      "track": "Wine",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        72,
+        55,
+        42,
+        32,
+        23
+      ],
+      "buy": [
+        34,
+        27,
+        21,
+        17,
+        13
+      ]
+    },
+    {
+      "id": "ma_1",
+      "name": "Chickens",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        14,
+        11,
+        8,
+        6,
+        5
+      ],
+      "buy": [
+        7,
+        6,
+        4,
+        3,
+        3
+      ]
+    },
+    {
+      "id": "ma_2",
+      "name": "Pheasants",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        15,
+        11,
+        9,
+        7,
+        5
+      ],
+      "buy": [
+        8,
+        6,
+        5,
+        4,
+        3
+      ]
+    },
+    {
+      "id": "ma_3",
+      "name": "Hares",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        13,
+        10,
+        8,
+        6,
+        4
+      ],
+      "buy": [
+        7,
+        5,
+        4,
+        3,
+        3
+      ]
+    },
+    {
+      "id": "ma_4",
+      "name": "Lamb",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        29,
+        22,
+        17,
+        13,
+        9
+      ],
+      "buy": [
+        13,
+        10,
+        8,
+        6,
+        5
+      ]
+    },
+    {
+      "id": "ma_5",
+      "name": "Pig",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        38,
+        29,
+        22,
+        17,
+        12
+      ],
+      "buy": [
+        16,
+        12,
+        9,
+        7,
+        6
+      ]
+    },
+    {
+      "id": "ma_6",
+      "name": "Geese",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        21,
+        16,
+        12,
+        9,
+        7
+      ],
+      "buy": [
+        11,
+        8,
+        6,
+        5,
+        4
+      ]
+    },
+    {
+      "id": "ma_7",
+      "name": "Oysters",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        18,
+        14,
+        10,
+        8,
+        6
+      ],
+      "buy": [
+        9,
+        7,
+        5,
+        4,
+        4
+      ]
+    },
+    {
+      "id": "ma_8",
+      "name": "Goat",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        31,
+        24,
+        18,
+        14,
+        10
+      ],
+      "buy": [
+        14,
+        11,
+        8,
+        6,
+        5
+      ]
+    },
+    {
+      "id": "ma_9",
+      "name": "Ducks",
+      "category": "Animals",
+      "subcategory": "Meat Animals",
+      "track": "Animals",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        20,
+        15,
+        11,
+        8,
+        6
+      ],
+      "buy": [
+        10,
+        8,
+        6,
+        5,
+        4
+      ]
+    },
+    {
+      "id": "ea_1",
+      "name": "Ostrich",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        34,
+        26,
+        20,
+        15,
+        11
+      ],
+      "buy": [
+        17,
+        13,
+        10,
+        8,
+        6
+      ],
+      "combatText": null,
+      "combat": null
+    },
+    {
+      "id": "ea_2",
+      "name": "Buffalo",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        44,
+        34,
+        26,
+        19,
+        14
+      ],
+      "buy": [
+        21,
+        16,
+        12,
+        9,
+        7
+      ],
+      "combatText": null,
+      "combat": null
+    },
+    {
+      "id": "ea_3",
+      "name": "Boar",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        45,
+        35,
+        26,
+        20,
+        14
+      ],
+      "buy": [
+        19,
+        15,
+        11,
+        9,
+        7
+      ],
+      "combatText": "1(R) -1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": -1,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_4",
+      "name": "Leopard",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        60,
+        46,
+        35,
+        26,
+        19
+      ],
+      "buy": [
+        25,
+        19,
+        15,
+        12,
+        9
+      ],
+      "combatText": "1 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 1,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_5",
+      "name": "Bear",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        48,
+        37,
+        28,
+        21,
+        15
+      ],
+      "buy": [
+        28,
+        22,
+        17,
+        13,
+        10
+      ],
+      "combatText": "3 -2(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 2,
+        "flat": 3,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_6",
+      "name": "Crocodile",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        55,
+        43,
+        33,
+        25,
+        18
+      ],
+      "buy": [
+        34,
+        27,
+        21,
+        16,
+        12
+      ],
+      "combatText": "2 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 2,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_7",
+      "name": "Tiger",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        56,
+        44,
+        34,
+        26,
+        19
+      ],
+      "buy": [
+        38,
+        30,
+        23,
+        18,
+        13
+      ],
+      "combatText": "2(R) -1(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 1,
+        "flat": 0,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_8",
+      "name": "Lion",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        74,
+        57,
+        43,
+        32,
+        24
+      ],
+      "buy": [
+        30,
+        23,
+        18,
+        14,
+        11
+      ],
+      "combatText": "2(R) -2 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -2,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "ea_9",
+      "name": "Rhinoceros",
+      "category": "Animals",
+      "subcategory": "Exotic Animals",
+      "track": "Animals",
+      "blocks": 4,
+      "guards": 0,
+      "sell": [
+        84,
+        65,
+        49,
+        37,
+        27
+      ],
+      "buy": [
+        32,
+        25,
+        19,
+        15,
+        12
+      ],
+      "combatText": "3(R) -4 CP",
+      "combat": {
+        "dice": 3,
+        "negDice": 0,
+        "flat": -4,
+        "mandatory": true
+      }
+    },
+    {
+      "id": "wpn_1",
+      "name": "Sagittae",
+      "subtitle": "Arrows",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        23,
+        18,
+        14,
+        10,
+        8
+      ],
+      "buy": [
+        12,
+        9,
+        7,
+        6,
+        5
+      ],
+      "combatText": "No combat bonus",
+      "combat": null
+    },
+    {
+      "id": "wpn_2",
+      "name": "Scuta",
+      "subtitle": "Shields",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        19,
+        16,
+        11,
+        9,
+        7
+      ],
+      "buy": [
+        17,
+        14,
+        10,
+        8,
+        6
+      ],
+      "combatText": "Ignore (R) Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsDice": 1
+      }
+    },
+    {
+      "id": "wpn_3",
+      "name": "Pugiones",
+      "subtitle": "Daggers",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        18,
+        15,
+        10,
+        8,
+        7
+      ],
+      "buy": [
+        16,
+        13,
+        9,
+        7,
+        6
+      ],
+      "combatText": "2 -1(R) CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 1,
+        "flat": 2
+      }
+    },
+    {
+      "id": "wpn_4",
+      "name": "Gladii",
+      "subtitle": "Shortswords",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        21,
+        17,
+        12,
+        10,
+        8
+      ],
+      "buy": [
+        19,
+        15,
+        11,
+        9,
+        7
+      ],
+      "combatText": "1(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "wpn_5",
+      "name": "Hastae",
+      "subtitle": "Spears",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        32,
+        24,
+        19,
+        14,
+        12
+      ],
+      "buy": [
+        29,
+        22,
+        17,
+        13,
+        11
+      ],
+      "combatText": "2(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "wpn_6",
+      "name": "Spathae",
+      "subtitle": "Swords",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        30,
+        23,
+        18,
+        14,
+        11
+      ],
+      "buy": [
+        27,
+        21,
+        16,
+        13,
+        10
+      ],
+      "combatText": "1(R) +1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "wpn_7",
+      "name": "Manicae",
+      "subtitle": "Armguards",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        20,
+        16,
+        11,
+        9,
+        8
+      ],
+      "buy": [
+        18,
+        14,
+        10,
+        8,
+        7
+      ],
+      "combatText": "Ignore 1 Wound",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 1
+      }
+    },
+    {
+      "id": "wpn_8",
+      "name": "Galeae",
+      "subtitle": "Helmets",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        28,
+        22,
+        17,
+        13,
+        10
+      ],
+      "buy": [
+        25,
+        20,
+        15,
+        12,
+        9
+      ],
+      "combatText": "Ignore 2 Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 2
+      }
+    },
+    {
+      "id": "wpn_9",
+      "name": "Arcus",
+      "subtitle": "Bows",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        22,
+        18,
+        13,
+        10,
+        9
+      ],
+      "buy": [
+        20,
+        16,
+        12,
+        9,
+        8
+      ],
+      "combatText": "2(R) -1 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -1
+      }
+    },
+    {
+      "id": "wpn_10",
+      "name": "Pila",
+      "subtitle": "Javelins",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        22,
+        18,
+        13,
+        10,
+        8
+      ],
+      "buy": [
+        16,
+        13,
+        9,
+        7,
+        6
+      ],
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      }
+    },
+    {
+      "id": "wpn_11",
+      "name": "Pila",
+      "subtitle": "Javelins",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        22,
+        18,
+        13,
+        10,
+        8
+      ],
+      "buy": [
+        16,
+        13,
+        9,
+        7,
+        6
+      ],
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      }
+    },
+    {
+      "id": "wpn_12",
+      "name": "Loricae",
+      "subtitle": "Body Armor",
+      "category": "Weapons",
+      "subcategory": "Weapons",
+      "track": "Weapons",
+      "blocks": 1,
+      "guards": 0,
+      "sell": [
+        36,
+        28,
+        21,
+        16,
+        13
+      ],
+      "buy": [
+        17,
+        14,
+        10,
+        8,
+        7
+      ],
+      "combatText": "0 CP (Crated Armor Cargo)",
+      "combat": null
+    },
+    {
+      "id": "mrb_1",
+      "name": "Carrara",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        58,
+        44,
+        34,
+        25,
+        19
+      ],
+      "buy": [
+        25,
+        19,
+        15,
+        12,
+        10
+      ]
+    },
+    {
+      "id": "mrb_2",
+      "name": "Carrara",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        76,
+        58,
+        44,
+        33,
+        25
+      ],
+      "buy": [
+        31,
+        24,
+        18,
+        14,
+        12
+      ]
+    },
+    {
+      "id": "mrb_3",
+      "name": "Pavonazzetto",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        63,
+        48,
+        37,
+        28,
+        21
+      ],
+      "buy": [
+        27,
+        21,
+        16,
+        13,
+        11
+      ]
+    },
+    {
+      "id": "mrb_4",
+      "name": "Pavonazzetto",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        82,
+        63,
+        48,
+        36,
+        27
+      ],
+      "buy": [
+        33,
+        25,
+        19,
+        15,
+        13
+      ]
+    },
+    {
+      "id": "mrb_5",
+      "name": "Proconnesian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        67,
+        51,
+        39,
+        30,
+        22
+      ],
+      "buy": [
+        29,
+        22,
+        17,
+        14,
+        11
+      ]
+    },
+    {
+      "id": "mrb_6",
+      "name": "Proconnesian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        88,
+        67,
+        51,
+        39,
+        29
+      ],
+      "buy": [
+        35,
+        27,
+        21,
+        16,
+        13
+      ]
+    },
+    {
+      "id": "mrb_7",
+      "name": "Cipollino",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        71,
+        54,
+        41,
+        31,
+        23
+      ],
+      "buy": [
+        31,
+        24,
+        18,
+        15,
+        12
+      ]
+    },
+    {
+      "id": "mrb_8",
+      "name": "Cipollino",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        93,
+        71,
+        54,
+        41,
+        31
+      ],
+      "buy": [
+        37,
+        29,
+        22,
+        17,
+        14
+      ]
+    },
+    {
+      "id": "mrb_9",
+      "name": "Numidian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        76,
+        58,
+        44,
+        33,
+        25
+      ],
+      "buy": [
+        33,
+        25,
+        19,
+        15,
+        13
+      ]
+    },
+    {
+      "id": "mrb_10",
+      "name": "Numidian",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        98,
+        75,
+        57,
+        43,
+        32
+      ],
+      "buy": [
+        39,
+        30,
+        23,
+        18,
+        15
+      ]
+    },
+    {
+      "id": "mrb_11",
+      "name": "Imperial Porphyry",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 2,
+      "guards": 0,
+      "sell": [
+        81,
+        62,
+        47,
+        36,
+        27
+      ],
+      "buy": [
+        35,
+        27,
+        21,
+        16,
+        14
+      ]
+    },
+    {
+      "id": "mrb_12",
+      "name": "Imperial Porphyry",
+      "category": "Marble",
+      "subcategory": "Marble",
+      "track": "Marble",
+      "blocks": 3,
+      "guards": 0,
+      "sell": [
+        105,
+        80,
+        61,
+        46,
+        35
+      ],
+      "buy": [
+        42,
+        32,
+        25,
+        19,
+        16
+      ]
+    },
+    {
+      "id": "grd_1",
+      "name": "Lucius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        25,
+        20,
+        15,
+        12,
+        9
+      ],
+      "combatText": "(R) CP & +■■ Cart Space",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "bonusBlocks": 2,
+      "bonusGuards": 0
+    },
+    {
+      "id": "grd_2",
+      "name": "Servius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        24,
+        19,
+        14,
+        11,
+        9
+      ],
+      "combatText": "(R) CP & +▲ Cart Space",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "bonusBlocks": 0,
+      "bonusGuards": 1
+    },
+    {
+      "id": "grd_3",
+      "name": "Plinius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        20,
+        16,
+        12,
+        9,
+        8
+      ],
+      "combatText": "1 CP & Cheap Wines Sell at +1 Rarity",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1
+      },
+      "rarityBonus": "Cheap Wine"
+    },
+    {
+      "id": "grd_4",
+      "name": "Rufus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        26,
+        20,
+        15,
+        12,
+        10
+      ],
+      "combatText": "2 CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 2
+      }
+    },
+    {
+      "id": "grd_5",
+      "name": "Decimus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        26,
+        21,
+        15,
+        12,
+        10
+      ],
+      "combatText": "(R) CP & Ignore 1 Wound",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 1
+      }
+    },
+    {
+      "id": "grd_6",
+      "name": "Manius",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        17,
+        14,
+        10,
+        8,
+        6
+      ],
+      "combatText": "1 CP",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "grd_7",
+      "name": "Agrippa",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        20,
+        16,
+        12,
+        9,
+        8
+      ],
+      "combatText": "2(R) - 1 CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": -1
+      }
+    },
+    {
+      "id": "grd_8",
+      "name": "Marcus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        19,
+        15,
+        11,
+        9,
+        7
+      ],
+      "combatText": "(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "grd_9",
+      "name": "Paullus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        29,
+        22,
+        17,
+        13,
+        11
+      ],
+      "combatText": "2(R) CP",
+      "combat": {
+        "dice": 2,
+        "negDice": 0,
+        "flat": 0
+      }
+    },
+    {
+      "id": "grd_10",
+      "name": "Maximus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        27,
+        21,
+        16,
+        13,
+        10
+      ],
+      "combatText": "(R) + 1 CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 1
+      }
+    },
+    {
+      "id": "grd_11",
+      "name": "Gnaeus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        22,
+        18,
+        13,
+        10,
+        8
+      ],
+      "combatText": "(R) CP & Meat Animals Sell at +1 Rarity",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      },
+      "rarityBonus": "Meat Animals"
+    },
+    {
+      "id": "grd_12",
+      "name": "Gordianus",
+      "category": "Guards",
+      "subcategory": "Guard",
+      "track": "Guards",
+      "blocks": 0,
+      "guards": 1,
+      "sell": null,
+      "buy": [
+        19,
+        15,
+        11,
+        9,
+        7
+      ],
+      "combatText": "(R) CP",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0
+      }
+    }
+  ],
+  "influence": [
+    {
+      "id": "inf_1",
+      "name": "Twist Of Fate",
+      "effectText": "Force any one (R) die to be re-rolled",
+      "effectCode": "reroll_die",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_2",
+      "name": "Patron",
+      "effectText": "Receive 8(d)",
+      "effectCode": "gain_40d",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_3",
+      "name": "Flying Chamber Pot",
+      "effectText": "Add +1 CP to any side of any Combat after the dice are rolled",
+      "effectCode": "combat_plus_1_after_roll",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_5",
+      "name": "Procurer",
+      "effectText": "Choose any Good in the Goods deck and buy it onto your Cart at its Common (>) buying price",
+      "effectCode": "buy_from_deck_uncommon",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_8",
+      "name": "Change Of Plans",
+      "effectText": "Cycle the revealed tile in your current neighborhood to the bottom of its stack, reveal a new tile, and gain 2(d)",
+      "effectCode": "redraw_occupied_tile",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_11",
+      "name": "Lucky Break",
+      "effectText": "Add +1 to any Chart Roll after the die roll (Theater Troupe, Death, or Mob) (Cannot be used for Gambling)",
+      "effectCode": "chart_roll_plus_1",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_12",
+      "name": "Prophecy",
+      "effectText": "Trigger Soothsayer for any Player.",
+      "effectCode": "trigger_soothsayer",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_14",
+      "name": "Shortcut",
+      "effectText": "Pass through one edge as though it were green",
+      "effectCode": "pass_edge_as_green",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_15",
+      "name": "Supplicant",
+      "effectText": "Temporarily receive +2 Favor for your next encounter (can be played after encounter is revealed)",
+      "effectCode": "temp_favor_plus_2",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_16",
+      "name": "Plautilla Favor",
+      "effectText": "Receive 6(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectCode": "faction_favor_plautilla",
+      "favorGain": {
+        "faction": "Plautilla",
+        "cash": 6,
+        "extraFavor": [
+          "-Caracalla",
+          "Plautilla"
+        ]
+      },
+      "sellTable": null
+    },
+    {
+      "id": "inf_17",
+      "name": "Plea",
+      "effectText": "Play this card to satisfy a demand for Goods.",
+      "effectCode": "satisfy_goods_demand",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_18",
+      "name": "Aurelian Favor",
+      "effectText": "Receive 6(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectCode": "faction_favor_aurelius",
+      "favorGain": {
+        "faction": "Aurelius",
+        "cash": 6,
+        "extraFavor": [
+          "-Caracalla",
+          "Aurelius"
+        ]
+      },
+      "sellTable": null
+    },
+    {
+      "id": "inf_20",
+      "name": "Make Haste",
+      "effectText": "Move twice this turn (can transact on both tiles)",
+      "effectCode": "move_twice",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_22",
+      "name": "Cartwright",
+      "effectText": "Permanent +2 cubes of Goods storage (place this on your Cart) +2 cubes",
+      "effectCode": "permanent_storage_plus_2",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_23",
+      "name": "Friend In The City Guard",
+      "effectText": "Waive all Edge Tolls this Night, and halve your Daybreak Fine (or eliminate a Gate Fine)",
+      "effectCode": "reduce_fine",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_26",
+      "name": "Geta Favor",
+      "effectText": "Receive 5(d), gain 1 Geta Favor (Emerald), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectCode": "faction_favor_geta",
+      "favorGain": {
+        "faction": "Geta",
+        "cash": 5,
+        "extraFavor": [
+          "-Caracalla",
+          "Geta"
+        ]
+      },
+      "sellTable": null
+    },
+    {
+      "id": "inf_27",
+      "name": "Informants",
+      "effectText": "Look at the top three cards of any deck or the top three tiles of any stack and put them back in any order",
+      "effectCode": "reorder_top_3_any",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_28",
+      "name": "Thug",
+      "effectText": "Free Guard (place this on your Cart) (R) CP",
+      "effectCode": "free_guard_1r",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_29",
+      "name": "Match Fixing",
+      "effectText": "Add (R) to one Gambling roll before rolling",
+      "effectCode": "gambling_plus_1r",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_30",
+      "name": "Informants",
+      "effectText": "Look at the top three cards of any deck or the top three tiles of any stack and put them back in any order",
+      "effectCode": "reorder_top_3_any",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_34",
+      "name": "Man Of The People",
+      "effectText": "Ignore consequences of one Angry Mob encounter and collect 4(d) from the crowd",
+      "effectCode": "ignore_mob",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_35",
+      "name": "Surprise Shipment",
+      "effectText": "Move the Scarcity for one category of Goods one level to the right for this Season (Place card on Mkt until Season ends)",
+      "effectCode": "shift_category_scarcity_right",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_36",
+      "name": "Informants",
+      "effectText": "Look at the top three cards of any deck or the top three tiles of any stack and put them back in any order",
+      "effectCode": "reorder_top_3_any",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_37",
+      "name": "Distraction",
+      "effectText": "Deduct one (R) from any side of any Combat (before the roll)",
+      "effectCode": "combat_minus_1r_before_roll",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_38",
+      "name": "Shortcut",
+      "effectText": "Pass through one edge as though it were green",
+      "effectCode": "pass_edge_as_green",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_39",
+      "name": "Patron",
+      "effectText": "Receive 8(d)",
+      "effectCode": "gain_40d",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_43",
+      "name": "Dramaturge",
+      "effectText": "Turn one Theater Troupe encounter into an automatic III result (ignore penalties and draw (R) Influence cards)",
+      "effectCode": "ignore_theater_troupe",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_44",
+      "name": "Flying Chamber Pot",
+      "effectText": "Add +1 CP to any side of any Combat after the dice are rolled",
+      "effectCode": "combat_plus_1_after_roll",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_45",
+      "name": "Gladiator's Intervention",
+      "effectText": "Add (R) CP to any side of any Combat after the dice are rolled",
+      "effectCode": "combat_plus_1r_after_roll",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_46",
+      "name": "Puffery",
+      "effectText": "Increase the Scarcity of all Goods you sell this hour by one level",
+      "effectCode": "increase_own_sale_scarcity",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_48",
+      "name": "Twist Of Fate",
+      "effectText": "Force any one (R) to be re-rolled",
+      "effectCode": "reroll_die",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_49",
+      "name": "Lucky Break",
+      "effectText": "Add +1 to any Chart Roll after the die roll (Theater Troupe, Death, or Mob) (Cannot be used for Gambling)",
+      "effectCode": "chart_roll_plus_1",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_50",
+      "name": "Wine Forger",
+      "effectText": "Counts as any one Wine for mission purposes. Or sell: [12, 9, 6, 4, 3]",
+      "effectCode": "wine_forger",
+      "favorGain": null,
+      "sellTable": [
+        12,
+        9,
+        6,
+        4,
+        3
+      ]
+    },
+    {
+      "id": "inf_51",
+      "name": "Lucky Break",
+      "effectText": "Add +1 to any Chart Roll after the die roll (Theater Troupe, Death, or Mob) (Cannot be used for Gambling)",
+      "effectCode": "chart_roll_plus_1",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_52",
+      "name": "Domna Favor",
+      "effectText": "Receive 6(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
+      "effectCode": "faction_favor_domna",
+      "favorGain": {
+        "faction": "Domna",
+        "cash": 6,
+        "extraFavor": [
+          "-Plautilla",
+          "-Aurelius",
+          "Domna"
+        ]
+      },
+      "sellTable": null
+    },
+    {
+      "id": "inf_53",
+      "name": "Caracalla Favor",
+      "effectText": "Receive 5(d), gain 1 Caracalla Favor (Ruby), and lose 1 Geta Favor (Emerald) and 1 Plautilla Favor (Sapphire) (can be played after encounter is revealed)",
+      "effectCode": "faction_favor_caracalla",
+      "favorGain": {
+        "faction": "Caracalla",
+        "cash": 5,
+        "extraFavor": [
+          "-Geta",
+          "-Plautilla",
+          "Caracalla"
+        ]
+      },
+      "sellTable": null
+    },
+    {
+      "id": "inf_55",
+      "name": "Twist Of Fate",
+      "effectText": "Force any one (R) to be re-rolled",
+      "effectCode": "reroll_die",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_56",
+      "name": "Mercenary Ambush",
+      "effectText": "Add (R)(R) CP to any side of any Combat before the dice are rolled",
+      "effectCode": "combat_plus_2r_before_roll",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_57",
+      "name": "Trained Dog",
+      "effectText": "Play this card to satisfy any demand for Denarii (d). (Can't use for edge tolls or fines)",
+      "effectCode": "satisfy_cash_demand",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_58",
+      "name": "Casus Belli",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
+      "effectCode": "casus_belli",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_59",
+      "name": "Casus Belli",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
+      "effectCode": "casus_belli",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_60",
+      "name": "Casus Belli",
+      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
+      "effectCode": "casus_belli",
+      "favorGain": null,
+      "sellTable": null
+    },
+    {
+      "id": "inf_15b",
+      "name": "Supplicant",
+      "effectText": "Temporarily receive +2 Favor for your next encounter (can be played after encounter is revealed)",
+      "effectCode": "temp_favor_plus_2",
+      "favorGain": null,
+      "sellTable": null
+    }
+  ],
+  "missiones": [
+    {
+      "id": "mis_1",
+      "name": "Patronize The Arts",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "--",
+      "cell": "D1",
+      "rewardText": "Any Wine on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "mode": "any"
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Sell Marble at -- Scarcity in D1 (Horti Sallustiani)."
+    },
+    {
+      "id": "mis_2",
+      "name": "Javelins For The Games",
+      "kind": "delivery",
+      "item": "Pila",
+      "category": "Weapons",
+      "blocks": 2,
+      "combatText": "1 CP (destroyed if used)",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 1,
+        "consumable": true
+      },
+      "pickupCell": "B6",
+      "deliverCell": "B3",
+      "fencedSell": [
+        38,
+        22,
+        16,
+        10,
+        7
+      ],
+      "rewardText": "10(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 10
+      },
+      "favor": [],
+      "text": "Pick up Pila (Weapons • 2■ • 1 CP (destroyed if used)) in B6 (Via Ostiensis), Deliver to B3 (Circus Flaminius). [Fenced Sell: 38/22/16/10/7]"
+    },
+    {
+      "id": "mis_3",
+      "name": "Imperial Mausoleum Marble",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "+",
+      "cell": "A1",
+      "rewardText": "Caracalla & Domna Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla",
+        "Domna"
+      ],
+      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+    },
+    {
+      "id": "mis_4",
+      "name": "Price Gouge Grapes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "++",
+      "cell": "D4",
+      "rewardText": "Geta Favor (-Domna)",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "-Domna",
+        "Geta"
+      ],
+      "text": "Sell Cheap Wine at ++ Scarcity in D4 (Forum Vespasiani)."
+    },
+    {
+      "id": "mis_5",
+      "name": "Feed The Plebes",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "=",
+      "cell": "B4",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Grain at = Scarcity in B4 (Trans Tiberim)."
+    },
+    {
+      "id": "mis_6",
+      "name": "Feed The Plebes",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "--",
+      "cell": "E2",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Grain at -- Scarcity in E2 (Subura)."
+    },
+    {
+      "id": "mis_7",
+      "name": "Noctes Romanae",
+      "kind": "expose",
+      "exposeType": "patricii",
+      "exposeCount": 4,
+      "description": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)",
+      "rewardText": "16(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 16
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_8",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "=",
+      "cell": "C6",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Cheap Wine at = Scarcity in C6 (Remuria / Aventinus Minor)."
+    },
+    {
+      "id": "mis_9",
+      "name": "Uber Drinks",
+      "kind": "delivery",
+      "item": "Caeretanum",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "A5",
+      "deliverCell": "C1",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        8,
+        6
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Caeretanum (Cheap Wine • 1■) in A5 (Horti Caesaris), Deliver to C1 (Mons Pincius). [Fenced Sell: 32/20/13/8/6]"
+    },
+    {
+      "id": "mis_10",
+      "name": "Price Gouge Grain",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "+",
+      "cell": "C1",
+      "rewardText": "4(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 4
+      },
+      "favor": [],
+      "text": "Sell Grain at + Scarcity in C1 (Mons Pincius)."
+    },
+    {
+      "id": "mis_11",
+      "name": "Sports",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "-",
+      "cell": "A2",
+      "rewardText": "Top card of Goods deck",
+      "reward": {
+        "type": "top_good"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at - Scarcity in A2 (Circus Agonalis)."
+    },
+    {
+      "id": "mis_12",
+      "name": "Animal Sacrifice",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "+",
+      "cell": "C2",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Meat Animals at + Scarcity in C2 (Saepta Julia)."
+    },
+    {
+      "id": "mis_13",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "-",
+      "cell": "D2",
+      "rewardText": "Cheapest Guard on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Guards",
+        "mode": "cheapest"
+      },
+      "favor": [],
+      "text": "Sell Cheap Wine at - Scarcity in D2 (Collis Quirinalis)."
+    },
+    {
+      "id": "mis_14",
+      "name": "Feast",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "-",
+      "cell": "E1",
+      "rewardText": "Cheapest Weapon on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Weapons",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Meat Animals at - Scarcity in E1 (Via Nomentana)."
+    },
+    {
+      "id": "mis_15",
+      "name": "Grain Delivery",
+      "kind": "delivery",
+      "item": "Spelt",
+      "category": "Grain",
+      "blocks": 2,
+      "pickupCell": "E6",
+      "deliverCell": "F4",
+      "fencedSell": [
+        20,
+        13,
+        8,
+        5,
+        4
+      ],
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Spelt (Grain • 2■) in E6 (Caeliolus), Deliver to F4 (Collis Esquilinus). [Fenced Sell: 20/13/8/5/4]"
+    },
+    {
+      "id": "mis_16",
+      "name": "Arm The Vigiles",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "--",
+      "cell": "A4",
+      "rewardText": "Cheapest Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Weapons at -- Scarcity in A4 (Via Aurelia)."
+    },
+    {
+      "id": "mis_17",
+      "name": "Rhino Racing",
+      "kind": "delivery",
+      "item": "Rhinoceros",
+      "category": "Exotic Animals",
+      "blocks": 4,
+      "combatText": "3(R) -4 CP",
+      "combat": {
+        "dice": 3,
+        "negDice": 0,
+        "flat": -4,
+        "mandatory": true
+      },
+      "pickupCell": "F3",
+      "deliverCell": "A2",
+      "fencedSell": [
+        76,
+        50,
+        28,
+        18,
+        10
+      ],
+      "rewardText": "(R) x 20(d)",
+      "reward": {
+        "type": "dice_cash",
+        "multiplier": 20
+      },
+      "favor": [],
+      "text": "Pick up Rhinoceros (Exotic Animals • 4■ • 3(R) -4 CP) in F3 (Via Tiburtina), Deliver to A2 (Circus Agonalis). [Fenced Sell: 76/50/28/18/10]"
+    },
+    {
+      "id": "mis_18",
+      "name": "Hunting Games",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "+",
+      "cell": "B3",
+      "rewardText": "Caracalla & Geta Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at + Scarcity in B3 (Circus Flaminius)."
+    },
+    {
+      "id": "mis_19",
+      "name": "Shields For The Cohortes Urbanae",
+      "kind": "delivery",
+      "item": "Scuta",
+      "category": "Weapons",
+      "blocks": 2,
+      "combatText": "Ignore (R) Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsDice": 1
+      },
+      "pickupCell": "B6",
+      "deliverCell": "C2",
+      "fencedSell": [
+        26,
+        18,
+        10,
+        7,
+        4
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Scuta (Weapons • 2■ • Ignore (R) Wounds) in B6 (Via Ostiensis), Deliver to C2 (Saepta Julia). [Fenced Sell: 26/18/10/7/4]"
+    },
+    {
+      "id": "mis_20",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Opimian",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "D3",
+      "deliverCell": "B5",
+      "fencedSell": [
+        80,
+        60,
+        40,
+        30,
+        15
+      ],
+      "rewardText": "Cheapest Mkt Marble",
+      "reward": {
+        "type": "market_pick",
+        "track": "Marble",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "-Caracalla",
+        "Aurelius"
+      ],
+      "text": "Pick up Opimian (Fine Wine • 1■) in D3 (Forum Augustum), Deliver to B5 (Collis Aventinus). [Fenced Sell: 80/60/40/30/15]"
+    },
+    {
+      "id": "mis_21",
+      "name": "Conspire",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "-",
+      "cell": "B1",
+      "rewardText": "Any Cheap W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Cheap Wine",
+        "mode": "any"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Weapons at - Scarcity in B1 (Via Flaminia)."
+    },
+    {
+      "id": "mis_22",
+      "name": "Vigilante",
+      "kind": "kill",
+      "targetDeck": "Nefarii",
+      "description": "Kill a Nefarius in Combat",
+      "rewardText": "Any Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "any"
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Kill a Nefarius in Combat"
+    },
+    {
+      "id": "mis_23",
+      "name": "Armor For The Guards",
+      "kind": "delivery",
+      "item": "Galeae",
+      "category": "Weapons",
+      "blocks": 1,
+      "combatText": "Ignore 2 Wounds",
+      "combat": {
+        "dice": 0,
+        "negDice": 0,
+        "flat": 0,
+        "ignoreWoundsFlat": 2
+      },
+      "pickupCell": "F1",
+      "deliverCell": "A4",
+      "fencedSell": [
+        32,
+        22,
+        13,
+        11,
+        8
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Galeae (Weapons • 1■ • Ignore 2 Wounds) in F1 (Castra Praetoria), Deliver to A4 (Via Aurelia). [Fenced Sell: 32/22/13/11/8]"
+    },
+    {
+      "id": "mis_24",
+      "name": "Marble Delivery",
+      "kind": "delivery",
+      "item": "Imperial Porphyry",
+      "category": "Marble",
+      "blocks": 2,
+      "pickupCell": "F3",
+      "deliverCell": "B2",
+      "fencedSell": [
+        76,
+        52,
+        31,
+        23,
+        13
+      ],
+      "rewardText": "Priciest Mkt Guard",
+      "reward": {
+        "type": "market_pick",
+        "track": "Guards",
+        "mode": "priciest"
+      },
+      "favor": [
+        "-Geta",
+        "Caracalla"
+      ],
+      "text": "Pick up Imperial Porphyry (Marble • 2■) in F3 (Via Tiburtina), Deliver to B2 (Pantheum / Thermae Neronianae). [Fenced Sell: 76/52/31/23/13]"
+    },
+    {
+      "id": "mis_25",
+      "name": "Chariot Games",
+      "kind": "sell",
+      "category": "Exotic Animals",
+      "modifier": "=",
+      "cell": "C5",
+      "rewardText": "Any Weapon on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Weapons",
+        "mode": "any"
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Exotic Animals at = Scarcity in C5 (Circus Maximus)."
+    },
+    {
+      "id": "mis_26",
+      "name": "Martial Law",
+      "kind": "expose",
+      "exposeType": "legiones",
+      "exposeCount": 12,
+      "description": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)",
+      "rewardText": "40(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 40
+      },
+      "favor": [
+        "Caracalla",
+        "Geta"
+      ],
+      "text": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_27",
+      "name": "Poultry Delivery",
+      "kind": "delivery",
+      "item": "Chickens",
+      "category": "Meat Animals",
+      "blocks": 1,
+      "pickupCell": "C1",
+      "deliverCell": "D5",
+      "fencedSell": [
+        19,
+        12,
+        7,
+        5,
+        4
+      ],
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [],
+      "text": "Pick up Chickens (Meat Animals • 1■) in C1 (Mons Pincius), Deliver to D5 (Mons Palatinus). [Fenced Sell: 19/12/7/5/4]"
+    },
+    {
+      "id": "mis_28",
+      "name": "Decorate The Baths",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "=",
+      "cell": "D6",
+      "rewardText": "Caracalla Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Sell Marble at = Scarcity in D6 (Thermae Antoninianae)."
+    },
+    {
+      "id": "mis_29",
+      "name": "Grain Delivery",
+      "kind": "delivery",
+      "item": "Durum",
+      "category": "Grain",
+      "blocks": 2,
+      "pickupCell": "C6",
+      "deliverCell": "D3",
+      "fencedSell": [
+        20,
+        12,
+        7,
+        5,
+        3
+      ],
+      "rewardText": "(R) Influence Cards",
+      "reward": {
+        "type": "dice_influence",
+        "dice": 1
+      },
+      "favor": [],
+      "text": "Pick up Durum (Grain • 2■) in C6 (Remuria / Aventinus Minor), Deliver to D3 (Forum Augustum). [Fenced Sell: 20/12/7/5/3]"
+    },
+    {
+      "id": "mis_30",
+      "name": "Arm The Praetoriani",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "++",
+      "cell": "E4",
+      "rewardText": "Caracalla Favor (-Plautilla)",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "-Plautilla",
+        "Caracalla"
+      ],
+      "text": "Sell Weapons at ++ Scarcity in E4 (Amphitheatrum Flavium)."
+    },
+    {
+      "id": "mis_31",
+      "name": "Seafood Delivery",
+      "kind": "delivery",
+      "item": "Oysters",
+      "category": "Meat Animals",
+      "blocks": 1,
+      "pickupCell": "B4",
+      "deliverCell": "F2",
+      "fencedSell": [
+        24,
+        16,
+        10,
+        9,
+        6
+      ],
+      "rewardText": "10(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 10
+      },
+      "favor": [],
+      "text": "Pick up Oysters (Meat Animals • 1■) in B4 (Trans Tiberim), Deliver to F2 (Collis Viminalis). [Fenced Sell: 24/16/10/9/6]"
+    },
+    {
+      "id": "mis_32",
+      "name": "Feast",
+      "kind": "sell",
+      "category": "Meat Animals",
+      "modifier": "=",
+      "cell": "E6",
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Meat Animals at = Scarcity in E6 (Caeliolus)."
+    },
+    {
+      "id": "mis_33",
+      "name": "Price Gouge Grain",
+      "kind": "sell",
+      "category": "Grain",
+      "modifier": "++",
+      "cell": "D3",
+      "rewardText": "2(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 2
+      },
+      "favor": [
+        "-Caracalla",
+        "Geta"
+      ],
+      "text": "Sell Grain at ++ Scarcity in D3 (Forum Augustum)."
+    },
+    {
+      "id": "mis_34",
+      "name": "Regicide",
+      "kind": "kill_emperor",
+      "description": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)",
+      "rewardText": "You Win The Game",
+      "reward": {
+        "type": "win_game"
+      },
+      "favor": [],
+      "text": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)"
+    },
+    {
+      "id": "mis_35",
+      "name": "Uber Drinks",
+      "kind": "delivery",
+      "item": "Falernian",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "D1",
+      "deliverCell": "F4",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        8,
+        6
+      ],
+      "rewardText": "12(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 12
+      },
+      "favor": [],
+      "text": "Pick up Falernian (Fine Wine • 1■) in D1 (Horti Sallustiani), Deliver to F4 (Collis Esquilinus). [Fenced Sell: 32/20/13/8/6]"
+    },
+    {
+      "id": "mis_36",
+      "name": "Hunting Games",
+      "kind": "delivery",
+      "item": "Ostrich",
+      "category": "Exotic Animals",
+      "blocks": 2,
+      "pickupCell": "E6",
+      "deliverCell": "A2",
+      "fencedSell": [
+        16,
+        12,
+        8,
+        6,
+        3
+      ],
+      "rewardText": "(R) x 10(d)",
+      "reward": {
+        "type": "dice_cash",
+        "multiplier": 10
+      },
+      "favor": [],
+      "text": "Pick up Ostrich (Exotic Animals • 2■) in E6 (Caeliolus), Deliver to A2 (Circus Agonalis). [Fenced Sell: 16/12/8/6/3]"
+    },
+    {
+      "id": "mis_37",
+      "name": "Revolt",
+      "kind": "kill",
+      "targetDeck": "Legiones",
+      "description": "Kill a Legionary in Combat",
+      "rewardText": "Cheapest Fine W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Fine Wine",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Kill a Legionary in Combat"
+    },
+    {
+      "id": "mis_38",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Cretan",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "B2",
+      "deliverCell": "C5",
+      "fencedSell": [
+        42,
+        26,
+        16,
+        11,
+        6
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Cretan (Cheap Wine • 1■) in B2 (Pantheum / Thermae Neronianae), Deliver to C5 (Circus Maximus). [Fenced Sell: 42/26/16/11/6]"
+    },
+    {
+      "id": "mis_39",
+      "name": "Arm The Cohortes Urbanae",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "=",
+      "cell": "B6",
+      "rewardText": "Cheapest Meat A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Meat Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Weapons at = Scarcity in B6 (Via Ostiensis)."
+    },
+    {
+      "id": "mis_40",
+      "name": "Quid Pro Quo",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "-",
+      "cell": "A5",
+      "rewardText": "Cheapest Exotic A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Exotic Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Fine Wine at - Scarcity in A5 (Horti Caesaris)."
+    },
+    {
+      "id": "mis_41",
+      "name": "City Of Thieves",
+      "kind": "expose",
+      "exposeType": "nefarii",
+      "exposeCount": 8,
+      "description": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)",
+      "rewardText": "26(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 26
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)"
+    },
+    {
+      "id": "mis_42",
+      "name": "Patronize The Arts",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "-",
+      "cell": "E3",
+      "rewardText": "Any Exotic A on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "subcategory": "Exotic Animals",
+        "mode": "any"
+      },
+      "favor": [
+        "Domna"
+      ],
+      "text": "Sell Marble at - Scarcity in E3 (Thermae Traiani)."
+    },
+    {
+      "id": "mis_43",
+      "name": "Sacrificial Lamb",
+      "kind": "delivery",
+      "item": "Lamb",
+      "category": "Meat Animals",
+      "blocks": 2,
+      "pickupCell": "F4",
+      "deliverCell": "C2",
+      "fencedSell": [
+        32,
+        20,
+        13,
+        9,
+        5
+      ],
+      "rewardText": "4(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 4,
+        "count": 1
+      },
+      "favor": [],
+      "text": "Pick up Lamb (Meat Animals • 2■) in F4 (Collis Esquilinus), Deliver to C2 (Saepta Julia). [Fenced Sell: 32/20/13/9/5]"
+    },
+    {
+      "id": "mis_44",
+      "name": "Wine Merchant",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "=",
+      "cell": "F4",
+      "rewardText": "1 Influence Card",
+      "reward": {
+        "type": "influence",
+        "count": 1
+      },
+      "favor": [
+        "Aurelius"
+      ],
+      "text": "Sell Fine Wine at = Scarcity in F4 (Collis Esquilinus)."
+    },
+    {
+      "id": "mis_45",
+      "name": "Arm The Uprising",
+      "kind": "sell",
+      "category": "Weapons",
+      "modifier": "+",
+      "cell": "E5",
+      "rewardText": "Cheapest Cheap W on Mkt",
+      "reward": {
+        "type": "market_pick",
+        "track": "Wine",
+        "subcategory": "Cheap Wine",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "Plautilla"
+      ],
+      "text": "Sell Weapons at + Scarcity in E5 (Sucusa)."
+    },
+    {
+      "id": "mis_46",
+      "name": "Royal Banquet Wine",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "+",
+      "cell": "D5",
+      "rewardText": "Geta Favor",
+      "reward": {
+        "type": "none"
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Fine Wine at + Scarcity in D5 (Mons Palatinus)."
+    },
+    {
+      "id": "mis_47",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Hadrianum",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "C3",
+      "deliverCell": "F2",
+      "fencedSell": [
+        74,
+        48,
+        34,
+        24,
+        14
+      ],
+      "rewardText": "Cheapest Mkt Animal",
+      "reward": {
+        "type": "market_pick",
+        "track": "Animals",
+        "mode": "cheapest"
+      },
+      "favor": [
+        "-Plautilla",
+        "Caracalla"
+      ],
+      "text": "Pick up Hadrianum (Fine Wine • 1■) in C3 (Forum Traiani), Deliver to F2 (Collis Viminalis). [Fenced Sell: 74/48/34/24/14]"
+    },
+    {
+      "id": "mis_48",
+      "name": "Wine For The Theater",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "+",
+      "cell": "A3",
+      "rewardText": "2(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 2
+      },
+      "favor": [
+        "Geta"
+      ],
+      "text": "Sell Cheap Wine at + Scarcity in A3 (Theatrum Pompeii)."
+    },
+    {
+      "id": "mis_49",
+      "name": "Assassin",
+      "kind": "kill",
+      "targetDeck": "Patricii",
+      "description": "Kill a Patricius in Combat",
+      "rewardText": "10(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 10,
+        "count": 1
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Kill a Patricius in Combat"
+    },
+    {
+      "id": "mis_50",
+      "name": "Festival Wine",
+      "kind": "sell",
+      "category": "Fine Wine",
+      "modifier": "--",
+      "cell": "B2",
+      "rewardText": "(R)(R) Influence Cards",
+      "reward": {
+        "type": "dice_influence",
+        "dice": 2
+      },
+      "favor": [],
+      "text": "Sell Fine Wine at -- Scarcity in B2 (Pantheum / Thermae Neronianae)."
+    },
+    {
+      "id": "mis_51",
+      "name": "Regime Change",
+      "kind": "kill_emperor_cancel",
+      "description": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)",
+      "rewardText": "20(d) & Cancels all active regicide missions",
+      "reward": {
+        "type": "regime_change",
+        "amount": 20
+      },
+      "favor": [],
+      "text": "Kill the Emperor (Completed if either Geta or Caracalla is killed by any Player)"
+    },
+    {
+      "id": "mis_52",
+      "name": "Wine Delivery",
+      "kind": "delivery",
+      "item": "Narbo",
+      "category": "Cheap Wine",
+      "blocks": 1,
+      "pickupCell": "B4",
+      "deliverCell": "E6",
+      "fencedSell": [
+        24,
+        15,
+        9,
+        6,
+        4
+      ],
+      "rewardText": "6(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 6
+      },
+      "favor": [],
+      "text": "Pick up Narbo (Cheap Wine • 1■) in B4 (Trans Tiberim), Deliver to E6 (Caeliolus). [Fenced Sell: 24/15/9/6/4]"
+    },
+    {
+      "id": "mis_53",
+      "name": "Sate The Plebes",
+      "kind": "sell",
+      "category": "Cheap Wine",
+      "modifier": "--",
+      "cell": "F3",
+      "rewardText": "2 Influence Cards",
+      "reward": {
+        "type": "influence",
+        "count": 2
+      },
+      "favor": [],
+      "text": "Sell Cheap Wine at -- Scarcity in F3 (Via Tiburtina)."
+    },
+    {
+      "id": "mis_54",
+      "name": "Imperial Tomb Marble",
+      "kind": "sell",
+      "category": "Marble",
+      "modifier": "+",
+      "cell": "A1",
+      "rewardText": "8(d)",
+      "reward": {
+        "type": "cash",
+        "amount": 8
+      },
+      "favor": [
+        "Domna",
+        "Geta"
+      ],
+      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+    },
+    {
+      "id": "mis_55",
+      "name": "Ashes of Severus",
+      "kind": "delivery",
+      "item": "Hadrianum",
+      "category": "Fine Wine",
+      "blocks": 1,
+      "pickupCell": "F5",
+      "deliverCell": "A1",
+      "fencedSell": [
+        44,
+        28,
+        18,
+        12,
+        7
+      ],
+      "rewardText": "10(d) & 1 Influence Card",
+      "reward": {
+        "type": "cash_and_influence",
+        "amount": 10,
+        "count": 1
+      },
+      "favor": [
+        "Caracalla"
+      ],
+      "text": "Pick up Hadrianum (Fine Wine • 1■) in F5 (Amphitheatrum Castrense), Deliver to A1 (Mausoleum Hadriani). [Fenced Sell: 44/28/18/12/7]"
+    }
+  ],
+  "patricii": [
+    {
+      "id": "pat_1",
+      "name": "Procession",
+      "deck": "patricii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Lose your next turn. Player leaves Cart on present Tile and does not move or transact next hour.",
+      "mission": null
+    },
+    {
+      "id": "pat_2",
+      "name": "Quintus Tineius Clemens",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Senior patrician senator and consul ordinarius of 195 from the distinguished Tineii family.",
+      "combatFormula": "1(R)+1",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "Sell Falernian at + in C5",
+      "mission": {
+        "kind": "sell",
+        "item": "Falernian",
+        "pickupCell": null,
+        "deliverCell": "C5",
+        "category": "Fancy Wine",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_3",
+      "name": "Salve!",
+      "deck": "patricii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Temporarily receive +1 factional reputation for your next encounter. Draw again.",
+      "mission": null
+    },
+    {
+      "id": "pat_4",
+      "name": "Lucius Flavius Philostratus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Commissioned by the Empress to write the Life of Apollonius of Tyana.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "12(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "16(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "mission": null
+    },
+    {
+      "id": "pat_5",
+      "name": "Decimus Caelius Calvinus Balbinus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Would serve as consul with Caracalla in 213. Emperor for three months in 238.",
+      "combatFormula": "1(R)+2",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta"
+      ],
+      "friendlyReward": "12(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "=0",
+          "type": "deck_quest_demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Fancy Wine from Market or Deck at < Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": "Fancy Wine",
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Fancy Wine",
+        "modifier": "<",
+        "target": "Market or Deck"
+      }
+    },
+    {
+      "id": "pat_6",
+      "name": "Julia Avita Mamaea",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Niece of Julia Domna. Future empress mother to Alexander Severus.",
+      "combatFormula": "1(R)+1",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Plautilla"
+      ],
+      "combatReward": "20(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Buy one Fancy Wine at + Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": "Fancy Wine",
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Fancy Wine",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_7",
+      "name": "Ushered Along",
+      "deck": "patricii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Move Again. Player must move to an accessible Tile. Cannot complete missions or transact on this Tile before proceeding.",
+      "mission": null
+    },
+    {
+      "id": "pat_8",
+      "name": "Lucius Fabius Cilo",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Tutor of Caracalla and Geta.",
+      "combatFormula": "2(R)",
+      "friendlyFavor": [
+        "Geta",
+        "Caracalla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Caracalla"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell the top card of the Goods deck for 14(d) (unless Infl, decide without looking)",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": "Top card of Goods deck",
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Any",
+        "modifier": "14(d)",
+        "target": "Goods deck"
+      }
+    },
+    {
+      "id": "pat_9",
+      "name": "Marcus Annius Flavius Libo",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Was Consul in 204. Distant cousin of Marcus Aurelius.",
+      "combatFormula": "2(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "1 Meat A from market",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "6(d)"
+        }
+      ],
+      "actionText": "Sell Grain at - in B4",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": "B4",
+        "category": "Grain",
+        "modifier": "-",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_10",
+      "name": "Julia Soaemias",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Murdered alongside son Elagabalus by Praetorians and discarded in the Tiber in 222.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Plautilla"
+      ],
+      "combatReward": "20(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "cash_reward",
+          "reward": "3(d)"
+        },
+        {
+          "condition": ">=-1",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "7(d)"
+        }
+      ],
+      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "mission": null
+    },
+    {
+      "id": "pat_11",
+      "name": "Marcus Ulpius Leurus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Senator during the reign of Caracalla. May have been a Plautilla sympathizer.",
+      "combatFormula": "1(R)+1",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Plautilla",
+        "-Domna"
+      ],
+      "combatReward": "Cheapest Mkt Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Buy one Meat Animal at + Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Meat Animal",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_12",
+      "name": "Quintus Anicius Faustus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Built the desert forts of Roman Africa; sidelined by Caracalla until recalled to govern Asia in 217.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up Buffalo in F5 and Deliver to C2",
+      "mission": {
+        "kind": "delivery",
+        "item": "Buffalo",
+        "pickupCell": "F5",
+        "deliverCell": "C2",
+        "category": "Meat Animal",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 2,
+        "payoutTable": [
+          19,
+          14,
+          10,
+          7,
+          4
+        ]
+      }
+    },
+    {
+      "id": "pat_13",
+      "name": "Publius Septimius Geta",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Co-Emperor. Ambushed by Caracalla at a parley. Died in the arms of their mother, Julia Domna.",
+      "combatFormula": "4(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Domna"
+      ],
+      "combatReward": "20(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_strict"
+        }
+      ],
+      "actionText": "Sell Marble at -- in C6",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": "C6",
+        "category": "Marble",
+        "modifier": "--",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_14",
+      "name": "Cornificia",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Surviving daughter of Marcus Aurelius. Ordered to take her own life by Caracalla after she wept openly with Julia Domna over the murder of Geta.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_strict"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "3(d)"
+        }
+      ],
+      "actionText": "Pick up Falernian in E6, Deliver to D2",
+      "mission": {
+        "kind": "delivery",
+        "item": "Falernian",
+        "pickupCell": "E6",
+        "deliverCell": "D2",
+        "category": "Fancy Wine",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 1,
+        "payoutTable": [
+          54,
+          42,
+          32,
+          22,
+          16
+        ]
+      }
+    },
+    {
+      "id": "pat_15",
+      "name": "Quintus Tineius Sacerdos",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Served as consul ordinarius in 219 with Emperor Elagabalus. Aligned with Aurelians.",
+      "combatFormula": "2(R)-1",
+      "friendlyFavor": [
+        "Aurelius"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Animal from Market or Deck at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Animal",
+        "modifier": ">",
+        "target": "Market or Deck"
+      }
+    },
+    {
+      "id": "pat_16",
+      "name": "Lucius Aurelius Commodus Pompeianus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Caracalla took the precaution of making his murder appear to have been perpetrated by bandits.",
+      "combatFormula": "3(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "20(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "16(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up Cipollino in F2 and Deliver to B5",
+      "mission": {
+        "kind": "delivery",
+        "item": "Cipollino",
+        "pickupCell": "F2",
+        "deliverCell": "B5",
+        "category": "Marble",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 3,
+        "payoutTable": [
+          80,
+          60,
+          36,
+          24,
+          12
+        ]
+      }
+    },
+    {
+      "id": "pat_17",
+      "name": "Serenus Sammonicus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Renowned physician-poet. Owner of a 62,000-scroll library. Hacked to death at dinner during 211 purge.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "4(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "Cheapest Mkt Cheap Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "=0",
+          "type": "deck_quest_demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell the top card of the Goods deck for 10(d) (unless Infl, decide without looking)",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": "Top card of Goods deck",
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Any",
+        "modifier": "10(d)",
+        "target": "Goods deck"
+      }
+    },
+    {
+      "id": "pat_18",
+      "name": "Marcus Nummius Senecio Albinus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Served as consul in 227.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Caracalla",
+        "Plautilla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "20(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "cash_reward",
+          "reward": "3(d)"
+        },
+        {
+          "condition": ">=-1",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "7(d)"
+        }
+      ],
+      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "mission": null
+    },
+    {
+      "id": "pat_19",
+      "name": "Lucius Valerius Messalla Apollinaris",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Thought to have been the son of Thrasea Priscus. Served as consul in 214.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Plautilla",
+        "-Geta"
+      ],
+      "combatReward": "Cheapest Mkt Wine",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": ">=-1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "mission": null
+    },
+    {
+      "id": "pat_20",
+      "name": "Lucius Valerius Messalla Thrasea Priscus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Patrician senator of ancient Republican lineage; executed during Caracalla's purge as a suspected partisan of Geta.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Geta"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Plautilla"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up Lion in B3 and Deliver to D5",
+      "mission": {
+        "kind": "delivery",
+        "item": "Lion",
+        "pickupCell": "B3",
+        "deliverCell": "D5",
+        "category": "Exotic Animal",
+        "modifier": "2(R)-1 CP",
+        "target": null,
+        "cargoSize": 2,
+        "payoutTable": [
+          33,
+          25,
+          17,
+          12,
+          9
+        ]
+      }
+    },
+    {
+      "id": "pat_21",
+      "name": "Julia Maesa",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Julia Domna's older sister. Mother of Julia Soaemias and Julia Avita Mamaea.",
+      "combatFormula": "1(R)+1",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Plautilla"
+      ],
+      "combatReward": "Cheapest Mkt Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Buy one Marble at + Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Marble",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_22",
+      "name": "Marcus Aurelius Antoninus (Caracalla)",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Senior Co-Emperor — nicknamed Caracalla after the hooded Gallic tunic he popularized. Murdered his brother Geta in December 211.",
+      "combatFormula": "4(R)",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta",
+        "-Plautilla"
+      ],
+      "friendlyReward": "16(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "-Caracalla",
+        "Geta"
+      ],
+      "combatReward": "20(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_strict"
+        }
+      ],
+      "actionText": "Pick up Oysters in A6 and Deliver to F1 by 5 a.m. next season",
+      "mission": {
+        "kind": "delivery",
+        "item": "Oysters",
+        "pickupCell": "A6",
+        "deliverCell": "F1",
+        "category": "Meat Animals",
+        "modifier": "by 5 a.m. next season",
+        "target": null,
+        "cargoSize": 1,
+        "payoutTable": [
+          32,
+          24,
+          16,
+          10,
+          7
+        ]
+      }
+    },
+    {
+      "id": "pat_23",
+      "name": "Cassius Dio",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Bithynian senator, member of Julia Domna's court circle, and eyewitness historian.",
+      "combatFormula": "2(R)",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Aurelius"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": ">=-1",
+          "type": "mission_offer"
+        }
+      ],
+      "actionText": "Sell Fine Wine in A3 at + Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": "Fine Wine",
+        "pickupCell": null,
+        "deliverCell": "A3",
+        "category": "Wine",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_24",
+      "name": "Castor",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Confidant of Septimius Severus who tried to restrain Caracalla's plots; ambushed and murdered by Caracalla's henchmen in 211.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "Cheapest Mkt Cheap Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "=0",
+          "type": "mission_request"
+        },
+        {
+          "condition": ">=1",
+          "type": "mission_offer"
+        }
+      ],
+      "actionText": "Pick up Imperial Porphyry in D5 and Deliver to A1",
+      "mission": {
+        "name": "Severus's Funerary Urn",
+        "kind": "delivery",
+        "item": "Imperial Porphyry",
+        "pickupCell": "D5",
+        "deliverCell": "A1",
+        "category": "Marble",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 2,
+        "payoutTable": [
+          42,
+          30,
+          19,
+          14,
+          8
+        ]
+      }
+    },
+    {
+      "id": "pat_25",
+      "name": "Publius Helvius Pertinax Jr",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Son of Pertinax; executed for joking that Caracalla should add 'Geticus Maximus' to his victory titles for slaying Geta.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "Cheapest Mkt Wine",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": ">=-1",
+          "type": "mission_offer"
+        }
+      ],
+      "actionText": "Sell Oysters at + in B6",
+      "mission": {
+        "kind": "sell",
+        "item": "Oysters",
+        "pickupCell": null,
+        "deliverCell": "B6",
+        "category": "Meat Animals",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_26",
+      "name": "Gaius Julius Avitus Alexianus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Husband of Julia Maesa and prefect of imperial child-welfare endowments under Caracalla.",
+      "combatFormula": "1(R)",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "12(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Aurelius"
+      ],
+      "combatReward": "16(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "mission": null
+    },
+    {
+      "id": "pat_27",
+      "name": "Gaius Septimius Severus Aper",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Consul Ordinarius in 207. Executed in late 211 or early 212.",
+      "combatFormula": "2(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Geta"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_strict"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "3(d)"
+        }
+      ],
+      "actionText": "Sell Opimian at + in C5",
+      "mission": {
+        "kind": "sell",
+        "item": "Opimian",
+        "pickupCell": null,
+        "deliverCell": "C5",
+        "category": "Fancy Wine",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "pat_28",
+      "name": "Aemilius Papinianus",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Celebrated jurist. Executed for refusing to compose a legal defense for Geta's murder.",
+      "combatFormula": "1(R)+1",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Geta"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "Pick up Opimian in C1 and deliver to F2",
+      "mission": {
+        "kind": "delivery",
+        "item": "Opimian",
+        "pickupCell": "C1",
+        "deliverCell": "F2",
+        "category": "Fancy Wine",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 1,
+        "payoutTable": [
+          60,
+          44,
+          36,
+          28,
+          18
+        ]
+      }
+    },
+    {
+      "id": "pat_29",
+      "name": "Brutta Figura",
+      "deck": "patricii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Temporarily receive -1 factional reputation for your next encounter. Draw again.",
+      "mission": null
+    },
+    {
+      "id": "pat_30",
+      "name": "Julia Domna",
+      "deck": "patricii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Empress mother of Geta and Caracalla. Committed suicide following Caracalla's assassination in 217.",
+      "combatFormula": "2(R)",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "16(d)",
+      "hostileFavor": [
+        "-Domna",
+        "-Geta",
+        "-Caracalla"
+      ],
+      "combatReward": "30(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "cash_reward",
+          "reward": "4(d)"
+        },
+        {
+          "condition": ">=-1",
+          "type": "mission_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "cash_reward",
+          "reward": "12(d)"
+        }
+      ],
+      "actionText": "Sell Marble at = in B2",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": "B2",
+        "category": "Marble",
+        "modifier": "=",
+        "target": null
+      }
+    }
+  ],
+  "legiones": [
+    {
+      "id": "leg_1",
+      "name": "Publius Catius Sabinus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Intimate supporter of Caracalla. Ordered killed by Elagabalus, but mistakenly expelled from Rome instead.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Caracalla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me (R) x 4(d) (Can give all (d) and take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "leg_2",
+      "name": "Publius Cornelius Anulinus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Would serve as Consul ordinarius in 216.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Fine Wine (if Player has no Fine W, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_3",
+      "name": "Macrinus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Conspired to assassinate Caracalla after a seer prophesied that he would become Emperor. Emperor from 217-218.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "-Caracalla"
+      ],
+      "friendlyReward": "50(d)",
+      "hostileFavor": [
+        "Caracalla"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_strict"
+        }
+      ],
+      "actionText": "Kill the Emperor (Complete if any Player kills either Emperor)",
+      "mission": {
+        "kind": "kill",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": null,
+        "modifier": null,
+        "target": "The Emperor"
+      }
+    },
+    {
+      "id": "leg_4",
+      "name": "Clodius Pompeianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Member of the Claudian Aurelian dynasty. Consul in 241.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Aurelius"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me 6(d) (If Player has <6(d), can take thumbs-down and avoid Combat by paying all (d))",
+      "mission": null
+    },
+    {
+      "id": "leg_5",
+      "name": "Tiberius Claudius Aurelius Quintianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Great-grandson of Marcus Aurelius; served as military tribune and senator under Caracalla.",
+      "combatFormula": "X(R)+X",
+      "friendlyFavor": [
+        "Caracalla",
+        "Aurelius"
+      ],
+      "friendlyReward": "7(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "-Aurelius"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me half of your Cash (give >=50% of all (d) or face Combat)",
+      "mission": null
+    },
+    {
+      "id": "leg_6",
+      "name": "Vigiles Urbani",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Watchmen of the city. Primarily firefighters.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "4(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=1",
+          "type": "demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!: Give me all of your Grain (if Player has no Grain, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_7",
+      "name": "Centurions",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Roman soldiers.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me (R) Influence Cards (Can give all Cards and take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "leg_8",
+      "name": "Praetorian Guard",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "The Imperial Guard.",
+      "combatFormula": "X(R)+X",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "-Geta",
+        "Caracalla"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me all of your Exotic Animals (Player has no Exotic A, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_9",
+      "name": "Praetorian Guard",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "The Imperial Guard.",
+      "combatFormula": "X+1",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me your most valuable Item (highest Uncommon Sell Price)",
+      "mission": null
+    },
+    {
+      "id": "leg_10",
+      "name": "Cohortes Urbanae",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Roman police force used to counterbalance the Praetorian Guard.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=1",
+          "type": "demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me 4(d) (If Player has <4(d), receive thumbs-down)",
+      "mission": null
+    },
+    {
+      "id": "leg_11",
+      "name": "Sextus Varius Marcellus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Married to Julia Soaemias, father of future emperor Elagabalus; served as Prefect in Rome in 211.",
+      "combatFormula": "X+1",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=1",
+          "type": "demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me 4(d) (If player has <4(d), receive thumbs-down)",
+      "mission": null
+    },
+    {
+      "id": "leg_12",
+      "name": "Praetorian Guard",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "The Imperial Guard.",
+      "combatFormula": "X(R)+X",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta"
+      ],
+      "friendlyReward": "7(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "Geta"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me two Influence Cards (Can give all cards to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "leg_13",
+      "name": "Quintus Maecius Laetus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Veteran equestrian commander and Praetorian Prefect in 211. Appointed at Septimius Severus's deathbed.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "Geta"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "mission_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "mission_offer"
+        }
+      ],
+      "actionText": "Sell Weapons at + in A1",
+      "mission": {
+        "name": "Arm the Mausoleum Watch",
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": "A1",
+        "category": "Weapons",
+        "modifier": "+",
+        "target": null
+      }
+    },
+    {
+      "id": "leg_14",
+      "name": "Lucius Tiberius Claudius Pompeianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Son of Lucius A.C. Pompeianus. Great grandson of Marcus Aurelius. Consul in 231.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Plautilla",
+        "Aurelius",
+        "-Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Plautilla",
+        "-Aurelius"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me all of your Weapons (if Player has no Weapons, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_15",
+      "name": "Gaius Vettius Gratus Sabinianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Curator of Via Flaminia. Responsible for Rome's food supply.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Geta"
+      ],
+      "friendlyReward": "4(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up Rye in B1, Deliver to C4",
+      "mission": {
+        "kind": "delivery",
+        "item": "Rye",
+        "pickupCell": "B1",
+        "deliverCell": "C4",
+        "category": "Grain",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 2,
+        "payoutTable": [
+          18,
+          11,
+          7,
+          5,
+          3
+        ]
+      }
+    },
+    {
+      "id": "leg_16",
+      "name": "Legio II Parthica ('The Albanians')",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Barred their camp gates against Caracalla after Geta's murder until bribed with vast donatives.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "=0",
+          "type": "mission_request"
+        },
+        {
+          "condition": ">=1",
+          "type": "mission_offer"
+        }
+      ],
+      "actionText": "Pick up Hadrianum in A1 and Deliver to F6",
+      "mission": {
+        "name": "Libations for the Alban Camp",
+        "kind": "delivery",
+        "item": "Hadrianum",
+        "pickupCell": "A1",
+        "deliverCell": "F6",
+        "category": "Fine Wine",
+        "modifier": null,
+        "target": null,
+        "cargoSize": 1,
+        "payoutTable": [
+          36,
+          23,
+          15,
+          11,
+          6
+        ]
+      }
+    },
+    {
+      "id": "leg_17",
+      "name": "Quintus Virius Egnatius Sulpicius Priscus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Suffect Consul sometime under Caracalla.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Caracalla"
+      ],
+      "friendlyReward": "16(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up cheapest Marble on Mkt in C3 and deliver to D6. (lowest present Sell Price)",
+      "mission": {
+        "kind": "delivery",
+        "item": "Cheapest Marble on Mkt",
+        "pickupCell": "C3",
+        "deliverCell": "D6",
+        "category": "Marble",
+        "modifier": "lowest present Sell Price",
+        "target": null
+      }
+    },
+    {
+      "id": "leg_18",
+      "name": "Cohortes Urbanae",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Roman city guard. These ones are loyal to Plautilla.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Plautilla",
+        "Domna"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Move again this turn",
+      "mission": null
+    },
+    {
+      "id": "leg_19",
+      "name": "Gaius Octavius Appius Suetrius Sabinus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Served under Caracalla. Lived on the Aventine.",
+      "combatFormula": "X+1",
+      "friendlyFavor": [
+        "Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "Weapon",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "mission_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up priciest Meat A on Mkt in F4 and deliver to B5. (highest present Sell Price) (if no Meat A on Mkt, no mission)",
+      "mission": {
+        "kind": "delivery",
+        "item": "Priciest Meat Animal on Mkt",
+        "pickupCell": "F4",
+        "deliverCell": "B5",
+        "category": "Meat Animal",
+        "modifier": "highest present Sell Price",
+        "target": null
+      }
+    },
+    {
+      "id": "leg_20",
+      "name": "Julius Martialis",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Initial assassin in the murder of Caracalla.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Geta",
+        "Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Caracalla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me 5(d) (If Player has <5(d), can take thumbs-down and avoid Combat by paying all (d))",
+      "mission": null
+    },
+    {
+      "id": "leg_21",
+      "name": "Quintus Hedius Lollianus Plautius Avitus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Consul ordinarius in 209. Not killed by Caracalla.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Aurelius"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Wine (if Player has no Wine, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_22",
+      "name": "Titus Flavius Sallustius Paelignianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Suffect Consul in 231.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "Geta"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Marble (if Player has no Marble, no demand)",
+      "mission": null
+    },
+    {
+      "id": "leg_23",
+      "name": "Lucius Virius Agricola",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Consul ordinarius in 230.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Domna"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up priciest Wine on Mkt in C1 and deliver to F2. (highest present Sell Price) (if no Wine on Mkt, no mission)",
+      "mission": {
+        "kind": "delivery",
+        "item": "Priciest Wine on Mkt",
+        "pickupCell": "C1",
+        "deliverCell": "F2",
+        "category": "Wine",
+        "modifier": "highest present Sell Price",
+        "target": null
+      }
+    },
+    {
+      "id": "leg_24",
+      "name": "Nemesianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Tribune in 217. Pretended to come to Caracalla's rescue after he had been stabbed by Martialis. Instead slew him.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me 3(d) (If player has <3(d), receive thumbs-down)",
+      "mission": null
+    },
+    {
+      "id": "leg_25",
+      "name": "Marcus Clodius Pupienus Maximus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Co-emperor for three months in 238. Dragged from the palace and hacked to death in the streets by Praetorians.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Aurelius"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Caracalla",
+        "Aurelius"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": ">=-1",
+          "type": "deck_quest_demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Grain from Mkt at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Grain",
+        "modifier": ">",
+        "target": "Market"
+      }
+    },
+    {
+      "id": "leg_26",
+      "name": "Road Blocked",
+      "deck": "legiones",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Turn Around. Player must move to previously-occupied Tile and end turn. If edge encounter, stay on present tile. If first turn, remove cart from board; can pick any entry gate next turn.",
+      "mission": null
+    },
+    {
+      "id": "leg_27",
+      "name": "Lucius Virius Lupus Iulianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Consul in 232.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Weapon on Mkt at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Weapon",
+        "modifier": ">",
+        "target": "Market"
+      }
+    },
+    {
+      "id": "leg_28",
+      "name": "Gaius Valerius Patruinus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Praetorian Prefect in 211; executed during Caracalla's purge right after Geta's assassination.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me one Wine (If player has no Wine, receive thumbs-down)",
+      "mission": null
+    },
+    {
+      "id": "leg_29",
+      "name": "Ushered Along",
+      "deck": "legiones",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Move Again. Player must move to an accessible Tile. Cannot complete missions or transact on this Tile before proceeding.",
+      "mission": null
+    },
+    {
+      "id": "leg_30",
+      "name": "Marcus Julius Gessius Marcianus",
+      "deck": "legiones",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Married to Julia Mamaea. Father of Severus Alexander.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Move again this turn",
+      "mission": null
+    }
+  ],
+  "nefarii": [
+    {
+      "id": "nef_1",
+      "name": "Aelius Herodianus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Celebrated grammarian whose treatises on Greek accentuation were prized by Domna's learned circle.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "Cheapest Mkt Animal",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me your cheapest Good (if Player has no goods, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_2",
+      "name": "Marcus Antonius Gordianus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Would become Emperor Gordian II for twenty-two days in 238. Killed at the Battle of Carthage.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Aurelius"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=1",
+          "type": "demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me (R) Influence Cards (Can give all Cards to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_3",
+      "name": "Salve!",
+      "deck": "nefarii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Temporarily receive +1 factional reputation for your next encounter. Draw again.",
+      "mission": null
+    },
+    {
+      "id": "nef_4",
+      "name": "Carpophorus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Famed Roman bestiarius celebrated for slaying twenty wild beasts in a single arena spectacle.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Geta",
+        "-Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Animals. (if Player has no Animals, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_5",
+      "name": "Gaius Sempronius Rufus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Notorious eunuch, street poisoner, and palace informer exiled to an island by Severus.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Aurelius"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "Cheapest Mkt Marble",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me 6(d) (Can give all (d) to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_6",
+      "name": "Smuggler",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "This procurer of rare goods works for Julia Domna.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell any one Good from Goods Deck at + (relative to Present Mkt Scarcity)",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": "Any one Good from Goods Deck",
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Any",
+        "modifier": "+",
+        "target": "Goods Deck"
+      }
+    },
+    {
+      "id": "nef_7",
+      "name": "Maximinus Thrax",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Thracian recruit, famous for out-wrestling whole cohorts in camp games; Emperor in 235.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Aurelius"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "Cheapest Mkt Animal",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Influence Cards (if Player has no Cards, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_8",
+      "name": "Bato",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Caracalla commanded Bato to fight three gladiators consecutively, then rewarded him with a magnificent funeral.",
+      "combatFormula": "X+1",
+      "friendlyFavor": [
+        "Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "Cheapest Mkt Weapon",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Cheap Wine (if Player has no Cheap W, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_9",
+      "name": "Bulla Felix",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Legendary 'Robin Hood' bandit captain of 600 brigands. Betrayed by his mistress and thrown to wild beasts.",
+      "combatFormula": "2X(R)",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "3(d)",
+      "hostileFavor": [
+        "Caracalla",
+        "-Plautilla"
+      ],
+      "combatReward": "10(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me your cheapest Good (if Player has no goods, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_10",
+      "name": "Fulvius Plautius Hortensianus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Son of the executed prefect Plautianus and brother of Fulvia Plautilla. Caracalla orders both siblings strangled.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Cash. (if Player has no Cash, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_11",
+      "name": "Gannys",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Shrewd palace operative.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "Cheapest Mkt Cheap Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me (R) Influence Cards (Can give all Cards and take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_12",
+      "name": "Theocritus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Former slave and Roman pantomime dancer who taught Caracalla to dance.",
+      "combatFormula": "X-1",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Caracalla"
+      ],
+      "combatReward": "Weapon",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Marble from Mkt at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Marble",
+        "modifier": ">",
+        "target": "Market"
+      }
+    },
+    {
+      "id": "nef_13",
+      "name": "Tiberius Clodius Pupienus Pulcher Maximus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Consul suffectus in 224.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Geta"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Geta",
+        "-Domna"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        }
+      ],
+      "actionText": "Pick up cheapest Wine on Mkt in F6 and deliver to E3. (highest present Sell Price) (if no Wine on Mkt, no mission)",
+      "mission": {
+        "kind": "delivery",
+        "item": "Cheapest Wine on Mkt",
+        "pickupCell": "F6",
+        "deliverCell": "E3",
+        "category": "Wine",
+        "modifier": "highest present Sell Price",
+        "target": null
+      }
+    },
+    {
+      "id": "nef_14",
+      "name": "Serapion",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Underground Egyptian astrologer.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "8(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "Cheapest Mkt Cheap Wine",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me (R) Influence Cards (Can give all Cards and take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_15",
+      "name": "Subura Cutthroat",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Aurelius",
+      "bio": "Hired blade.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Aurelius",
+        "-Geta"
+      ],
+      "friendlyReward": "7(d)",
+      "hostileFavor": [
+        "-Aurelius"
+      ],
+      "combatReward": "Cheapest Mkt Animal",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me your cheapest Good (if Player has no goods, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_16",
+      "name": "Euprepes",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Celebrated Roman charioteer who crowned 782 Circus victories. Marked for death by Caracalla solely because he raced for Geta's preferred faction.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Geta"
+      ],
+      "friendlyReward": "7(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me (R) Influence Cards (Can give all cards to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_17",
+      "name": "Brutta Figura",
+      "deck": "nefarii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Temporarily receive -1 factional reputation for your next encounter. Draw again.",
+      "mission": null
+    },
+    {
+      "id": "nef_18",
+      "name": "Suppositicius",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Fresh arena substitute gladiator thrown in against an exhausted Bato during Caracalla's rigged spectacle; Geta's partisans backed him out of spite.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "-Geta"
+      ],
+      "combatReward": "Cheapest Mkt Weapon",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me all of your Meat Animals (if Player has no Meat A, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_19",
+      "name": "Fulvia Plautilla",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Estranged wife of Caracalla. Banished to Lipara after her father's execution. Ordered strangled in 211.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "10(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "12(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "mission_request"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "Pick up Pugiones in A5 and deliver to D5",
+      "mission": {
+        "kind": "delivery",
+        "item": "Pugiones",
+        "pickupCell": "A5",
+        "deliverCell": "D5",
+        "category": "Weapon",
+        "modifier": "+1 CP",
+        "target": null,
+        "cargoSize": 1,
+        "payoutTable": [
+          32,
+          24,
+          16,
+          10,
+          7
+        ]
+      }
+    },
+    {
+      "id": "nef_20",
+      "name": "Coeranus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Egyptian equestrian confidant of Plautianus exiled to an island in 205.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Plautilla"
+      ],
+      "friendlyReward": "7(d)",
+      "hostileFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me (R) Influence Cards (Can give all cards to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_21",
+      "name": "Flamma",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Geta",
+      "bio": "Fought 34 bouts, won 21, refused the wooden rudis of freedom four times. Died in the arena at age 30.",
+      "combatFormula": "X(R)+1",
+      "friendlyFavor": [
+        "Geta",
+        "-Domna"
+      ],
+      "friendlyReward": "5(d)",
+      "hostileFavor": [
+        "Domna",
+        "-Geta"
+      ],
+      "combatReward": "Cheapest Mkt Animal",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me all of your Wine (if Player has no Wine, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_22",
+      "name": "Euodus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Caracalla",
+      "bio": "Engineered the palace trap against Plautianus. Nonetheless executed by Caracalla in late 211.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Caracalla",
+        "-Geta"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "Geta",
+        "-Caracalla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": ">=-1",
+          "type": "deck_quest_demand"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Exotic A from Mkt at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Exotic Animal",
+        "modifier": ">",
+        "target": "Market"
+      }
+    },
+    {
+      "id": "nef_23",
+      "name": "Lupanar Procurer",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Brothel-keeper.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Domna"
+      ],
+      "friendlyReward": "4(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "8(d)",
+      "reactions": [
+        {
+          "condition": "<=-2",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!!: Give me all of your Marble (if Player has no Marble, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_24",
+      "name": "Saturninus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Nocturnal courier.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Plautilla",
+        "-Caracalla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Buy one Wine at = Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Wine",
+        "modifier": "=",
+        "target": null
+      }
+    },
+    {
+      "id": "nef_25",
+      "name": "Herodian Of Antioch",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Minor imperial freedman-clerk in 211. Author of Herodian's Roman History.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Plautilla",
+        "Geta",
+        "-Caracalla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=1",
+          "type": "demand"
+        },
+        {
+          "condition": ">=2",
+          "type": "deck_quest_offer"
+        }
+      ],
+      "actionText": "!: Give me all of your Fine Wine (if Player has no Fine W, no demand)",
+      "mission": null
+    },
+    {
+      "id": "nef_26",
+      "name": "Epagathus",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Palace enforcer.",
+      "combatFormula": "X(R)-1",
+      "friendlyFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "-Domna"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": "<=0",
+          "type": "demand_strict"
+        },
+        {
+          "condition": ">=1",
+          "type": "deck_quest_demand"
+        }
+      ],
+      "actionText": "!!: Give me 4(d) (Can give all (d) to take thumbs-down and no Combat)",
+      "mission": null
+    },
+    {
+      "id": "nef_27",
+      "name": "Road Blocked",
+      "deck": "nefarii",
+      "type": "event",
+      "faction": null,
+      "bio": null,
+      "combatFormula": null,
+      "friendlyFavor": [],
+      "friendlyReward": null,
+      "hostileFavor": [],
+      "combatReward": null,
+      "reactions": [],
+      "actionText": "Turn Around. Player must move to previously-occupied Tile and end turn. If edge encounter, stay on present tile. If first turn, remove cart from board; can pick any entry gate next turn.",
+      "mission": null
+    },
+    {
+      "id": "nef_28",
+      "name": "Emporium Dock-Thief",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Plautilla",
+      "bio": "Riverfront smuggling gang.",
+      "combatFormula": "X(R)",
+      "friendlyFavor": [
+        "Plautilla"
+      ],
+      "friendlyReward": "9(d)",
+      "hostileFavor": [
+        "Domna",
+        "-Plautilla"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Buy one Wine at = Scarcity",
+      "mission": {
+        "kind": "sell",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Wine",
+        "modifier": "=",
+        "target": null
+      }
+    },
+    {
+      "id": "nef_29",
+      "name": "Poacher",
+      "deck": "nefarii",
+      "type": "character",
+      "faction": "Domna",
+      "bio": "Purveyor of fine contraband.",
+      "combatFormula": "X",
+      "friendlyFavor": [
+        "Domna"
+      ],
+      "friendlyReward": "6(d)",
+      "hostileFavor": [
+        "Plautilla",
+        "-Domna"
+      ],
+      "combatReward": "6(d)",
+      "reactions": [
+        {
+          "condition": "<=-1",
+          "type": "combat"
+        },
+        {
+          "condition": ">=0",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=1",
+          "type": "offer"
+        }
+      ],
+      "actionText": "?: Will Sell one Exotic A from Mkt at > Scarcity",
+      "mission": {
+        "kind": "buy_from_npc",
+        "item": null,
+        "pickupCell": null,
+        "deliverCell": null,
+        "category": "Exotic Animal",
+        "modifier": ">",
+        "target": "Market"
+      }
+    }
+  ]
+}

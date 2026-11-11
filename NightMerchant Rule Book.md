@@ -128,7 +128,7 @@ III) **Start your engines.** Continuing in turn order, each Player selects a poi
    
 Starting with the Player with the First Player Token:  
    
-1) **Trash a tile or card**. Player *may* elect to discard an Influence Card in order to move the top unexposed tile to the bottom of its stack **or** the top card of any deck (Patricii, Nefarii, Legiones, Missiones, Influence, Goods) to the bottom of its deck.
+1) **Trash a tile or card** *(once per turn, before or after Moving — even while on a cell occupied by another merchant)*. Player *may* elect to discard an Influence Card in order to send either the top card of **any of the 6 decks** (**Patricii**, **Nefarii**, **Legiones**, **Missiones**, **Influence**—whose existing top card cycles *before* your discarded card goes underneath—or **Goods**), the top **unrevealed stack tile**, **or** an **exposed face-up neighborhood tile** to the bottom of its respective deck or tile stack. If the trashed exposed tile is **occupied** by any active merchant, the next unrevealed stack tile immediately flips face-up to replace it; if **unoccupied**, the cell remains **unrevealed** until a merchant enters it.
 
 2) **Move**. Player *may* move once in any available direction (including exiting Rome off an open perimeter edge):  
 Green: can pass through.  
@@ -164,7 +164,7 @@ For Sell Missions: Player may complete the mission during Step 7 (Transact) by s
 - **Purchase**: (On any of the three central Forum cells: **C3**, **D3**, **D4**) Player can purchase one good from the Market subject to the Scarcity Modifier listed on the tile.  
 - **Gamble**: If the revealed tile has a Gambling/Dice icon, then the Player can elect to spend their transaction making a single Gamble of up to **20(d)**. See TABLE ENCOUNTERS – Gambling.
 
-8) **Free Scout** – Player may look at the top Tile of any cell or the top Card of any of the six Decks and then put the tile or card back on the top of its respective stack or deck.
+8) **Free Scout** – Once per Delivery turn—at any time **before or after Moving** and **before or after Transacting**—the Player may peek at the top unrevealed Tile of any cell stack or the top Card of any of the six Decks (**Patricii**, **Nefarii**, **Legiones**, **Goods**, **Missiones**, or **Influence**) and put the tile or card back on top. Scouting NEVER forces your turn to end; continue acting afterward or end your turn from the Scout preview.
 
 9) **Advance Turn** – Once all Players have acted, advance the Clock one hour and pass the First Player Token clockwise. Repeat until Sunrise (the end of Turn 10) or until all Carts have left Rome.  
  
@@ -217,10 +217,10 @@ c) **! (Request)**: Player must fulfill the request or take Hostile Favor conseq
 d) **? (Offer)**: Player may partake in the offered transaction. This does not consume the Player’s transaction for the turn.  
 e) **Quest / Mission**: Character demands or offers a Mission.  
 
-DECK (T)YPES  
-**Nefarii** – [Gray] – (B) Bandits, conspirators, and nocturnal fixers (likely to rob or kill you).  
-**Patricii** – [Saffron] – (A) Aristocrats, senators, and courtiers (likely to send you on an errand).  
-**Legiones** – [Madder] – (L) Soldiers, prefects, and city watchmen (likely to demand a bribe).  
+DECK TYPES  
+- **Patricii** – [Saffron] – *(A) Senators, aristocrats, and magistrates (30 cards: `Caracalla` 2, `Geta` 5, `Julia Domna` 8, `Plautilla` 3, `Aurelius` 8, `Events` 4).* Mechanics: Heavily aligned with Julia Domna & Aurelius; friendly nobles grant high-paying Missions and Denarii, while hostile nobles demand luxury wine/marble or bribes. Historically, patrician families controlled Rome's civic patronage and grain dole administration.
+- **Legiones** – [Madder] – *(L) Praetorian guards, vigiles, and cohorts (30 cards: `Caracalla` 9, `Geta` 5, `Julia Domna` 3, `Plautilla` 8, `Aurelius` 3, `Events` 2).* Mechanics: Dominated by Caracalla and Plautilla; gains `+2 CP` in Combat whenever `Army Pay Hike` is active. Historically, Rome's Praetorians and night cohorts demanded protection bribes from merchants and were often as dangerous as street criminals.
+- **Nefarii** – [Gray] – *(B) Bandits, cutthroats, and nocturnal syndicates (29 cards: `Caracalla` 5, `Geta` 5, `Julia Domna` 5, `Plautilla` 8, `Aurelius` 3, `Events` 3).* Mechanics: Plautilla's underworld network is densest here; `1×–3×` Dagger icons always draw **1 card** and multiply Combat to `X(R)+X` CP when fighting occurs. Historically, gangs, informants, and cutpurses ruled unlit alleys after curfew.
    
 TABLE ENCOUNTERS  
 **Angry Mob**:  
@@ -333,8 +333,20 @@ FAVOR SUMMARY
 - **(Diamond) – Domna**: Emperors’ Mother; loves both Severan sons, hostile to their rivals.  
    
 COMBAT BETWEEN PLAYERS  
+**1) Proactive PvP Duels via *Casus Belli* (Night Delivery Phase):**  
+*"Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter."*  
+- **Two Uses:** During an active **NPC Encounter** decision window (`pre_decision`), *Casus Belli* lets you initiate Combat against a friendly/unthreatening NPC (this encounter use is allowed on Turn 1 and does **not** spend your turn Transaction). Outside encounters, during the **Night Delivery Phase** (`Turn 2+` only—prohibited on **Turn 1**), you may play *Casus Belli* on your turn while sharing a neighborhood tile (`A1`–`F6`) with at least one rival merchant who has not yet Exited Rome, suffered Night Over, or been eliminated.  
+- **Turn Cost & Timing:** Challenging a present rival **immediately exhausts your hourly Transaction `(T)`** for the turn (so you cannot challenge if you have already transacted, gambled, or ended your turn). If the Attacker loses combat (`Defender CP > Attacker CP`), the Attacker's current turn ends immediately; if the Attacker wins or ties, they may continue using any remaining Movement `(M)`.  
+- **Simultaneous Combat & Consumables:** Both the Attacker and Defender decide whether to commit `"destroyed if used"` consumable Weapons before rolling. Both sides roll `1®` for their Driver + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (`+1 CP` per positive Ruby) + Pre-Roll Influence (*Mercenary Ambush* `+2®`, *Distraction* `-1®`), followed by simultaneous Post-Roll Influence (*Twist Of Fate*, *Gladiator’s Intervention* `+1®` CP, *Flying Chamber Pot* `+1 CP`). Unlike NPC combat (where ties favor the player), a **PvP Tie results in no Wounds and no Spoils**.  
+- **Armor, Guards & Driver Fate Spoils:** If one merchant wins by `Winner CP > Loser CP`, the Loser suffers `Raw Wounds = Winner CP − Loser CP`. Armor (`ignoreWounds`) blocks Wounds first, then each remaining Wound kills `1` Guard (`▲`, hired Guards return to the bottom of the Market deck). If at least `1` unblocked Wound reaches the Loser's Driver, the Loser rolls `1®` on the **Driver Fate Chart** (and the Combat Winner claims all lost Spoils):  
+  - **`0` — Dead:** **Combat Winner claims all Goods** on the Loser's Cart (Mission Cargo is discarded; non-mission Goods that exceed Winner Cart capacity go through overflow/swap and any excess returns to the bottom of the Market deck). The **Loser's night ends (`nightEnded`)** for the rest of the Season (no Dawn curfew fine is charged to that Cart).  
+  - **`I` — Left for dead:** **Combat Winner claims all Goods** (with the same transfer/Mission Cargo discard rules), while the **Loser remains active** in Rome for future turns in the Season.  
+  - **`II` — Beaten and mugged:** **Combat Winner steals all of the Loser’s Denarii `(d)`**; Loser's night continues.  
+  - **`III` — Begged for mercy:** **Combat Winner claims all of the Loser’s Influence cards**; Loser's night continues.
+
+**2) Winter Reckoning & Most/Least Tie-Breaker Combat:**  
 **All ties in the game**—including every **Most** or **Least** Political Climate award (even when Players are tied at `0`!), tied wealthiest rivals, and Final Score ties at Winter Reckoning—are broken by **Combat between the tied Players**, using Drivers (`1®`), Guards, Weapons, mandatory Exotic Animals, combat Influence cards, and `+1 CP` per positive Ruby if *Army Pay Hike* is active.  
-- **Pre-Roll vs. Post-Roll Combat Influence**: Pre-roll cards (*Mercenary Ambush* `+1®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* zeroing an opponent’s highest die; *Gladiator’s Intervention* `+3 CP`) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
+- **Pre-Roll vs. Post-Roll Combat Influence**: Pre-roll cards (*Mercenary Ambush* `+2®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* granting `+1 CP` after dice are rolled; *Gladiator’s Intervention* rolling `+1®` bonus CP after combat dice are rolled) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
 - **Strictly One Recipient**: Every Most/Least bonus or penalty is awarded to **strictly one Player**. For **Most** awards, the Combat **winner** claims the bonus; for **Least** penalties or elimination, the Combat winner escapes and the Combat **loser** suffers the penalty!  
 - **No Draws**: If a Combat between Players ends in a draw, repeat Combat (any one-shot Influence cards or consumable Weapons used in a previous round remain exhausted) until one side wins by at least **1 CP**!
 
@@ -361,10 +373,12 @@ COMBAT BETWEEN PLAYERS
 - **`(R)` / `®` (Roman Numeral Die)**: 6-sided custom Roman die with faces **`0, 0, I, I, II, III`** (average roll = `1.0`).
 - **`++`  `+`  `=`  `-`  `--` (Tile Buyer & Forum Modifiers)**: Shifts the active Market Scarcity column 1 or 2 steps left toward `<<` Precious (`+` / `++`) or right toward `>>` Abundant (`-` / `--`).
 - **Persistent (`⤹`) & Refresh (`↻` / `⤿`) Tile Icons**: Persistent landmark tiles remain face-up across seasons; Refresh tiles discard after their encounter resolves and immediately reveal the next tile.
+- **Green Bar** (*Tile Edge*): Open Street — passable movement between connected neighborhoods without a Shortcut card.
+- **Red Bar** (*Tile Edge*): Barricaded Alley — impassable barrier unless crossing with a `Shortcut` Influence card.
 - **Encounter Icons**:
-  - **Patricii** (*Senatorial Bust*): Draws from the Patricii deck (aligned with Aurelius, Domna, or Geta).
-  - **Legiones** (*Roman Helmet*): Draws from the Legiones deck (heavily aligned with Caracalla).
-  - **Nefarii** (*Dagger / 3× Daggers*): Draws 1 (or 3) cards from the Nefarii underworld deck (often aligned with Plautilla).
+  - **Patricii** (*Senatorial Bust*): Always draws **1** card from the Patricii deck (30 cards: `Julia Domna` 8, `Aurelius` 8, `Geta` 5, `Plautilla` 3, `Caracalla` 2, Events 4); if `1×–3×` Combat occurs, roll `X(R)+X` CP where `X` = icon count.
+  - **Legiones** (*Roman Helmet*): Always draws **1** card from the Legiones deck (30 cards: `Caracalla` 9, `Plautilla` 8, `Geta` 5, `Julia Domna` 3, `Aurelius` 3, Events 2; `+2 CP` under Army Pay Hike). Historically, Praetorians and soldiers extorted merchants and were often as dangerous as street criminals. If Combat occurs, `X` = icon count (`X(R)+X`).
+  - **Nefarii** (*Dagger / `2×` / `3×` Daggers*): Always draws **1** card from the Nefarii underworld deck (29 cards: `Plautilla` 8, `Caracalla` 5, `Geta` 5, `Julia Domna` 5, `Aurelius` 3, Events 3). The number of daggers (`1`, `2`, or `3`) sets **`X`** in **`X(R)+X` Combat** (for example, `3× Daggers` rolls **`3(R)+3` CP**, NOT 3 cards).
   - **Angry Mob** (*Torch & Pitchfork*): Roll `1(R)` (`0`: lose Wine; `I`: lose Grain; `II`: lose costliest Good; `III`: safe).
   - **Theater Troupe** (*Comedy/Tragedy Masks*): Roll `1(R)` (`0`: lose positive Favor; `I`: lose negative Favor; `II`: lose rest of turn & next turn; `III`: draw `1(R)` Influence).
   - **Soothsayer** (*Augur’s Hand*): Draws a mandatory Soothsayer Mission and seals `1(R)` face-down Influence cards beneath it until fulfilled.

@@ -719,6 +719,258 @@ const FACTION_META = [
   },
 ];
 
+const ENCOUNTER_DECK_PROFILES = {
+  patricii: {
+    key: "patricii",
+    label: "Patricii",
+    subtitle: "Senators, Magistrates & Nobles",
+    totalCards: 30,
+    img: "/assets/icons/card_back_patricii.png?v=24",
+    mechanicsSummary:
+      "Rich in Julia Domna (8) and Aurelius (8) ties; rewards high favor with lucrative Missions, Denarii, and Influence, while hostile nobles demand bribes or luxury goods.",
+    historicalSummary:
+      "Rome's hereditary senatorial elite. Wealthy yet caught between Severan dynastic purges and old Claudio-Aurelian prestige, they trade favors behind marble peristyles.",
+  },
+  legiones: {
+    key: "legiones",
+    label: "Legionnaire (Legiones)",
+    filterValue: "Legiones",
+    subtitle: "Praetorians, Vigiles & Cohorts",
+    totalCards: 30,
+    img: "/assets/icons/card_back_legiones.png?v=24",
+    mechanicsSummary:
+      "Dominated by Caracalla (9) and Plautilla (8) ties; frequent Combat checkpoints (boosted +2 CP by Army Pay Hike), heavy fines, and cargo seizures.",
+    historicalSummary:
+      "Praetorian guardsmen, urban cohorts, and night watchmen. Far from neutral peacekeepers, soldiers in Severan Rome extorted bribes, raided carts, and were often as dangerous to merchants as street criminals.",
+  },
+  nefarii: {
+    key: "nefarii",
+    label: "Nefarii",
+    subtitle: "Syndicates, Smugglers & Cutthroats",
+    totalCards: 29,
+    img: "/assets/icons/card_back_nefarii.png?v=24",
+    mechanicsSummary:
+      "Balanced across Caracalla, Geta, and Domna (5 each) with deep Plautilla (8) roots; risky ambushes and shakedowns, or underworld shortcuts and contracts if favored.",
+    historicalSummary:
+      "Rome's nocturnal underworld of collegia thugs, Subura cutthroats, and black-market fences—deadly to outsiders yet deeply intertwined with exiled Plautilla's covert rings.",
+  },
+};
+
+const ALL_PICKER_DECK_SPECS = [
+  { key: "patricii", label: "Patricii", img: "/assets/icons/card_back_patricii.png?v=24" },
+  { key: "nefarii", label: "Nefarii", img: "/assets/icons/card_back_nefarii.png?v=24" },
+  { key: "legiones", label: "Legionnaire", img: "/assets/icons/card_back_legiones.png?v=24" },
+  {
+    key: "market",
+    label: "Goods & Guards",
+    img: "/assets/icons/card_back_goods.png?v=24",
+    shortDesc: "Next Cargo or Guard card drawn into Ostia Port Market tracks.",
+  },
+  {
+    key: "missiones",
+    label: "Missiones",
+    icon: "📜",
+    shortDesc: "Next Delivery, Trade, or Contract Mission drawn into Rome.",
+  },
+  {
+    key: "influence",
+    label: "Influence",
+    icon: "🃏",
+    shortDesc: "Next tactical Influence scheme card (purchased at Dawn or drawn via encounters).",
+  },
+];
+
+function getEncounterDeckFactionStats(gs, deckKey, useLiveCounts = true) {
+  const profile = ENCOUNTER_DECK_PROFILES[deckKey];
+  if (!profile) return null;
+  const liveByFaction = (useLiveCounts && gs && gs.factionDeckCounts) || null;
+  const liveDeckTotal =
+    useLiveCounts && gs && gs.deckCounts && typeof gs.deckCounts[deckKey] === "number"
+      ? gs.deckCounts[deckKey]
+      : profile.totalCards;
+
+  let baseFactionSum = 0;
+  let liveFactionSum = 0;
+  const factions = FACTION_META.map((fm) => {
+    const base = Number((fm.defaultDeckCounts && fm.defaultDeckCounts[deckKey]) || 0);
+    const live =
+      liveByFaction && liveByFaction[fm.key] && typeof liveByFaction[fm.key][deckKey] === "number"
+        ? liveByFaction[fm.key][deckKey]
+        : base;
+    baseFactionSum += base;
+    liveFactionSum += live;
+    return {
+      meta: fm,
+      base,
+      live,
+    };
+  });
+
+  const baseEvents = Math.max(0, profile.totalCards - baseFactionSum);
+  const liveEvents = liveByFaction ? Math.max(0, liveDeckTotal - liveFactionSum) : baseEvents;
+
+  return {
+    profile,
+    factions,
+    baseEvents,
+    liveEvents,
+    baseTotal: profile.totalCards,
+    liveTotal: liveDeckTotal,
+    isLive: Boolean(liveByFaction),
+  };
+}
+
+function renderEncounterDeckGemsStripNode(gs, deckKey, opts = {}) {
+  const stats = getEncounterDeckFactionStats(gs, deckKey, opts.useLiveCounts !== false);
+  if (!stats) return null;
+  const { profile, factions, baseEvents, liveEvents, isLive } = stats;
+
+  return el(
+    "div",
+    { className: "encounter-deck-gems-row" },
+    ...factions.map(({ meta, base, live }) => {
+      const capGem = meta.gemSingular.charAt(0).toUpperCase() + meta.gemSingular.slice(1);
+      const countText = isLive && live !== base ? `${live}/${base}` : String(base);
+      const tip =
+        isLive && live !== base
+          ? `${meta.key} (${capGem}): ${live} remaining of ${base} total in ${profile.label}`
+          : `${meta.key} (${capGem}): ${base} of ${profile.totalCards} cards in ${profile.label}`;
+      return el(
+        "span",
+        {
+          className: "encounter-deck-gem-chip",
+          title: tip,
+        },
+        el("img", {
+          src: meta.gem,
+          alt: meta.key,
+          style: { width: "13px", height: "13px", objectFit: "contain", flex: "0 0 auto" },
+        }),
+        el("span", {
+          style: { color: meta.color },
+          text: opts.showFactionName ? `${meta.key} ${countText}` : countText,
+        })
+      );
+    }),
+    baseEvents > 0 || liveEvents > 0
+      ? el("span", {
+          className: "encounter-deck-gem-chip is-event-chip",
+          title:
+            isLive && liveEvents !== baseEvents
+              ? `Unaligned Events: ${liveEvents} remaining of ${baseEvents} total in ${profile.label}`
+              : `Unaligned Events: ${baseEvents} cards in ${profile.label}`,
+          text:
+            isLive && liveEvents !== baseEvents
+              ? `📜 ${liveEvents}/${baseEvents}`
+              : `📜 ${baseEvents}`,
+        })
+      : null
+  );
+}
+
+function renderEncounterDeckMetaBlockNode(gs, deckKey, opts = {}) {
+  const profile = ENCOUNTER_DECK_PROFILES[deckKey];
+  if (!profile) return null;
+  const includeHistory = opts.includeHistory !== false;
+  return el(
+    "div",
+    { className: "encounter-deck-meta-box" },
+    el(
+      "div",
+      { className: "encounter-deck-meta-line" },
+      el("span", { className: "encounter-deck-meta-tag", text: "Mechanics:" }),
+      profile.mechanicsSummary
+    ),
+    includeHistory
+      ? el(
+          "div",
+          { className: "encounter-deck-meta-line" },
+          el("span", { className: "encounter-deck-meta-tag", text: "History:" }),
+          profile.historicalSummary
+        )
+      : null,
+    renderEncounterDeckGemsStripNode(gs, deckKey, opts)
+  );
+}
+
+function openEncounterDecksOverviewModal(gs, focusDeck = null) {
+  const deckKeys = ["patricii", "legiones", "nefarii"];
+  const normalizedFocus = focusDeck ? String(focusDeck).trim().toLowerCase() : null;
+  const counts = (gs && gs.deckCounts) || {};
+
+  showModal(
+    "🃏 Roman Encounter Decks — Mechanics, History & Faction Odds",
+    el(
+      "div",
+      {},
+      el("p", {
+        style: { fontSize: "0.84rem", color: "var(--text-main)", marginTop: "0", marginBottom: "0.75rem" },
+        text: "Inspect the faction composition, mechanical danger, and historical context of Rome's three street encounter decks at any time. Gem badges show card counts across Caracalla (Ruby), Geta (Emerald), Domna (Diamond), Plautilla (Sapphire), Aurelius (Amethyst), plus unaligned Events.",
+      }),
+      el(
+        "div",
+        { className: "encounter-deck-profiles-grid" },
+        ...deckKeys.map((dk) => {
+          const profile = ENCOUNTER_DECK_PROFILES[dk];
+          const rem = typeof counts[dk] === "number" ? counts[dk] : profile.totalCards;
+          const isFocused = normalizedFocus === dk;
+          return el(
+            "div",
+            { className: `encounter-deck-profile-card ${isFocused ? "is-active" : ""}` },
+            el(
+              "div",
+              { className: "encounter-deck-profile-head" },
+              el("img", {
+                className: "encounter-deck-profile-thumb",
+                src: profile.img,
+                alt: `${profile.label} Card Back`,
+              }),
+              el(
+                "div",
+                {},
+                el("div", { className: "encounter-deck-profile-title", text: profile.label }),
+                el("div", {
+                  className: "encounter-deck-profile-sub",
+                  text: `${profile.subtitle} • ${
+                    typeof counts[dk] === "number"
+                      ? `${rem} left / ${profile.totalCards} total`
+                      : `${profile.totalCards} total cards`
+                  }`,
+                })
+              )
+            ),
+            renderEncounterDeckMetaBlockNode(gs, dk, {
+              useLiveCounts: true,
+              includeHistory: true,
+              showFactionName: false,
+            })
+          );
+        })
+      ),
+      el(
+        "div",
+        { style: { display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" } },
+        el("button", {
+          type: "button",
+          className: "btn",
+          text: "📖 Open Rulebook Section 14",
+          onClick: () => {
+            closeModal();
+            openFullRulebookView("catalog-encounters");
+          },
+        }),
+        el("button", {
+          type: "button",
+          className: "btn btn-primary",
+          text: "Close",
+          onClick: closeModal,
+        })
+      )
+    ),
+    { wide: true }
+  );
+}
+
 const DEFAULT_POLITICAL_CLIMATE_FACTORS = [
   { id: "Caracalla", label: "Caracalla", gemName: "Ruby", subtitle: "Severan Co-Emperor" },
   { id: "Geta", label: "Geta", gemName: "Emerald", subtitle: "Rival Co-Emperor" },
@@ -1475,6 +1727,17 @@ const appState = {
   shownFinishModalGameIds: new Set(),
   botPersonas: [],
   referenceCatalog: [],
+  cardsCatalog: null,
+  cardsCatalogLoading: false,
+  cardsCatalogError: null,
+  rulebookCatalogFilters: {
+    marketTrack: "All",
+    influenceCategory: "All",
+    missionFaction: "All",
+    missionKind: "All",
+    encounterDeck: "All",
+    encounterFaction: "All",
+  },
   rulebookSection: "overview",
   rulebookSearch: "",
   currentGameId: null,
@@ -1556,6 +1819,210 @@ function navigateToMarketBoardForCategory(category) {
 }
 
 /**
+ * Fetch and cache the static 271-card Rulebook catalog JSON once.
+ */
+function ensureCardsCatalogLoaded() {
+  if (appState.cardsCatalog || appState.cardsCatalogLoading) {
+    return appState.cardsCatalogPromise || Promise.resolve(appState.cardsCatalog);
+  }
+  appState.cardsCatalogLoading = true;
+  appState.cardsCatalogError = null;
+  const p = fetch("./data/cards_catalog.json?v=54")
+    .then((resp) => {
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status} loading card catalog`);
+      }
+      return resp.json();
+    })
+    .then((data) => {
+      appState.cardsCatalog = data;
+      appState.cardsCatalogLoading = false;
+      appState.cardsCatalogError = null;
+      renderApp();
+      return data;
+    })
+    .catch((err) => {
+      appState.cardsCatalogLoading = false;
+      appState.cardsCatalogError = err && err.message ? err.message : "Failed to load cards catalog.";
+      renderApp();
+      return null;
+    });
+  appState.cardsCatalogPromise = p;
+  return p;
+}
+
+/**
+ * Normalize Rome map cell IDs (e.g. legacy Roman row suffix I..VI -> 1..6) to match backend logic.
+ */
+function normalizeCellIdClient(cell) {
+  if (!cell || typeof cell !== "string") return cell || null;
+  const s = cell.trim().toUpperCase();
+  if (s.length >= 2 && ["A", "B", "C", "D", "E", "F", "G"].includes(s[0])) {
+    const rest = s.slice(1);
+    if (["1", "2", "3", "4", "5", "6"].includes(rest)) {
+      return `${s[0]}${rest}`;
+    }
+    const romanMap = { I: "1", II: "2", III: "3", IV: "4", V: "5", VI: "6" };
+    if (romanMap[rest]) {
+      return `${s[0]}${romanMap[rest]}`;
+    }
+  }
+  return cell;
+}
+
+/**
+ * Measure rendered rival name labels in Faction Standings and abbreviate overflowing names with a single dot.
+ */
+function abbreviateSingleDotRivalNames() {
+  if (typeof document === "undefined") return;
+  const labels = document.querySelectorAll(".faction-standing-rival-label");
+  labels.forEach((lbl) => {
+    const full = String(lbl.getAttribute("data-full-name") || lbl.textContent || "").trim();
+    if (!full) return;
+    lbl.textContent = full;
+    if (!lbl.getClientRects().length || lbl.clientWidth <= 0) return;
+    const nameWrap = lbl.parentElement;
+    const line = lbl.closest(".faction-standing-rival-line");
+    const fits = () => {
+      if (lbl.scrollWidth > lbl.clientWidth + 0.5) return false;
+      if (nameWrap && nameWrap.scrollWidth > nameWrap.clientWidth + 0.5) return false;
+      if (line && line.scrollWidth > line.clientWidth + 0.5) return false;
+      return true;
+    };
+    if (fits()) return;
+    let cut = full.length - 1;
+    while (cut >= 1) {
+      lbl.textContent = `${full.slice(0, cut).trimEnd()}.`;
+      if (fits()) break;
+      cut -= 1;
+    }
+  });
+}
+
+/**
+ * List rival merchants on the viewer's current normalized Rome cell eligible for Casus Belli PvP combat.
+ */
+function getEligibleCasusBelliPvpTargets(gs, viewer) {
+  if (!gs || !viewer) return [];
+  const myCell = normalizeCellIdClient(viewer.position);
+  if (!myCell) return [];
+  return (gs.players || []).filter((cand) => {
+    if (!cand || cand.index === viewer.index) return false;
+    if (cand.eliminated || cand.exitedRome || cand.nightEnded) return false;
+    return normalizeCellIdClient(cand.position) === myCell;
+  });
+}
+
+/**
+ * Validate whether Casus Belli can currently be played (NPC pre_decision OR Turn 2+ proactive PvP).
+ */
+function getCasusBelliProactiveDisabledReason(gs, viewer) {
+  if (!gs || !viewer) return "No active game.";
+  const pend = gs.pendingEncounter;
+  if (pend) {
+    const pStage = pend.stage || "pre_decision";
+    if (
+      pStage === "pre_decision" &&
+      !pend.isPvp &&
+      pend.playerIndex === viewer.index &&
+      pend.interveningPlayerIndex == null
+    ) {
+      return null;
+    }
+    return "Casus Belli can only be played during an initial NPC Encounter decision or outside an Encounter on your Night Delivery turn (Turn 2+).";
+  }
+  if (gs.phase !== "delivery" || gs.activePlayerIndex !== viewer.index) {
+    return "Casus Belli can only initiate PvP combat on your Night Delivery turn.";
+  }
+  if ((Number(gs.turn) || 1) <= 1) {
+    return "Casus Belli cannot be used on Turn 1 to initiate combat with another merchant.";
+  }
+  const myCell = normalizeCellIdClient(viewer.position);
+  if (viewer.exitedRome || viewer.nightEnded || viewer.eliminated || viewer.turnStep === "done" || !myCell) {
+    return "Your Cart must be active inside Rome to initiate Casus Belli PvP combat.";
+  }
+  if (viewer.transactedThisTurn || viewer.gambledThisTurn) {
+    return "Casus Belli exhausts your Transaction for this turn, and you have already transacted or gambled.";
+  }
+  const hasBlockingPrompt =
+    (Array.isArray(viewer.pendingNpcOffer) ? viewer.pendingNpcOffer.length > 0 : Boolean(viewer.pendingNpcOffer)) ||
+    (Array.isArray(viewer.pendingCartOverflow) ? viewer.pendingCartOverflow.length > 0 : Boolean(viewer.pendingCartOverflow)) ||
+    (Array.isArray(viewer.pendingMarketReward) ? viewer.pendingMarketReward.length > 0 : Boolean(viewer.pendingMarketReward)) ||
+    (Array.isArray(viewer.pendingTop3Reorder) ? viewer.pendingTop3Reorder.length > 0 : Boolean(viewer.pendingTop3Reorder));
+  if (hasBlockingPrompt) {
+    return "Resolve your active Cart/Market prompt before playing Casus Belli.";
+  }
+  const targets = getEligibleCasusBelliPvpTargets(gs, viewer);
+  if (targets.length === 0) {
+    return `No eligible opponent merchant is present in ${myCell} to challenge with Casus Belli.`;
+  }
+  return null;
+}
+
+/**
+ * Open the target-selection modal for initiating proactive Casus Belli PvP combat on the viewer's Rome cell.
+ */
+function openCasusBelliPvpModal(gs, viewer, card) {
+  if (!gs || !viewer || !card) return;
+  const targets = getEligibleCasusBelliPvpTargets(gs, viewer);
+  if (targets.length === 0) {
+    showToast("No eligible rival merchant is on your Rome cell to challenge.", true);
+    return;
+  }
+  const myCell = normalizeCellIdClient(viewer.position) || "Rome";
+  showModal(
+    `⚔️ Casus Belli — Challenge Merchant in ${myCell}`,
+    el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "0.75rem" } },
+      el("p", {
+        style: { margin: "0", fontSize: "0.86rem", lineHeight: "1.45", color: "var(--text-main)" },
+        text: "Choose a rival merchant on your neighborhood tile to challenge in PvP Combat. This uses your Transaction for the turn. If you win, you claim Spoils (up to 3d, 1 Good, 1 Mission, or 1 Influence Card from the loser) before wounds/armor/guard checks apply!",
+      }),
+      ...targets.map((t) => {
+        const tGoods = (t.cart && t.cart.goods) || [];
+        const tGuards = (t.cart && t.cart.guards) || [];
+        const armorWounds = Number(t.driverWounds || 0);
+        const armorCount = Array.isArray(t.armor) ? t.armor.length : 0;
+        return el(
+          "button",
+          {
+            type: "button",
+            className: "btn btn-crimson",
+            style: {
+              textAlign: "left",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: "0.2rem",
+              padding: "0.65rem 0.85rem",
+            },
+            onClick: () => {
+              closeModal();
+              sendGameAction({
+                type: "play_influence",
+                cardId: card.id,
+                targetPlayerIndex: t.index,
+                targetId: t.id,
+              });
+            },
+          },
+          el("span", {
+            style: { fontWeight: "800", fontSize: "0.92rem" },
+            text: `⚔️ Challenge ${t.name || "Rival"} (${t.cash ?? 0}d • ${tGoods.length} Good${tGoods.length === 1 ? "" : "s"} • ${tGuards.length} Guard${tGuards.length === 1 ? "" : "s"})`,
+          }),
+          el("span", {
+            style: { fontSize: "0.76rem", opacity: "0.9" },
+            text: `Missions: ${(t.missions || []).length} • Influence: ${(t.influence || []).length} • Armor: ${armorCount} • Driver Wounds: ${armorWounds}`,
+          })
+        );
+      }),
+      el("button", { type: "button", className: "btn", text: "Cancel", onClick: closeModal })
+    )
+  );
+}
+
+/**
  * Normalizes currency tokens like "60(d)", "60d", or "60𐆖" so the Roman Denarius symbol "𐆖"
  * is placed at the front of the price (e.g. "𐆖60", "+𐆖100", "<𐆖15").
  */
@@ -1580,7 +2047,7 @@ function replaceDenariiTokens(rawStr) {
  * - (R), (r), ®, or 🅁 with an inline square-enclosed 'R' symbol (<span class="rome-die-box">R</span>)
  */
 const GAME_TOKEN_REGEX =
-  /(\(SELL_SYM\)|\(BUY_SYM\)|\(COMBAT_ICON\)|\(DECK_ICON\)|\(QUEST_ICON\)|\(R\)|\(r\)|®|🅁|𐆖)/g;
+  /(\(SELL_SYM\)|\(BUY_SYM\)|\(COMBAT_ICON\)|\(DECK_ICON\)|\(QUEST_ICON\)|\(M\)|\(T\)|\(GREEN_BAR\)|\(RED_BAR\)|\(R\)|\(r\)|®|🅁|𐆖)/g;
 
 /**
  * Builds an inline SVG vector Roman Denarius monogram (X with crossbar: 𐆖)
@@ -1835,6 +2302,26 @@ function createTransactionActionCircleNode(titleText = "Unused Transaction Actio
   return wrap;
 }
 
+/**
+ * Builds an inline Green Bar or Red Bar legend chip matching Rome tile edges.
+ */
+function createEdgeBarLegendChipNode(isGreen) {
+  const wrap = document.createElement("span");
+  wrap.className = "rulebook-edge-bar-chip";
+  wrap.setAttribute(
+    "data-hover-title",
+    isGreen
+      ? "Green Bar Edge — Open Street (passable without Shortcut)"
+      : "Red Bar Edge — Barricaded Alley (impassable without Shortcut)"
+  );
+  const bar = document.createElement("span");
+  bar.className = `rulebook-edge-bar-sample ${isGreen ? "edge-green" : "edge-red"}`;
+  bar.setAttribute("aria-hidden", "true");
+  wrap.appendChild(bar);
+  wrap.appendChild(document.createTextNode(isGreen ? "Green Bar" : "Red Bar"));
+  return wrap;
+}
+
 function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
   const str = replaceDenariiTokens(rawValue);
   if (!GAME_TOKEN_REGEX.test(str)) {
@@ -1849,6 +2336,10 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
       .replace(/\(COMBAT_ICON\)/g, "Combat")
       .replace(/\(DECK_ICON\)/g, "Deck ")
       .replace(/\(QUEST_ICON\)/g, "Quest")
+      .replace(/\(M\)/g, "[M]")
+      .replace(/\(T\)/g, "[T]")
+      .replace(/\(GREEN_BAR\)/g, "Green Bar")
+      .replace(/\(RED_BAR\)/g, "Red Bar")
       .replace(/(\(R\)|\(r\)|®)/g, "🅁")
       .replace(/𐆖(\d+)/g, "$1d")
       .replace(/𐆖/g, "d");
@@ -1868,6 +2359,18 @@ function appendTextWithRomeDice(parentNode, rawValue, isOptionTag = false) {
       parentNode.appendChild(createDeckOfCardsIconNode());
     } else if (part === "(QUEST_ICON)") {
       parentNode.appendChild(createAncientRomanChestIconNode());
+    } else if (part === "(M)") {
+      const mNode = createMoveActionCircleNode("Move Action (M)");
+      mNode.classList.add("rulebook-inline-action-sym");
+      parentNode.appendChild(mNode);
+    } else if (part === "(T)") {
+      const tNode = createTransactionActionCircleNode("Transaction Action (T)");
+      tNode.classList.add("rulebook-inline-action-sym");
+      parentNode.appendChild(tNode);
+    } else if (part === "(GREEN_BAR)") {
+      parentNode.appendChild(createEdgeBarLegendChipNode(true));
+    } else if (part === "(RED_BAR)") {
+      parentNode.appendChild(createEdgeBarLegendChipNode(false));
     } else if (part === "(R)" || part === "(r)" || part === "®" || part === "🅁") {
       const dieBox = document.createElement("span");
       dieBox.className = "rome-die-box";
@@ -5158,6 +5661,11 @@ function renderApp() {
     contentNodes.push(renderPortalView());
   }
   root.replaceChildren(...contentNodes);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => abbreviateSingleDotRivalNames());
+  } else {
+    abbreviateSingleDotRivalNames();
+  }
 
   if (typeof window !== "undefined") {
     window.__NM_ACTIVE_GAME_ID__ =
@@ -7507,7 +8015,14 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
             renderApp();
           },
         })
-      )
+      ),
+      el("button", {
+        type: "button",
+        className: "btn btn-sm",
+        title: "Inspect Patricii, Legiones, and Nefarii encounter deck mechanics, Roman history, and live faction card counts",
+        text: "🃏 Encounter Decks",
+        onClick: () => openEncounterDecksOverviewModal(gs),
+      })
     )
   );
 }
@@ -7577,7 +8092,7 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
               : "No transaction available here"
             : `Waiting on ${activePlayer ? activePlayer.name : "active merchant"}`;
       if (gs.turn === 1 && viewer.movesRemaining === 0) {
-        promptText = `Turn 1 (8:00 P.M.) at ${viewer.position || "Gate"}: ${txStatusText} • Scout (ends turn) or End Turn.`;
+        promptText = `Turn 1 (8:00 P.M.) at ${viewer.position || "Gate"}: ${txStatusText} • Scout (anytime) or End Turn.`;
       } else {
         promptText = `Night Delivery (${gs.turnHourLabel}): ${viewer.movesRemaining} move left • ${txStatusText}. Exit before Turn 10 ends (${fineBase}d Curfew Fine; ${fineGate}d on a Gate).`;
       }
@@ -7623,7 +8138,7 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
           el("button", {
             type: "button",
             className: "btn btn-sm",
-            title: "Scout a neighborhood tile or card deck at the end of your turn",
+            title: "Free once-per-turn Scout: peek at the top unrevealed tile of any stack or top card of any of the 6 decks (usable before or after Moving/Transacting without ending your turn)",
             text: "👁️ Scout",
             disabled: viewer.scoutedThisTurn,
             onClick: () => openScoutModal(gs, viewer),
@@ -7631,7 +8146,8 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
           el("button", {
             type: "button",
             className: "btn btn-sm",
-            text: "🗑️ Trash Top Tile/Card",
+            title: "Discard 1 Influence card (once per turn, before or after moving) to trash an exposed face-up tile, top unrevealed stack tile, or top card of any of the 6 decks",
+            text: "🗑️ Trash Tile/Card",
             disabled: viewer.trashedThisTurn || viewer.influence.length === 0,
             onClick: () => openTrashModal(gs, viewer),
           }),
@@ -8052,6 +8568,55 @@ function formatSignedFlat(val) {
   return n >= 0 ? `+${n}` : `${n}`;
 }
 
+/**
+ * Collect all dice eligible for Twist Of Fate re-rolling in the current pending stage.
+ */
+function getEligibleRerollTargets(pend) {
+  if (!pend) return [];
+  const stage = pend.stage || "pre_decision";
+  const targets = [];
+  if (stage === "combat_post_roll") {
+    const pDice = Array.isArray(pend.playerDiceObjs) ? pend.playerDiceObjs : [];
+    pDice.forEach((_, idx) => {
+      targets.push({ targetSide: "player", dieIndex: idx, targetIndex: idx });
+    });
+    const oDice = Array.isArray(pend.oppDiceObjs) ? pend.oppDiceObjs : [];
+    oDice.forEach((_, idx) => {
+      targets.push({ targetSide: "opponent", dieIndex: idx, targetIndex: idx });
+    });
+  } else if (stage === "driver_fate_post_roll" || stage === "chart_post_roll" || stage === "demand_post_roll") {
+    targets.push({ targetSide: "player", dieIndex: 0, targetIndex: 0 });
+  } else if (stage === "gamble_post_roll") {
+    const gRolls = Array.isArray(pend.gambleRolls) ? pend.gambleRolls : [];
+    gRolls.forEach((_, idx) => {
+      targets.push({ targetSide: "player", dieIndex: idx, targetIndex: idx });
+    });
+  }
+  return targets;
+}
+
+/**
+ * Auto-dispatch Twist Of Fate immediately when only 1 eligible die exists; otherwise arm die selection.
+ */
+function triggerTwistOfFateOrArm(gs, cardObj) {
+  if (!cardObj || !cardObj.id) return;
+  const pend = gs && gs.pendingEncounter ? gs.pendingEncounter : null;
+  const targets = getEligibleRerollTargets(pend);
+  if (targets.length === 1) {
+    const t = targets[0];
+    appState.armedDieAction = null;
+    sendGameAction({
+      type: "play_influence",
+      cardId: cardObj.id,
+      targetSide: t.targetSide,
+      dieIndex: t.dieIndex,
+      targetIndex: t.targetIndex,
+    });
+    return;
+  }
+  armDieCardAction(cardObj, "reroll");
+}
+
 function armDieCardAction(cardObj, mode = "reroll") {
   if (!cardObj || !cardObj.id) return;
   if (appState.armedDieAction && appState.armedDieAction.cardId === cardObj.id) {
@@ -8200,6 +8765,7 @@ function renderInlineClickableDiceRow(pend, viewer, merchantLabel = "Your") {
       );
     });
     const oDice = Array.isArray(pend.oppDiceObjs) ? pend.oppDiceObjs : [];
+    const oppDieOwnerLabel = pend.isPvp && pend.card && pend.card.name ? pend.card.name : "Opponent";
     oDice.forEach((d, idx) => {
       const rom = d.roman !== undefined ? String(d.roman) : toRomanDieSymbol(Number(d.value) || 0);
       dieButtons.push(
@@ -8209,14 +8775,14 @@ function renderInlineClickableDiceRow(pend, viewer, merchantLabel = "Your") {
             type: "button",
             className: `inline-roman-die-btn ${hasTwist ? "clickable-die" : ""} ${hasTwist && isArmed ? "armed-die" : ""}`,
             disabled: !hasTwist,
-            title: hasTwist ? `Click this opponent die to re-roll with 'Twist Of Fate'` : `Opponent ${d.label || "Die"}`,
+            title: hasTwist ? `Click this ${oppDieOwnerLabel} die to re-roll with 'Twist Of Fate'` : `${oppDieOwnerLabel} ${d.label || "Die"}`,
             onClick: hasTwist ? () => handleDieSelectionClick(pend, viewer, "opponent", idx) : null,
           },
           el("span", { className: "inline-roman-die-face", text: rom }),
           el(
             "span",
             { className: "inline-roman-die-meta" },
-            el("span", { className: "inline-roman-die-owner", text: `Opponent • ${d.label || `Die #${idx + 1}`}` }),
+            el("span", { className: "inline-roman-die-owner", text: `${oppDieOwnerLabel} • ${d.label || `Die #${idx + 1}`}` }),
             el("span", {
               className: "inline-roman-die-action",
               text: hasTwist ? `+${rom} CP • ${actionHint}` : `+${rom} CP`,
@@ -8756,6 +9322,16 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               : null,
             el("span", { className: "badge", text: `Merchant: ${encPlayer.name}` }),
             el("span", { className: "badge", text: `Deck: ${deckLabel}` }),
+            pend.deck && ENCOUNTER_DECK_PROFILES[String(pend.deck).toLowerCase()]
+              ? el("button", {
+                  type: "button",
+                  className: "btn btn-sm",
+                  style: { padding: "0.14rem 0.5rem", fontSize: "0.75rem" },
+                  title: "Inspect Encounter Deck mechanics, Roman history, and live faction card counts",
+                  text: "🃏 Deck Guide",
+                  onClick: () => openEncounterDecksOverviewModal(gs, pend.deck),
+                })
+              : null,
             el("span", { className: "badge", text: "Event Card (Mandatory Effect)" })
           ),
           el(
@@ -9045,14 +9621,60 @@ function renderPendingEncounterPanelCore(gs, viewer) {
 
   // Stage 0C: Pre-Combat Consumable ("Destroyed if Used") Weapon Choice Before Rolling Combat Dice
   if (stage === "combat_consumable_pre_roll") {
+    const isPvp = Boolean(pend.isPvp);
+    const consumableActorIdx =
+      pend.consumableRole === "defender" && pend.pvpDefenderIndex != null
+        ? pend.pvpDefenderIndex
+        : pend.interveningPlayerIndex != null
+        ? pend.interveningPlayerIndex
+        : pend.playerIndex;
+    const consumableActor =
+      (gs.players &&
+        (gs.players.find((p) => p.index === consumableActorIdx) || gs.players[consumableActorIdx])) ||
+      encPlayer;
+    const isOtherConsumableActor = !viewer || !consumableActor || viewer.index !== consumableActor.index;
     const consumables = Array.isArray(pend.consumableItems)
       ? pend.consumableItems
-      : (encPlayer.cart || []).filter((it) => it && it.combat && it.combat.consumable);
-    if (!appState._stageConsumableSelection || appState._stageConsumableEncounterCardId !== card.id) {
-      appState._stageConsumableEncounterCardId = card.id;
+      : (consumableActor.cart || []).filter((it) => it && it.combat && it.combat.consumable);
+    const consumableKey = `${card.id || "combat"}_${pend.consumableRole || "npc"}`;
+    if (!appState._stageConsumableSelection || appState._stageConsumableEncounterCardId !== consumableKey) {
+      appState._stageConsumableEncounterCardId = consumableKey;
       appState._stageConsumableSelection = new Set();
     }
     const selectedSet = appState._stageConsumableSelection;
+
+    const pvpSummaryCardNode = el(
+      "div",
+      {
+        style: {
+          padding: "0.9rem",
+          borderRadius: "6px",
+          border: "2px solid #991b1b",
+          background: "linear-gradient(180deg, #fffdf7 0%, #f5ebd4 100%)",
+          boxShadow: "var(--bevel-sunken)",
+        },
+      },
+      el("div", {
+        style: { fontFamily: '"Cinzel", serif', fontWeight: "900", color: "#7f1d1d", fontSize: "0.95rem", marginBottom: "0.35rem" },
+        text: "⚔️ Casus Belli PvP Combat",
+      }),
+      el("div", {
+        style: { fontSize: "0.84rem", fontWeight: "700", color: "var(--text-main)", marginBottom: "0.3rem" },
+        text: `${encPlayer.name} (Attacker) vs. ${card.name || "Opponent"} (Defender)`,
+      }),
+      pend.encounterSource
+        ? el("div", {
+            style: { fontSize: "0.78rem", color: "#92400e", fontWeight: "700", marginBottom: "0.25rem" },
+            text: `📍 ${pend.encounterSource}`,
+          })
+        : null,
+      el("div", {
+        style: { fontSize: "0.78rem", color: "var(--text-muted)" },
+        text: `${consumableActor.name} is selecting whether to expend consumable weapon(s) (${
+          pend.consumableRole === "defender" ? "Defending" : "Attacking"
+        }) before combat dice are rolled.`,
+      })
+    );
 
     return el(
       "div",
@@ -9064,7 +9686,11 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       el(
         "h3",
         { className: "panel-title" },
-        el("span", { text: `🗡️ Pre-Combat Weapon Choice vs. ${card.name || "Opponent"}` }),
+        el("span", {
+          text: isPvp
+            ? `🗡️ Pre-Combat Weapon Choice (${consumableActor.name}) — ${encPlayer.name} vs. ${card.name || "Opponent"}`
+            : `🗡️ Pre-Combat Weapon Choice vs. ${card.name || "Opponent"}`,
+        }),
         el("span", {
           style: { fontSize: "0.78rem", color: "var(--gold-bright)" },
           text: "Decide whether to expend destroyed-if-used weapon(s) before rolling!",
@@ -9073,20 +9699,22 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       el(
         "div",
         { className: "encounter-interactive-layout" },
-        card && card.id ? renderPhysicalEncounterCardNode(card, pend, { interactive: false }) : null,
+        isPvp ? pvpSummaryCardNode : card && card.id ? renderPhysicalEncounterCardNode(card, pend, { interactive: false }) : null,
         el(
           "div",
           {},
           el("p", {
             style: { marginTop: "0", fontSize: "0.88rem", color: "#78350f", fontWeight: "700" },
-            text: "Choose which consumable ('destroyed if used') weapon(s) on your Cart you want to use in this combat before rolling the combat dice:",
+            text: `Choose which consumable ('destroyed if used') weapon(s) on ${
+              isOtherConsumableActor ? `${consumableActor.name}'s` : "your"
+            } Cart to use in this combat before rolling the combat dice:`,
           }),
           el(
             "div",
             { style: { display: "flex", flexDirection: "column", gap: "0.55rem", marginBottom: "0.9rem" } },
             ...buildConsumableWeaponPickerNodes(consumables, selectedSet, () => renderApp())
           ),
-          !isOtherPlayerEncounter
+          !isOtherConsumableActor
             ? el("button", {
                 type: "button",
                 className: "btn btn-crimson",
@@ -9107,7 +9735,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               })
             : el("div", {
                 style: { fontSize: "0.84rem", color: "var(--text-muted)" },
-                text: `Waiting for ${encPlayer.name} to choose whether to use their consumable weapon(s)...`,
+                text: `Waiting for ${consumableActor.name} to choose whether to use their consumable weapon(s)...`,
               })
         )
       )
@@ -9116,17 +9744,37 @@ function renderPendingEncounterPanelCore(gs, viewer) {
 
   // Stage 2: Combat Post-Roll Influence Opportunity (Gladiator's Intervention, Mercenary Ambush, Flying Chamber Pot, Twist Of Fate)
   if (stage === "combat_post_roll") {
+    const isPvp = Boolean(pend.isPvp);
     const pCP = Number(pend.playerCP) || 0;
     const oCP = Number(pend.oppCP) || 0;
     const isVictory = pCP > oCP;
     const isTie = pCP === oCP;
-    const rawWounds = Math.max(0, oCP - pCP);
-    const ignoreWounds = Number(pend.ignoreWounds) || 0;
+    const defPlayer =
+      isPvp && pend.pvpDefenderIndex != null
+        ? (gs.players || []).find((p) => p.index === pend.pvpDefenderIndex) || (gs.players || [])[pend.pvpDefenderIndex]
+        : null;
+    const oppName = card.name || (defPlayer && defPlayer.name) || "Opponent";
+    const losingPlayer = isPvp && isVictory ? defPlayer : encPlayer;
+    const losingName = (losingPlayer && losingPlayer.name) || (isVictory ? oppName : encPlayer.name);
+    const rawWounds = isTie ? 0 : isVictory ? (isPvp ? pCP - oCP : 0) : oCP - pCP;
+    const ignoreWounds = isPvp && isVictory ? Number(pend.oppIgnoreWounds) || 0 : Number(pend.ignoreWounds) || 0;
     const netWounds = Math.max(0, rawWounds - ignoreWounds);
-    const guardCount = (encPlayer.guards || []).length;
-    const survivesByArmor = !isVictory && !isTie && netWounds <= 0;
-    const survivesByGuard = !isVictory && !isTie && netWounds > 0 && netWounds <= guardCount;
-    const armorSources = Array.isArray(pend.armorSources) ? pend.armorSources : [];
+    const guardCount =
+      isPvp && isVictory
+        ? Array.isArray(pend.oppGuardNames)
+          ? pend.oppGuardNames.length
+          : ((losingPlayer && losingPlayer.guards) || []).length
+        : (encPlayer.guards || []).length;
+    const survivesByArmor = !isTie && rawWounds > 0 && netWounds <= 0;
+    const survivesByGuard = !isTie && netWounds > 0 && netWounds <= guardCount;
+    const armorSources =
+      isPvp && isVictory
+        ? Array.isArray(pend.oppArmorSources)
+          ? pend.oppArmorSources
+          : []
+        : Array.isArray(pend.armorSources)
+        ? pend.armorSources
+        : [];
     const armorLabelStr =
       armorSources.length > 0
         ? armorSources.join(", ")
@@ -9134,6 +9782,8 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         ? `Armor (Ignore ${ignoreWounds} Wound${ignoreWounds === 1 ? "" : "s"})`
         : "None";
     const equipNotes = Array.isArray(pend.equipmentNotes) ? pend.equipmentNotes : [];
+    const oppEquipNotes = isPvp && Array.isArray(pend.oppEquipmentNotes) ? pend.oppEquipmentNotes : [];
+    const singleReroll = getEligibleRerollTargets(pend).length === 1;
 
     const postCards = ((viewer && viewer.influence) || []).filter((c) => {
       const nm = String(c.name || "");
@@ -9153,17 +9803,38 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       .join(", ");
     const oDiceSummary = (pend.oppDiceObjs || []).map((d) => `${d.label}: [${d.roman}]`).join(", ");
 
-    const statusLabel = isVictory
-      ? "VICTORY"
-      : isTie
-      ? "TIE (SURVIVED — NO BONUS)"
-      : survivesByArmor
-      ? `SURVIVED (${armorLabelStr.toUpperCase()} BLOCKED WOUNDS)`
-      : survivesByGuard
-      ? "DEFEAT — SURVIVED (GUARD ABSORBED WOUND)"
-      : "DEFEAT (ROLL ON DEFEAT CHART)";
+    let statusLabel = "";
+    if (isPvp) {
+      if (isTie) {
+        statusLabel = "TIE (NO WOUNDS — NO SPOILS)";
+      } else if (survivesByArmor) {
+        statusLabel = `${isVictory ? encPlayer.name : oppName} LEADS (${losingName} ARMOR BLOCKED WOUNDS)`;
+      } else if (survivesByGuard) {
+        statusLabel = `${isVictory ? encPlayer.name : oppName} LEADS (${losingName} GUARD ABSORBED WOUND)`;
+      } else {
+        statusLabel = `${isVictory ? encPlayer.name : oppName} WINS — ${losingName} TO FATE CHART`;
+      }
+    } else {
+      statusLabel = isVictory
+        ? "VICTORY"
+        : isTie
+        ? "TIE (SURVIVED — NO BONUS)"
+        : survivesByArmor
+        ? `SURVIVED (${armorLabelStr.toUpperCase()} BLOCKED WOUNDS)`
+        : survivesByGuard
+        ? "DEFEAT — SURVIVED (GUARD ABSORBED WOUND)"
+        : "DEFEAT (ROLL ON DEFEAT CHART)";
+    }
 
-    const statusBorderColor = isVictory
+    const statusBorderColor = isPvp
+      ? isTie || survivesByArmor
+        ? "#ca8a04"
+        : survivesByGuard
+        ? "#ea580c"
+        : isVictory
+        ? "#16a34a"
+        : "#dc2626"
+      : isVictory
       ? "#16a34a"
       : isTie || survivesByArmor
       ? "#ca8a04"
@@ -9172,7 +9843,21 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       : "#dc2626";
 
     let outcomeSummaryText = "";
-    if (isVictory) {
+    if (isPvp) {
+      if (isTie) {
+        outcomeSummaryText = `⚖️ Current PvP Outcome: Tie (${pCP} CP vs. ${oCP} CP) — Neither Driver suffers Wounds, and no Spoils are claimed.`;
+      } else {
+        const winnerLbl = isVictory ? encPlayer.name : oppName;
+        const turnLossSuffix = !isVictory ? ` (${encPlayer.name}'s turn ends)` : "";
+        if (survivesByArmor) {
+          outcomeSummaryText = `🛡️ Current PvP Outcome: ${winnerLbl} leads (${pCP} CP vs. ${oCP} CP)${turnLossSuffix}, inflicting ${rawWounds} Wound(s) on ${losingName}, but ${armorLabelStr} blocked all Wounds! No Driver Fate roll or Spoils.`;
+        } else if (survivesByGuard) {
+          outcomeSummaryText = `🛡️ Current PvP Outcome: ${winnerLbl} leads (${pCP} CP vs. ${oCP} CP)${turnLossSuffix} — ${rawWounds} Raw Wound(s) on ${losingName}, ${ignoreWounds} Blocked by ${armorLabelStr}, ${netWounds} Absorbed by ${losingName}'s Hired Guard(s)! No Driver Fate roll or Spoils.`;
+        } else {
+          outcomeSummaryText = `⚔️ Current PvP Outcome: ${winnerLbl} defeats ${losingName} (${pCP} CP vs. ${oCP} CP)${turnLossSuffix} — ${rawWounds} Raw Wound(s), ${ignoreWounds} Blocked by ${armorLabelStr} (${netWounds} Unblocked). ${losingName}'s Driver must roll on the Driver Fate Chart (${winnerLbl} claims Spoils)!`;
+        }
+      }
+    } else if (isVictory) {
       outcomeSummaryText = `🏆 Current Outcome for ${encPlayer.name}: Victory (${pCP} CP vs. ${oCP} CP)!`;
     } else if (isTie) {
       outcomeSummaryText = `⚖️ Current Outcome for ${encPlayer.name}: Tie (${pCP} CP vs. ${oCP} CP) — ${encPlayer.name} survives combat unharmed (no roll on the Defeat Chart), but does not receive the bonus for winning combat.`;
@@ -9188,6 +9873,31 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       outcomeSummaryText = `⚠️ Current Outcome for ${encPlayer.name}: Defeat (${pCP} CP vs. ${oCP} CP) — ${rawWounds} Raw Wound(s), ${ignoreWounds} Blocked by ${armorLabelStr} (${netWounds} Unblocked). Driver will proceed to a roll on the Defeat Chart!`;
     }
 
+    let confirmBtnText = "✅ Confirm Combat Victory";
+    if (isOtherPlayerEncounter && !(isPvp && viewer && viewer.index === pend.pvpDefenderIndex)) {
+      confirmBtnText = "✅ Pass Intervention / Confirm Combat Result";
+    } else if (isTie) {
+      confirmBtnText = isPvp ? "✅ Confirm PvP Tie (No Wounds, No Spoils)" : "✅ Confirm Combat Tie (Survive, No Bonus)";
+    } else if (isPvp) {
+      if (isVictory) {
+        confirmBtnText =
+          survivesByArmor || survivesByGuard
+            ? `✅ Confirm PvP Victory (${oppName} Survived — No Spoils)`
+            : `⚔️ Confirm PvP Victory & ${oppName}'s Fate Roll`;
+      } else {
+        confirmBtnText =
+          survivesByArmor || survivesByGuard
+            ? `🛡️ Confirm PvP Outcome (${encPlayer.name} Survived — Turn Ends)`
+            : `💀 Confirm PvP Outcome & ${encPlayer.name}'s Fate Roll`;
+      }
+    } else if (!isVictory) {
+      confirmBtnText = survivesByArmor
+        ? `🛡️ Confirm Survival (${armorLabelStr} Blocked Wounds — No Defeat Roll)`
+        : survivesByGuard
+        ? "🛡️ Confirm Survival (Guard Absorbed Wound — No Defeat Roll)"
+        : "💀 Confirm Combat Result & Proceed to Driver Fate Roll";
+    }
+
     return el(
       "div",
       { id: "pending-encounter-panel", className: "panel", style: { borderColor: statusBorderColor } },
@@ -9195,7 +9905,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         "h3",
         { className: "panel-title" },
         el("span", {
-          text: `⚔️ Combat Dice Rolled: ${encPlayer.name} (${pCP} CP) vs. ${card.name} (${oCP} CP) — ${statusLabel}${
+          text: `${isPvp ? "⚔️ PvP Combat Dice Rolled" : "⚔️ Combat Dice Rolled"}: ${encPlayer.name} (${pCP} CP) vs. ${oppName} (${oCP} CP) — ${statusLabel}${
             isOtherPlayerEncounter ? " [Your Intervention Window]" : ""
           }`,
         })
@@ -9232,12 +9942,18 @@ function renderPendingEncounterPanelCore(gs, viewer) {
           style: { fontSize: "0.78rem", color: "var(--text-main)" },
           text: `${encPlayer.name} Rolls: ${pDiceSummary || "None"} (Flat ${formatSignedFlat(
             pend.playerFlat
-          )})  |  Opponent Rolls: ${oDiceSummary || "None"} (Flat ${formatSignedFlat(pend.oppFlat)})`,
+          )})  |  ${isPvp ? oppName : "Opponent"} Rolls: ${oDiceSummary || "None"} (Flat ${formatSignedFlat(pend.oppFlat)})`,
         }),
         equipNotes.length > 0
           ? el("div", {
               style: { fontSize: "0.78rem", color: "#78350f", marginTop: "0.3rem", fontWeight: "700" },
-              text: `🛡️⚔️ Active Guard & Weapon Effects: ${equipNotes.join(" • ")}`,
+              text: `🛡️⚔️ ${isPvp ? `${encPlayer.name}'s` : "Active"} Guard & Weapon Effects: ${equipNotes.join(" • ")}`,
+            })
+          : null,
+        oppEquipNotes.length > 0
+          ? el("div", {
+              style: { fontSize: "0.78rem", color: "#78350f", marginTop: "0.2rem", fontWeight: "700" },
+              text: `🛡️⚔️ ${oppName}'s Guard & Weapon Effects: ${oppEquipNotes.join(" • ")}`,
             })
           : null
       ),
@@ -9250,7 +9966,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             el("div", {
               style: { fontSize: "0.84rem", fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.45rem" },
               text: isOtherPlayerEncounter
-                ? `🃏 Intervene in ${encPlayer.name}'s Combat! Click a Die Above or Play a Post-Roll Influence Card:`
+                ? `🃏 Intervene in ${isPvp ? `${encPlayer.name} vs. ${oppName}` : `${encPlayer.name}'s Combat`}! Click a Die Above or Play a Post-Roll Influence Card:`
                 : "🃏 Post-Roll Combat Influence Cards Available (Click a Die Above to Re-Roll or Play a Card):",
             }),
             el(
@@ -9263,8 +9979,12 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                     actionButton: el("button", {
                       className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
                       style: { width: "100%" },
-                      text: isArmed ? "👆 Click Any Die Above!" : "🎲 Click a Die Above to Re-Roll",
-                      onClick: () => armDieCardAction(rc, "reroll"),
+                      text: singleReroll
+                        ? "🎲 Twist Of Fate — Re-Roll Die"
+                        : isArmed
+                        ? "👆 Click Any Die Above!"
+                        : "🎲 Click a Die Above to Re-Roll",
+                      onClick: () => triggerTwistOfFateOrArm(gs, rc),
                     }),
                   });
                 }
@@ -9272,8 +9992,8 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                   actionButton: buildCombatInfluenceCardActionNode(
                     rc,
                     encPlayer.name,
-                    card.name,
-                    isOtherPlayerEncounter
+                    oppName,
+                    isOtherPlayerEncounter || isPvp
                   ),
                 });
               })
@@ -9286,17 +10006,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         viewer
           ? el("button", {
             className: isVictory || isTie || survivesByArmor ? "btn btn-primary" : "btn btn-crimson",
-            text: isOtherPlayerEncounter
-              ? "✅ Pass Intervention / Confirm Combat Result"
-              : isVictory
-                ? "✅ Confirm Combat Victory"
-                : isTie
-                  ? "✅ Confirm Combat Tie (Survive, No Bonus)"
-                  : survivesByArmor
-                    ? `🛡️ Confirm Survival (${armorLabelStr} Blocked Wounds — No Defeat Roll)`
-                    : survivesByGuard
-                      ? "🛡️ Confirm Survival (Guard Absorbed Wound — No Defeat Roll)"
-                      : "💀 Confirm Combat Result & Proceed to Driver Fate Roll",
+            text: confirmBtnText,
             onClick: () => sendGameAction({ type: "resolve_encounter", decision: "finalize_combat" }),
           })
           : el("span", {
@@ -9312,13 +10022,18 @@ function renderPendingEncounterPanelCore(gs, viewer) {
     const postChartCards = ((viewer && viewer.influence) || []).filter(
       (c) => c.name === "Lucky Break" || c.name === "Twist Of Fate"
     );
+    const pvpSpoilsOwner = pend.pvpWinnerName || "Winner";
     return el(
       "div",
       { id: "pending-encounter-panel", className: "panel", style: { borderColor: "#b91c1c" } },
       el(
         "h3",
         { className: "panel-title" },
-        el("span", { text: `💀 Driver Wounded in Combat — Roll on the Driver Fate (Death) Chart!` })
+        el("span", {
+          text: pend.isPvp
+            ? `💀 PvP Defeat (${pend.pvpLoserName || encPlayer.name} Wounded) — Roll on the Driver Fate Chart!`
+            : `💀 Driver Wounded in Combat — Roll on the Driver Fate (Death) Chart!`,
+        })
       ),
       el(
         "div",
@@ -9334,12 +10049,18 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             boxShadow: "var(--bevel-sunken)",
           },
         },
-        el("strong", { text: "⚔️ Unblocked Wound to Driver: " }),
-        `${encPlayer.name} lost combat (${pend.playerCP} CP vs. ${card.name}'s ${pend.oppCP} CP), suffering ${pend.rawWounds} wound(s) (${
-          pend.ignoreWounds || 0
-        } blocked by Armor${
-          pend.casualties && pend.casualties.length ? `, ${pend.casualties.join(", ")}` : ""
-        }). Roll 1 Rome Die (1(R)) on the Death Chart below to determine the Driver's fate!`
+        el("strong", { text: pend.isPvp ? `⚔️ PvP Unblocked Wound (Spoils → ${pvpSpoilsOwner}): ` : "⚔️ Unblocked Wound to Driver: " }),
+        pend.isPvp
+          ? `${pend.pvpLoserName || encPlayer.name} suffered ${pend.rawWounds} wound(s) against ${pvpSpoilsOwner} (${
+              pend.playerCP
+            } CP vs. ${pend.oppCP} CP; ${pend.ignoreWounds || 0} blocked${
+              pend.casualties && pend.casualties.length ? `, ${pend.casualties.join(", ")}` : ""
+            }). Roll 1 Rome Die (1(R)) on the Death Chart below — ${pvpSpoilsOwner} claims any Goods, Denarii, or Influence lost!`
+          : `${encPlayer.name} lost combat (${pend.playerCP} CP vs. ${card.name}'s ${pend.oppCP} CP), suffering ${pend.rawWounds} wound(s) (${
+              pend.ignoreWounds || 0
+            } blocked by Armor${
+              pend.casualties && pend.casualties.length ? `, ${pend.casualties.join(", ")}` : ""
+            }). Roll 1 Rome Die (1(R)) on the Death Chart below to determine the Driver's fate!`
       ),
       el(
         "div",
@@ -9356,31 +10077,51 @@ function renderPendingEncounterPanelCore(gs, viewer) {
           "div",
           { style: { padding: "0.5rem", background: "#fef2f2", borderRadius: "4px", border: "1px solid #dc2626" } },
           el("strong", { style: { color: "#991b1b" }, text: "Roll 0 — Dead:" }),
-          el("div", { style: { color: "var(--text-main)" }, text: "Lose all Goods on Cart; your night ends immediately." })
+          el("div", {
+            style: { color: "var(--text-main)" },
+            text: pend.isPvp
+              ? `${pvpSpoilsOwner} takes all Goods on your Cart; your night ends immediately.`
+              : "Lose all Goods on Cart; your night ends immediately.",
+          })
         ),
         el(
           "div",
           { style: { padding: "0.5rem", background: "#fffbeb", borderRadius: "4px", border: "1px solid #d97706" } },
           el("strong", { style: { color: "#92400e" }, text: "Roll I — Left for dead:" }),
-          el("div", { style: { color: "var(--text-main)" }, text: "Lose all Goods on Cart; your night continues." })
+          el("div", {
+            style: { color: "var(--text-main)" },
+            text: pend.isPvp
+              ? `${pvpSpoilsOwner} takes all Goods on your Cart; your night continues.`
+              : "Lose all Goods on Cart; your night continues.",
+          })
         ),
         el(
           "div",
           { style: { padding: "0.5rem", background: "#fefce8", borderRadius: "4px", border: "1px solid #ca8a04" } },
           el("strong", { style: { color: "#713f12" }, text: "Roll II — Beaten & mugged:" }),
-          el("div", { style: { color: "var(--text-main)" }, text: "Lose all Denarii; your night continues." })
+          el("div", {
+            style: { color: "var(--text-main)" },
+            text: pend.isPvp
+              ? `${pvpSpoilsOwner} takes all your Denarii; your night continues.`
+              : "Lose all Denarii; your night continues.",
+          })
         ),
         el(
           "div",
           { style: { padding: "0.5rem", background: "#f0fdf4", borderRadius: "4px", border: "1px solid #16a34a" } },
           el("strong", { style: { color: "#15803d" }, text: "Roll III — Begged for mercy:" }),
-          el("div", { style: { color: "var(--text-main)" }, text: "Lose all Influence cards; your night continues." })
+          el("div", {
+            style: { color: "var(--text-main)" },
+            text: pend.isPvp
+              ? `${pvpSpoilsOwner} takes all your Influence cards; your night continues.`
+              : "Lose all Influence cards; your night continues.",
+          })
         )
       ),
       postChartCards.length > 0
         ? el("div", {
             style: { fontSize: "0.82rem", color: "var(--gold-bright)", marginBottom: "0.75rem", fontWeight: "600" },
-            text: `🃏 You hold ${postChartCards.map((c) => `'${c.name}'`).join(", ")} — after rolling the Death Chart die, click directly on the rolled die to modify or re-roll it!`,
+            text: `🃏 You hold ${postChartCards.map((c) => `'${c.name}'`).join(", ")} — after rolling the Death Chart die, you can modify or re-roll it immediately!`,
           })
         : null,
       viewer && !isOtherPlayerEncounter
@@ -9402,6 +10143,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
     const cType = pend.chartType || "death";
     const cRoll = Number(pend.chartRoll) || 0;
     const rom = toRomanDieSymbol(cRoll);
+    const singleReroll = getEligibleRerollTargets(pend).length === 1;
     const postChartCards = ((viewer && viewer.influence) || []).filter((c) => {
       const nm = String(c.name || "");
       if (nm === "Twist Of Fate") return true;
@@ -9420,7 +10162,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
         el("span", {
           text:
             stage === "driver_fate_post_roll"
-              ? `💀 ${encPlayer.name}'s Driver Fate (Death Chart) Roll: Rolled [${rom}]${
+              ? `💀 ${encPlayer.name}'s Driver Fate ${pend.isPvp ? `(PvP Spoils → ${pend.pvpWinnerName || "Winner"})` : "(Death Chart)"} Roll: Rolled [${rom}]${
                   isOtherPlayerEncounter ? " [Your Intervention Window]" : ""
                 }`
               : `🎲 ${encPlayer.name}'s ${card.name || "Encounter"} Roll: Rolled [${rom}]${
@@ -9442,7 +10184,9 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             boxShadow: "var(--bevel-sunken)",
           },
         },
-        el("strong", { text: `Current Outcome for ${encPlayer.name} (Roll = ${rom}): ` }),
+        el("strong", {
+          text: `Current Outcome for ${encPlayer.name}${pend.isPvp ? ` (Spoils → ${pend.pvpWinnerName || "Winner"})` : ""} (Roll = ${rom}): `,
+        }),
         pend.previewText || `Rolled ${rom}`
       ),
       renderInlineClickableDiceRow(pend, viewer, merchantLabel),
@@ -9455,7 +10199,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               style: { fontSize: "0.84rem", fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.45rem" },
               text: isOtherPlayerEncounter
                 ? `🃏 Intervene on ${encPlayer.name}'s Roll! Click the Die Above or Play a Card:`
-                : "🃏 Post-Roll Influence Cards in Hand (Click the Die Above to Modify / Re-Roll!):",
+                : "🃏 Post-Roll Influence Cards in Hand (Modify / Re-Roll the Die):",
             }),
             el(
               "div",
@@ -9478,8 +10222,12 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                     actionButton: el("button", {
                       className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
                       style: { width: "100%" },
-                      text: isArmed ? "👆 Click Die Above to Re-Roll!" : "🎲 Click Die Above to Re-Roll",
-                      onClick: () => armDieCardAction(rc, "reroll"),
+                      text: singleReroll
+                        ? "🎲 Twist Of Fate — Re-Roll Die"
+                        : isArmed
+                        ? "👆 Click Die Above to Re-Roll!"
+                        : "🎲 Click Die Above to Re-Roll",
+                      onClick: () => triggerTwistOfFateOrArm(gs, rc),
                     }),
                   });
                 }
@@ -9515,6 +10263,7 @@ function renderPendingEncounterPanelCore(gs, viewer) {
   // Stage 5 / 6: Demand Post-Roll (e.g., Scorpus / Sabinus) or Stadium Gambling Post-Roll
   if (stage === "demand_post_roll" || stage === "gamble_post_roll") {
     const twistCards = ((viewer && viewer.influence) || []).filter((c) => String(c.name || "") === "Twist Of Fate");
+    const singleReroll = getEligibleRerollTargets(pend).length === 1;
     const gambleRolls = Array.isArray(pend.gambleRolls) ? pend.gambleRolls : [];
     const romDisplay =
       stage === "demand_post_roll"
@@ -9563,7 +10312,11 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             el("div", {
               style: { fontSize: "0.84rem", fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.45rem" },
               text: isOtherPlayerEncounter
-                ? `🃏 Intervene on ${encPlayer.name}'s Roll! Click the Die Above to Force a Re-Roll:`
+                ? singleReroll
+                  ? `🃏 Intervene on ${encPlayer.name}'s Roll with Twist Of Fate:`
+                  : `🃏 Intervene on ${encPlayer.name}'s Roll! Click the Die Above to Force a Re-Roll:`
+                : singleReroll
+                ? "🃏 Play Twist Of Fate to Immediately Re-Roll This Die:"
                 : "🃏 Click Directly on the Die Above to Re-Roll with Twist Of Fate:",
             }),
             el(
@@ -9575,8 +10328,12 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                   actionButton: el("button", {
                     className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
                     style: { width: "100%" },
-                    text: isArmed ? "👆 Click a Die Above to Re-Roll!" : "🎲 Click a Die Above to Re-Roll",
-                    onClick: () => armDieCardAction(rc, "reroll"),
+                    text: singleReroll
+                      ? "🎲 Twist Of Fate — Re-Roll Die"
+                      : isArmed
+                      ? "👆 Click a Die Above to Re-Roll!"
+                      : "🎲 Click a Die Above to Re-Roll",
+                    onClick: () => triggerTwistOfFateOrArm(gs, rc),
                   }),
                 });
               })
@@ -9809,6 +10566,16 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             : null,
           el("span", { className: "badge", text: `Merchant: ${encPlayer.name}` }),
           el("span", { className: "badge", text: `Faction: ${card.faction || "Unaligned"}` }),
+          pend.deck && ENCOUNTER_DECK_PROFILES[String(pend.deck).toLowerCase()]
+            ? el("button", {
+                type: "button",
+                className: "btn btn-sm",
+                style: { padding: "0.14rem 0.5rem", fontSize: "0.75rem" },
+                title: "Inspect Encounter Deck mechanics, Roman history, and live faction card counts",
+                text: `🃏 ${(pend.deck || "").toUpperCase()} Deck Guide`,
+                onClick: () => openEncounterDecksOverviewModal(gs, pend.deck),
+              })
+            : null,
           el("span", { className: "badge", text: `Effective Favor: ${pend.favorScore > 0 ? `+${pend.favorScore}` : pend.favorScore}` }),
           el("span", {
             className: "badge",
@@ -10343,16 +11110,89 @@ function renderCleanupPhasePanel(gs, viewer) {
   );
 }
 
+function resolveItemPaidPriceIndex(item) {
+  if (!item || item.isCatalogPreview || item.isMissionCargo) return -1;
+  if (typeof item.purchasePriceIndex === "number") {
+    return item.purchasePriceIndex >= 0 && item.purchasePriceIndex <= 4 ? item.purchasePriceIndex : -1;
+  }
+  return -1;
+}
+
+function renderPhysicalMarketGoodCardFaceNode(card, opts = {}) {
+  const {
+    trackName: explicitTrack = null,
+    priceColIndex = -1,
+    isPriceIdxDirect = true,
+    extraCardClass = "",
+    title = "",
+    onClick = null,
+  } = opts;
+  const trackName = explicitTrack || card.track || card.category || "Grain";
+  const isGuardTrack = trackName === "Guards" || Number(card.guards) > 0;
+  const trackClass = resolveGoodTrackClass(explicitTrack || card);
+  const reqBlocks = Math.max(1, Number(card.blocks) || 1);
+  const reqGuards = Math.max(1, Number(card.guards) || 1);
+  const subtitleText = isGuardTrack
+    ? "Guard"
+    : card.subtitle
+    ? `(${card.subtitle})`
+    : card.subcategory || card.category || trackName;
+
+  let combatLineText = null;
+  if (isGuardTrack) {
+    combatLineText = `${card.combatText || ""}${card.abilityText ? ` & ${card.abilityText}` : ""}`.trim() || null;
+  } else if (trackName === "Weapons") {
+    combatLineText = card.combatText || "0 CP";
+  } else if (card.combatText) {
+    combatLineText = card.combatText;
+  }
+
+  const blocksSymbols = isGuardTrack ? "▲".repeat(reqGuards) : "■".repeat(reqBlocks);
+
+  return el(
+    "div",
+    {
+      className: `market-good-card ${trackClass}${extraCardClass ? ` ${extraCardClass}` : ""}`,
+      style: onClick ? { cursor: "pointer" } : undefined,
+      title: title || `Click to view ${card.name} details`,
+      onClick: onClick || undefined,
+    },
+    el(
+      "div",
+      { className: "market-good-card-inner" },
+      el(
+        "div",
+        { className: "good-card-header" },
+        el("div", { className: "slot-card-name", text: card.name }),
+        el("div", { className: "slot-sub", text: subtitleText }),
+        combatLineText ? el("div", { className: "good-combat-line", text: combatLineText }) : null
+      ),
+      renderGoodCardArtNode(card, trackName, false),
+      el(
+        "div",
+        { className: "good-card-footer" },
+        el("div", { className: "good-blocks-row", text: blocksSymbols }),
+        renderGoodPriceTableNode(card, trackName, priceColIndex, isPriceIdxDirect)
+      )
+    )
+  );
+}
+
 function renderGoodPriceTableNode(card, trackName, colIndex, isPriceIdxDirect = false) {
-  const activePriceIdx = isPriceIdxDirect
-    ? Math.max(0, Math.min(4, Number(colIndex) || 2))
-    : colIndex === 0
+  const hasCol =
+    colIndex !== null && colIndex !== undefined && colIndex !== "" && Number.isFinite(Number(colIndex)) && Number(colIndex) >= 0;
+  const numericCol = hasCol ? Number(colIndex) : -1;
+  const activePriceIdx = !hasCol
+    ? -1
+    : isPriceIdxDirect
+    ? Math.max(0, Math.min(4, numericCol))
+    : numericCol === 0
     ? 0
-    : colIndex === 1
+    : numericCol === 1
     ? 1
-    : colIndex <= 3
+    : numericCol <= 3
     ? 2
-    : colIndex === 4
+    : numericCol === 4
     ? 3
     : 4;
   const symHeaders = ["<<", "<", "=", ">", ">>"];
@@ -10485,7 +11325,16 @@ function openCartGoodDetailModal(item, gs, viewer, readOnly = false) {
             text: blocksSymbols,
           }),
           hasSellTable
-            ? renderGoodPriceTableNode(item, trackName, activeScarcityIdx, false)
+            ? renderGoodPriceTableNode(
+                item,
+                trackName,
+                typeof item.marketColIndex === "number"
+                  ? item.marketColIndex
+                  : item.isCatalogPreview
+                  ? -1
+                  : resolveItemPaidPriceIndex(item),
+                typeof item.marketColIndex !== "number"
+              )
             : el("div", {
                 className: "mission-cargo-no-sell-note",
                 text: `Deliver @ ${item.deliverCell || "Target"}`,
@@ -10652,6 +11501,14 @@ function openCartGuardDetailModal(g) {
   const buyArr = Array.isArray(g.buy) && g.buy.length >= 5 ? g.buy.slice(0, 5) : null;
   const scarcitySymbols = ["<<", "<", "=", ">", ">>"];
 
+  const priceHighlightCol =
+    typeof g.marketColIndex === "number"
+      ? g.marketColIndex
+      : g.isCatalogPreview
+      ? -1
+      : resolveItemPaidPriceIndex(g);
+  const priceHighlightDirect = typeof g.marketColIndex !== "number";
+
   const fullCardNode = el(
     "div",
     { className: "cart-good-detail-showcase" },
@@ -10673,7 +11530,7 @@ function openCartGuardDetailModal(g) {
           "div",
           { className: "good-card-footer" },
           el("div", { className: "good-blocks-row", title: `Guard Seat: ${guardsCount}▲`, text: blocksSymbols }),
-          buyArr ? renderGoodPriceTableNode(g, "Guards", 2, false) : null
+          buyArr ? renderGoodPriceTableNode(g, "Guards", priceHighlightCol, priceHighlightDirect) : null
         )
       )
     )
@@ -10693,6 +11550,18 @@ function openCartGuardDetailModal(g) {
       el("strong", { style: { color: "var(--gold-bright)" }, text: `${g.upkeepCost ?? 0}(d)` })
     ),
   ];
+  if (!g.isCatalogPreview && g.marketColIndex == null && typeof g.purchasePrice === "number") {
+    infoRows.push(
+      el(
+        "div",
+        { className: "cart-good-detail-row" },
+        el("span", { className: "cart-good-detail-label", text: "Hire Price Paid:" }),
+        el("strong", {
+          text: g.purchasePrice > 0 ? `${g.purchasePrice}(d)` : "0(d) (Free / Influence)",
+        })
+      )
+    );
+  }
   if (combatLineText) {
     infoRows.push(
       el(
@@ -10734,8 +11603,6 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
   const trackClass = resolveGoodTrackClass(item);
   const blocksCount = Math.max(1, Number(item.blocks) || 1);
   const blocksSymbols = "■".repeat(blocksCount);
-  const meta = (gs.marketMeta && gs.marketMeta[trackName]) || { scarcityIndex: 2 };
-  const activeScarcityIdx = typeof meta.scarcityIndex === "number" ? meta.scarcityIndex : 2;
 
   const subtitleText = item.isMissionCargo
     ? `Mission Cargo → ${item.deliverCell || "Rome"}`
@@ -10755,11 +11622,6 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
   const canSellNow = Boolean(
     !readOnly && sellOpt && hasViewerEnteredRomeForDelivery(gs, viewer) && gs.activePlayerIndex === viewer.index
   );
-  const hasPaidCost = !item.isMissionCargo && typeof item.purchasePrice === "number";
-  const netProfit =
-    hasPaidCost && sellOpt && !sellOpt.isFencedCargo
-      ? Number(sellOpt.price) - Number(item.purchasePrice)
-      : null;
 
   const openDetail = () => openCartGoodDetailModal(item, gs, viewer, readOnly);
 
@@ -10794,7 +11656,7 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
         { className: "good-card-footer" },
         el("div", { className: "good-blocks-row", title: `Weight: ${blocksCount}■ of Cart Capacity`, text: blocksSymbols }),
         hasSellTable
-          ? renderGoodPriceTableNode(item, trackName, activeScarcityIdx, true)
+          ? renderGoodPriceTableNode(item, trackName, resolveItemPaidPriceIndex(item), true)
           : el("div", {
               className: "mission-cargo-no-sell-note",
               text: `Deliver @ ${item.deliverCell || "Target"}`,
@@ -10804,21 +11666,6 @@ function renderLoadedGoodPhysicalCardNode(item, gs, viewer, readOnly = false) {
   );
 
   const externalMetaNodes = [];
-  if (hasPaidCost) {
-    externalMetaNodes.push(
-      el(
-        "div",
-        { className: "cost-basis-pill", title: "Purchase price paid for this Good" },
-        el("span", { text: `Paid ${item.purchasePrice}d` }),
-        netProfit !== null
-          ? el("span", {
-              className: netProfit >= 0 ? "profit-pos" : "profit-neg",
-              text: ` • Net ${netProfit >= 0 ? `+${netProfit}` : netProfit}d`,
-            })
-          : null
-      )
-    );
-  }
   if (canSellNow) {
     externalMetaNodes.push(
       el("button", {
@@ -10937,7 +11784,7 @@ function renderHiredGuardPhysicalCardNode(g) {
         "div",
         { className: "good-card-footer" },
         el("div", { className: "good-blocks-row", title: `Guard Seat: ${guardsCount}▲`, text: blocksSymbols }),
-        hasHireTable ? renderGoodPriceTableNode(g, "Guards", 2, true) : null
+        hasHireTable ? renderGoodPriceTableNode(g, "Guards", resolveItemPaidPriceIndex(g), true) : null
       )
     )
   );
@@ -11916,39 +12763,25 @@ function renderOstiaMarketBoard(gs, viewer) {
             el(
               "div",
               { className: "good-card-unit" },
-              el(
-                "div",
-                {
-                  className: `market-good-card ${trackClass} ${canForumBuy ? "forum-buyable-card" : ""}`,
-                  style: { cursor: "pointer" },
-                  title: `Click to view ${card.name} up close`,
-                  onClick: () => {
-                    if (isGuardTrack) {
-                      openCartGuardDetailModal(card);
-                    } else {
-                      openCartGoodDetailModal(Object.assign({ track: trackName }, card), gs, viewer, true);
-                    }
-                  },
+              renderPhysicalMarketGoodCardFaceNode(card, {
+                trackName,
+                priceColIndex: col,
+                isPriceIdxDirect: false,
+                extraCardClass: canForumBuy ? "forum-buyable-card" : "",
+                title: `Click to view ${card.name} up close`,
+                onClick: () => {
+                  if (isGuardTrack) {
+                    openCartGuardDetailModal(Object.assign({ marketColIndex: col }, card));
+                  } else {
+                    openCartGoodDetailModal(
+                      Object.assign({ track: trackName, marketColIndex: col }, card),
+                      gs,
+                      viewer,
+                      true
+                    );
+                  }
                 },
-                el(
-                  "div",
-                  { className: "market-good-card-inner" },
-                  el(
-                    "div",
-                    { className: "good-card-header" },
-                    el("div", { className: "slot-card-name", text: card.name }),
-                    el("div", { className: "slot-sub", text: subtitleText }),
-                    combatLineText ? el("div", { className: "good-combat-line", text: combatLineText }) : null
-                  ),
-                  renderGoodCardArtNode(card, trackName, false),
-                  el(
-                    "div",
-                    { className: "good-card-footer" },
-                    el("div", { className: "good-blocks-row", text: blocksSymbols }),
-                    renderGoodPriceTableNode(card, trackName, col)
-                  )
-                )
-              ),
+              }),
               el(
                 "div",
                 { className: "good-card-external-meta" },
@@ -13136,12 +13969,12 @@ function renderPlayerSidebar(gs, viewer) {
                   { className: "faction-standings-rivals" },
                   ...rivals.map((rv) => {
                     const rVal = (rv.favor && rv.favor[fm.key]) || 0;
-                    const rShort = String(rv.name || "Rival").split(" ")[0];
+                    const fullName = String(rv.name || "Rival").trim() || "Rival";
                     return el(
                       "div",
                       {
                         className: "faction-standing-rival-line",
-                        title: `${rv.name}: ${rVal > 0 ? `+${rVal}` : rVal} ${fm.key}`,
+                        title: `${fullName}: ${rVal > 0 ? `+${rVal}` : rVal} ${fm.key}`,
                       },
                       el(
                         "span",
@@ -13150,9 +13983,11 @@ function renderPlayerSidebar(gs, viewer) {
                           className: "faction-standing-swatch",
                           style: { background: resolveDieSwatchColor(rv.color, "player") },
                         }),
-                        el("span", { text: rShort }),
-                        rv.isBot ? document.createTextNode(" ") : null,
-                        rv.isBot ? createColumnCapitalIconNode(normalizeBotDifficulty(rv.botDifficulty), 10) : null
+                        el("span", {
+                          className: "faction-standing-rival-label",
+                          "data-full-name": fullName,
+                          text: fullName,
+                        })
                       ),
                       el("strong", {
                         style: {
@@ -13188,13 +14023,13 @@ function renderPlayerSidebar(gs, viewer) {
                 { className: "faction-standings-rivals", style: { marginTop: "0.3rem" } },
                 ...(gs.players || []).map((rv) => {
                   const rVal = (rv.favor && rv.favor[fm.key]) || 0;
-                  const rShort = String(rv.name || "Merchant").split(" ")[0];
+                  const fullName = String(rv.name || "Merchant").trim() || "Merchant";
                   return el(
                     "div",
                     {
                       className: "faction-standing-rival-line",
                       style: { cursor: "pointer" },
-                      title: `View ${rv.name}'s ${fm.key} Favor details`,
+                      title: `View ${fullName}'s ${fm.key} Favor details`,
                       onClick: (e) => {
                         e.stopPropagation();
                         openFactionFavorModal(gs, rv, fm.key);
@@ -13207,9 +14042,11 @@ function renderPlayerSidebar(gs, viewer) {
                         className: "faction-standing-swatch",
                         style: { background: resolveDieSwatchColor(rv.color, "player") },
                       }),
-                      el("span", { text: rShort }),
-                      rv.isBot ? document.createTextNode(" ") : null,
-                      rv.isBot ? createColumnCapitalIconNode(normalizeBotDifficulty(rv.botDifficulty), 10) : null
+                      el("span", {
+                        className: "faction-standing-rival-label",
+                        "data-full-name": fullName,
+                        text: fullName,
+                      })
                     ),
                     el("strong", {
                       style: {
@@ -13530,6 +14367,10 @@ function renderPlayerSidebar(gs, viewer) {
                 gs.phase !== "setup_climate" &&
                 gs.phase !== "finished"
               ) {
+                const isCasusBelliCard = cName === "Casus Belli" || effCode === "casus_belli";
+                const cbDisabledReason = isCasusBelliCard ? getCasusBelliProactiveDisabledReason(gs, viewer) : null;
+                const singleRerollSidebar =
+                  cName === "Twist Of Fate" && isViewerInPostRoll && getEligibleRerollTargets(pend).length === 1;
                 const needsThugSwap =
                   cName.includes("Thug") && !doesItemFitWithoutSwap(viewer, { reqGuards: 1 });
                 const needsWineForgerSwap =
@@ -13538,8 +14379,10 @@ function renderPlayerSidebar(gs, viewer) {
                 actionNode = el("button", {
                   className: `btn btn-sm ${isArmedCard ? "btn-crimson" : "btn-primary"}`,
                   style: { width: "100%", fontSize: "0.72rem", padding: "0.28rem 0.5rem" },
+                  disabled: Boolean(cbDisabledReason),
+                  title: cbDisabledReason || undefined,
                   text:
-                    cName === "Casus Belli"
+                    isCasusBelliCard
                       ? "⚔️ Play Casus Belli"
                       : isTop3Card
                       ? "👁️ Inspect & Reorder Top 3"
@@ -13552,7 +14395,9 @@ function renderPlayerSidebar(gs, viewer) {
                       : isShortcutCard
                       ? "🛣️ Ready Shortcut for Move"
                       : isReactiveOnly
-                      ? isArmedCard
+                      ? singleRerollSidebar
+                        ? "🎲 Re-Roll Die"
+                        : isArmedCard
                         ? "👆 Click Any Die to Apply"
                         : "🎲 Click a Die to Apply"
                       : needsThugSwap
@@ -13797,6 +14642,19 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
   const isGateEntrance = Boolean(isEntryPhase && isGateCell && isMyTurn);
   const canScoutTile = Boolean(isMyTurn && !viewer.scoutedThisTurn && unrevealedCount > 0);
   const canScoutDeck = Boolean(isMyTurn && !viewer.scoutedThisTurn);
+  const canTrashThisTile = Boolean(
+    !isEntryPhase &&
+      isDeliveryPhase &&
+      isMyTurn &&
+      !viewer.trashedThisTurn &&
+      Array.isArray(viewer.influence) &&
+      viewer.influence.length > 0 &&
+      (exposedTile || unrevealedCount > 0)
+  );
+  const centerEncounterKey =
+    rev && rev.encounter && ["patricii", "legiones", "nefarii"].includes(String(rev.encounter).toLowerCase())
+      ? String(rev.encounter).toLowerCase()
+      : null;
   const moveDir =
     resolvedMoveOpts && resolvedMoveOpts.moveDir ? String(resolvedMoveOpts.moveDir) : null;
   const canMoveStep = Boolean(
@@ -14028,9 +14886,9 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
             disabled: !canScoutTile,
             title: canScoutTile
               ? isEntryPhase
-                ? `Scout the top face-down tile of ${coord} (${cellName}) before entering Rome`
-                : `Scout the top face-down tile of ${coord} (${cellName}) and end your turn`
-              : "Scout Tile is unavailable (already scouted, no face-down tiles, or not your turn)",
+                ? `Scout the top unrevealed tile of ${coord} (${cellName}) before entering Rome`
+                : `Free once-per-turn Scout: peek at the top unrevealed tile of ${coord} (${cellName}) without ending your turn`
+              : "Scout Tile is unavailable (already scouted, no unrevealed tiles, or not your turn)",
             text: `👁️ Scout ${cellName}`,
             onClick: () => {
               if (!canScoutTile) return;
@@ -14048,7 +14906,7 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
             className: "btn",
             disabled: !canScoutDeck,
             title: canScoutDeck
-              ? "Scout the top card of an Encounter deck"
+              ? "Free once-per-turn Scout: peek at the top card of any of the 6 decks without ending your turn"
               : "Scout Deck Card is unavailable (already scouted or not your turn)",
             text: "🃏 Scout Deck Card",
             onClick: () => {
@@ -14056,6 +14914,40 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
               closeModal();
               openScoutModal(gs, viewer);
             },
+          }),
+          !isEntryPhase && isDeliveryPhase
+            ? el("button", {
+                id: "modal-trash-tile-btn",
+                type: "button",
+                className: "btn",
+                disabled: !canTrashThisTile,
+                title: canTrashThisTile
+                  ? `Discard 1 Influence card to trash ${
+                      exposedTile
+                        ? `the exposed face-up tile (${occupants.length > 0 ? "occupied: flips replacement" : "unoccupied: leaves unrevealed"}) or `
+                        : ""
+                    }the top unrevealed stack tile of ${coord}`
+                  : "Trash Tile is unavailable (already trashed this turn, no Influence cards, or not your turn)",
+                text: exposedTile ? "🗑️ Trash Tile" : "🗑️ Bury Stack Tile",
+                onClick: () => {
+                  if (!canTrashThisTile) return;
+                  closeModal();
+                  openTrashModal(gs, viewer, {
+                    cell: coord,
+                    targetMode: exposedTile ? "revealed" : "stack",
+                  });
+                },
+              })
+            : null,
+          el("button", {
+            id: "modal-encounter-decks-btn",
+            type: "button",
+            className: "btn",
+            title: "Inspect Patricii, Legiones, and Nefarii encounter deck mechanics, Roman history, and live faction card counts",
+            text: centerEncounterKey
+              ? `🃏 ${ENCOUNTER_DECK_PROFILES[centerEncounterKey].label} Odds`
+              : "🃏 Encounter Decks",
+            onClick: () => openEncounterDecksOverviewModal(gs, centerEncounterKey),
           })
         ),
         el(
@@ -14202,7 +15094,12 @@ function openNpcOfferModal(gs, viewer) {
             "div",
             { className: "good-card-footer" },
             el("div", { className: "good-blocks-row", text: blocksSymbols }),
-            renderGoodPriceTableNode(c, trackName, typeof cand.colIndex === "number" ? cand.colIndex : 2)
+            renderGoodPriceTableNode(
+              c,
+              trackName,
+              typeof cand.colIndex === "number" ? cand.colIndex : -1,
+              typeof cand.colIndex !== "number"
+            )
           )
         )
       ),
@@ -14412,7 +15309,12 @@ function openMarketRewardModal(gs, viewer) {
             "div",
             { className: "good-card-footer" },
             el("div", { className: "good-blocks-row", text: blocksSymbols }),
-            renderGoodPriceTableNode(c, trackName, typeof cand.colIndex === "number" ? cand.colIndex : 2)
+            renderGoodPriceTableNode(
+              c,
+              trackName,
+              typeof cand.colIndex === "number" ? cand.colIndex : -1,
+              typeof cand.colIndex !== "number"
+            )
           )
         )
       ),
@@ -14582,7 +15484,7 @@ function renderScoutedMarketCardPreview(card) {
           "div",
           { className: "good-card-footer" },
           el("div", { className: "good-blocks-row", text: blocksSymbols }),
-          renderGoodPriceTableNode(card, trackName, 2)
+          renderGoodPriceTableNode(card, trackName, -1, true)
         )
       )
     )
@@ -14705,6 +15607,14 @@ function openScoutResultModal(si) {
     gs.phase === "delivery" &&
     gs.activePlayerIndex === gs.viewerPlayerIndex &&
     !gs.pendingEncounter;
+  const scoutViewer =
+    canEndTurnFromScout && Array.isArray(gs.players)
+      ? gs.players[gs.viewerPlayerIndex]
+      : null;
+  const hasMoreActionsAfterScout = Boolean(
+    scoutViewer &&
+      (Number(scoutViewer.movesRemaining || 0) > 0 || hasAvailableDeliveryTransactionNow(gs, scoutViewer))
+  );
 
   showModal(
     `👁️ Scouted Intelligence — ${si.label || "Revealed Secret"}`,
@@ -14731,14 +15641,17 @@ function openScoutResultModal(si) {
         el("button", {
           id: "scout-modal-close-btn",
           type: "button",
-          className: canEndTurnFromScout || canMoveToScoutedGate ? "btn" : "btn btn-primary",
+          className:
+            (!canEndTurnFromScout && !canMoveToScoutedGate) || (canEndTurnFromScout && hasMoreActionsAfterScout)
+              ? "btn btn-primary"
+              : "btn",
           text: "Close Scout View",
           onClick: closeModal,
         }),
         canEndTurnFromScout
           ? el("button", {
               type: "button",
-              className: "btn btn-primary",
+              className: hasMoreActionsAfterScout ? "btn" : "btn btn-primary",
               text: "⏭️ End Turn",
               onClick: () => {
                 closeModal();
@@ -15467,14 +16380,46 @@ function triggerInfluenceCardPlay(gs, viewer, card) {
     return;
   }
 
-  if (cName === "Twist Of Fate" || cName === "Lucky Break") {
-    armDieCardAction(card, cName === "Lucky Break" ? "plus_one" : "reroll");
-    showToast(`👆 Click directly on the die you want to ${cName === "Lucky Break" ? "increase (+1)" : "re-roll"} with '${cName}'!`);
+  if (cName === "Twist Of Fate") {
+    triggerTwistOfFateOrArm(gs, card);
+    return;
+  }
+
+  if (cName === "Lucky Break") {
+    armDieCardAction(card, "plus_one");
+    showToast(`👆 Click directly on the die you want to increase (+1) with '${cName}'!`);
     const encEl = document.getElementById("pending-encounter-panel");
     if (!appState.activeDiceOverlay && encEl && typeof encEl.scrollIntoView === "function") {
       encEl.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     return;
+  }
+
+  if (cName === "Casus Belli") {
+    const pend = gs && gs.pendingEncounter;
+    if (!pend) {
+      const reason = getCasusBelliProactiveDisabledReason(gs, viewer);
+      if (reason) {
+        showToast(reason, true);
+        return;
+      }
+      openCasusBelliPvpModal(gs, viewer, card);
+      return;
+    }
+    const pStage = pend.stage || "pre_decision";
+    if (
+      pStage !== "pre_decision" ||
+      pend.isPvp ||
+      !viewer ||
+      pend.playerIndex !== viewer.index ||
+      pend.interveningPlayerIndex != null
+    ) {
+      showToast(
+        "Casus Belli can only be played during an initial NPC Encounter decision or proactively on your Night Delivery turn (Turn 2+).",
+        true
+      );
+      return;
+    }
   }
 
   sendGameAction({ type: "play_influence", cardId: card.id });
@@ -15673,6 +16618,20 @@ function renderDeckCardBackPickerGrid(gs, deckSpecs, onSelectDeck, tapPillLabel 
             )
           );
 
+      const metaNode = ENCOUNTER_DECK_PROFILES[spec.key]
+        ? renderEncounterDeckMetaBlockNode(gs, spec.key, {
+            useLiveCounts: true,
+            includeHistory: true,
+            showFactionName: false,
+          })
+        : spec.shortDesc
+        ? el(
+            "div",
+            { className: "encounter-deck-meta-box" },
+            el("div", { className: "encounter-deck-meta-line", text: spec.shortDesc })
+          )
+        : null;
+
       return el(
         "button",
         {
@@ -15684,6 +16643,7 @@ function renderDeckCardBackPickerGrid(gs, deckSpecs, onSelectDeck, tapPillLabel 
         cardVisual,
         el("div", { className: "scout-deck-caption", text: spec.label }),
         el("div", { className: "scout-deck-sub", text: countText }),
+        metaNode,
         el("div", { className: "scout-deck-tap-pill", text: tapPillLabel })
       );
     })
@@ -15691,15 +16651,6 @@ function renderDeckCardBackPickerGrid(gs, deckSpecs, onSelectDeck, tapPillLabel 
 }
 
 function openInformantsTargetModal(gs, _viewer, card) {
-  const allDeckSpecs = [
-    { key: "patricii", label: "Patricii", img: "/assets/icons/card_back_patricii.png?v=24" },
-    { key: "nefarii", label: "Nefarii", img: "/assets/icons/card_back_nefarii.png?v=24" },
-    { key: "legiones", label: "Legionnaire", img: "/assets/icons/card_back_legiones.png?v=24" },
-    { key: "market", label: "Goods & Guards", img: "/assets/icons/card_back_goods.png?v=24" },
-    { key: "missiones", label: "Missiones", icon: "📜" },
-    { key: "influence", label: "Influence", icon: "🃏" },
-  ];
-
   const cellSelect = el(
     "select",
     { className: "form-input" },
@@ -15730,7 +16681,7 @@ function openInformantsTargetModal(gs, _viewer, card) {
         }),
         renderDeckCardBackPickerGrid(
           gs,
-          allDeckSpecs,
+          ALL_PICKER_DECK_SPECS,
           (dk) => {
             closeModal();
             sendGameAction({
@@ -15763,7 +16714,8 @@ function openInformantsTargetModal(gs, _viewer, card) {
           },
         })
       )
-    )
+    ),
+    { wide: true }
   );
 }
 
@@ -16062,23 +17014,17 @@ function openScoutModal(gs, _viewer) {
     )
   );
 
-  const encounterDeckSpecs = [
-    { key: "patricii", label: "Patricii", img: "/assets/icons/card_back_patricii.png?v=24" },
-    { key: "nefarii", label: "Nefarii", img: "/assets/icons/card_back_nefarii.png?v=24" },
-    { key: "legiones", label: "Legionnaire", img: "/assets/icons/card_back_legiones.png?v=24" },
-  ];
-
   showModal(
     isEntryPhase
       ? "👁️ Pre-Night Initial Scout (Before Selecting Gate)"
-      : "👁️ Scout Action (Ends Turn)",
+      : "👁️ Free Scout Action (Once Per Turn)",
     el(
       "div",
       {},
       !isEntryPhase
         ? el("p", {
-            style: { fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0", marginBottom: "0.75rem" },
-            text: "Committing to your Scout action immediately advances the turn so the next merchant in sequence can begin while you examine the scouted card or tile.",
+            style: { fontSize: "0.84rem", color: "var(--text-main)", marginTop: "0", marginBottom: "0.75rem" },
+            text: "Use your 1 free Scout per turn at ANY time—before or after Moving and before or after Transacting. Scouting does NOT end your turn: you may keep taking remaining actions afterwards or click End Turn inside the preview.",
           })
         : null,
       el(
@@ -16086,15 +17032,15 @@ function openScoutModal(gs, _viewer) {
         { style: { marginBottom: "1.1rem" } },
         el("div", {
           style: { fontWeight: "700", color: "var(--gold-bright)", fontSize: "0.9rem", marginBottom: "0.25rem" },
-          text: "Option A: Tap an Encounter Card Deck to Scout Its Top Card",
+          text: "Option A: Tap Any of the 6 Card Decks to Scout Its Top Card",
         }),
         el("div", {
           style: { fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" },
-          text: "Select from the Patricii, Nefarii, or Legionnaire decks below by tapping directly on its card back:",
+          text: "Select from Patricii, Nefarii, Legionnaire, Goods & Guards, Missiones, or Influence by tapping directly on a deck below:",
         }),
         renderDeckCardBackPickerGrid(
           gs,
-          encounterDeckSpecs,
+          ALL_PICKER_DECK_SPECS,
           (dk) => {
             closeModal();
             sendGameAction({
@@ -16138,45 +17084,154 @@ function openScoutModal(gs, _viewer) {
           },
         })
       )
-    )
+    ),
+    { wide: true }
   );
 }
 
-function openTrashModal(gs, viewer) {
+function openTrashModal(gs, viewer, prefillOpts = {}) {
   const infSelect = el(
     "select",
     { className: "form-input" },
     ...(viewer.influence || []).map((c) => el("option", { value: c.id, text: c.name }))
   );
+  const initialCell = (prefillOpts && prefillOpts.cell && gs.romeBoard[prefillOpts.cell])
+    ? prefillOpts.cell
+    : appState.inspectedCell;
+  const preferredMode = prefillOpts && prefillOpts.targetMode === "stack" ? "stack" : "revealed";
+
   const cellSelect = el(
     "select",
     { className: "form-input" },
-    ...Object.keys(gs.romeBoard).map((coord) =>
-      el("option", { value: coord, selected: coord === appState.inspectedCell, text: `${coord} — ${gs.romeBoard[coord].name}` })
-    )
+    ...Object.keys(gs.romeBoard).map((coord) => {
+      const cObj = gs.romeBoard[coord];
+      const occCnt = ((gs.players) || []).filter(
+        (p) => p.position === coord && !p.exitedRome && !p.eliminated
+      ).length;
+      const statusTag = cObj.revealed
+        ? occCnt > 0
+          ? "Exposed, Occupied"
+          : "Exposed, Unoccupied"
+        : "Unrevealed";
+      return el("option", {
+        value: coord,
+        selected: coord === initialCell,
+        text: `${coord} — ${cObj.name} (${statusTag}, ${cObj.stackCount ?? 12} in stack)`,
+      });
+    })
   );
-  const encounterDeckSpecs = [
-    { key: "patricii", label: "Patricii", img: "/assets/icons/card_back_patricii.png?v=24" },
-    { key: "nefarii", label: "Nefarii", img: "/assets/icons/card_back_nefarii.png?v=24" },
-    { key: "legiones", label: "Legionnaire", img: "/assets/icons/card_back_legiones.png?v=24" },
-  ];
+
+  const cellStatusBox = el("div", { className: "trash-target-status-box" });
+  const trashExposedBtn = el("button", {
+    id: "trash-exposed-tile-btn",
+    type: "button",
+    className: "btn btn-crimson",
+    text: "🗑️ Trash Exposed Face-Up Tile",
+    onClick: () => {
+      closeModal();
+      sendGameAction({
+        type: "delivery_trash",
+        influenceCardId: infSelect.value,
+        targetType: "tile",
+        targetKey: cellSelect.value,
+        targetMode: "revealed",
+      });
+    },
+  });
+  const trashStackBtn = el("button", {
+    id: "trash-stack-tile-btn",
+    type: "button",
+    className: "btn",
+    text: "🗑️ Bury Top Unrevealed Stack Tile",
+    onClick: () => {
+      closeModal();
+      sendGameAction({
+        type: "delivery_trash",
+        influenceCardId: infSelect.value,
+        targetType: "tile",
+        targetKey: cellSelect.value,
+        targetMode: "stack",
+      });
+    },
+  });
+
+  const refreshSelectedCellUi = () => {
+    const coord = cellSelect.value;
+    const cObj = (gs.romeBoard && gs.romeBoard[coord]) || null;
+    const occNames = ((gs.players) || [])
+      .filter((p) => p.position === coord && !p.exitedRome && !p.eliminated)
+      .map((p) => p.name);
+    const hasExposed = Boolean(cObj && cObj.revealed);
+    const stackCnt = cObj ? Number(cObj.stackCount ?? 12) : 0;
+    const revSummary =
+      hasExposed && cObj.revealed
+        ? [
+            cObj.revealed.encounter ? `Center: ${cObj.revealed.encounter}` : "No Center Encounter",
+            Array.isArray(cObj.revealed.sells) && cObj.revealed.sells.length > 0
+              ? `Buys: ${cObj.revealed.sells.map((s) => s.category).join(", ")}`
+              : "No Buyers",
+          ].join(" • ")
+        : "";
+
+    trashExposedBtn.disabled = !hasExposed;
+    trashStackBtn.disabled = stackCnt <= 0;
+    trashExposedBtn.className =
+      hasExposed && preferredMode === "revealed" ? "btn btn-crimson" : "btn";
+    trashStackBtn.className =
+      (!hasExposed || preferredMode === "stack") && stackCnt > 0 ? "btn btn-crimson" : "btn";
+
+    cellStatusBox.innerHTML = "";
+    if (hasExposed) {
+      cellStatusBox.appendChild(
+        el("div", {
+          style: { fontWeight: "700", marginBottom: "0.2rem" },
+          text: `${coord} (${cObj.name}) — Exposed Tile (${revSummary})`,
+        })
+      );
+      cellStatusBox.appendChild(
+        el("div", {
+          text:
+            occNames.length > 0
+              ? `Occupied by ${occNames.join(", ")}: trashing the exposed tile sends it to the bottom and IMMEDIATELY flips the top unrevealed stack tile face-up (${stackCnt} available).`
+              : `Unoccupied: trashing the exposed tile sends it to the bottom and leaves ${coord} unrevealed until a merchant enters it.`,
+        })
+      );
+    } else {
+      cellStatusBox.appendChild(
+        el("div", {
+          text: `${coord} (${cObj ? cObj.name : coord}) currently has no exposed face-up tile (${stackCnt} unrevealed tiles in stack). Use "Bury Top Unrevealed Stack Tile" to send the top face-down tile to the bottom.`,
+        })
+      );
+    }
+  };
+
+  cellSelect.addEventListener("change", refreshSelectedCellUi);
+  refreshSelectedCellUi();
 
   showModal(
-    "🗑️ Trash Action (Discard 1 Influence to Bury Top Tile or Card)",
+    "🗑️ Trash Action (Discard 1 Influence to Bury Tile or Deck Card)",
     el(
       "div",
       {},
+      el("p", {
+        style: { fontSize: "0.84rem", color: "var(--text-main)", marginTop: "0", marginBottom: "0.75rem" },
+        text: "Once per Delivery turn (before or after Moving, even while sharing a cell with another merchant), discard 1 Influence card to bury the top card of any of the 6 decks OR trash either an exposed face-up tile or the top unrevealed stack tile.",
+      }),
       el("div", { className: "form-group" }, el("label", { text: "1. Influence Card to Discard" }), infSelect),
       el(
         "div",
         { style: { marginBottom: "1rem" } },
         el("div", {
-          style: { fontWeight: "700", color: "var(--gold-bright)", fontSize: "0.86rem", marginBottom: "0.35rem" },
-          text: "Option A: Tap an Encounter Deck to Bury Its Top Card",
+          style: { fontWeight: "700", color: "var(--gold-bright)", fontSize: "0.86rem", marginBottom: "0.25rem" },
+          text: "Option A: Tap Any of the 6 Decks to Bury Its Top Card to Bottom",
+        }),
+        el("div", {
+          style: { fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.45rem" },
+          text: "Supports Patricii, Nefarii, Legionnaire, Goods & Guards, Missiones, and Influence (the current top card cycles before your discarded Influence card goes underneath):",
         }),
         renderDeckCardBackPickerGrid(
           gs,
-          encounterDeckSpecs,
+          ALL_PICKER_DECK_SPECS,
           (dk) => {
             closeModal();
             sendGameAction({
@@ -16192,24 +17247,12 @@ function openTrashModal(gs, viewer) {
       el(
         "div",
         { style: { paddingTop: "0.8rem", borderTop: "1px solid var(--border-subtle)" } },
-        el("div", { className: "form-group" }, el("label", { text: "Option B: Target Neighborhood Tile Stack" }), cellSelect),
-        el("button", {
-          type: "button",
-          className: "btn btn-crimson",
-          style: { width: "100%" },
-          text: "🗑️ Bury Top Tile to Bottom of Stack",
-          onClick: () => {
-            closeModal();
-            sendGameAction({
-              type: "delivery_trash",
-              influenceCardId: infSelect.value,
-              targetType: "tile",
-              targetKey: cellSelect.value,
-            });
-          },
-        })
+        el("div", { className: "form-group" }, el("label", { text: "Option B: Target Neighborhood Tile (Exposed Face-Up OR Unrevealed Stack)" }), cellSelect),
+        cellStatusBox,
+        el("div", { className: "trash-target-actions-grid" }, trashExposedBtn, trashStackBtn)
       )
-    )
+    ),
+    { wide: true }
   );
 }
 
@@ -16239,12 +17282,12 @@ const HOTKEY_SPECS = [
   {
     key: "scoutTile",
     label: "Scout Neighborhood Tile Stack",
-    desc: "Peeks at the top unrevealed tile of the selected neighborhood stack (ends turn).",
+    desc: "Peeks at the top unrevealed tile of the selected neighborhood stack (once per turn, anytime without ending your turn).",
   },
   {
     key: "scoutDeck",
-    label: "Scout Encounter Deck Card",
-    desc: "Opens or triggers the Encounter Deck Scout picker (Patricii, Legiones, Nefarii).",
+    label: "Scout Card Deck",
+    desc: "Opens the Scout picker across all 6 decks (once per turn, anytime without ending your turn).",
   },
   {
     key: "endTurn",
@@ -16968,13 +18011,13 @@ const RULEBOOK_SECTIONS = [
       },
     ],
     bullets: [
-      "Step 1 — Optional Trash: Discard 1 Influence card to bury the top unexposed tile of any neighborhood or the top card of any deck to the bottom.",
+      "Step 1 (or Anytime During Your Turn) — Optional Trash: Once per Delivery turn (before or after Moving, even while on an occupied cell), discard 1 Influence card to bury the top card of ANY of the 6 decks (Patricii, Legiones, Nefarii, Goods & Guards, Missiones, or Influence—if targeting Influence, its existing top card cycles BEFORE your discarded card goes underneath), bury the top unrevealed stack tile of any neighborhood, OR trash an exposed face-up tile. Trashing an exposed tile on an occupied cell pushes it to the bottom and immediately flips the top unrevealed stack tile face-up; on an unoccupied cell, it leaves the space unrevealed until entered.",
       "Step 2 — Movement (1 Step (M)): Move along a passable outgoing edge to an adjacent neighborhood (revealing its top tile if face-down) or out an exterior perimeter edge to Exit Rome.",
       "Step 3 — Edge Cost / Hazard: Pay any 2(d) road toll (plus +4(d) Bridge Toll if Divided Tiber is active and you hold < +1 Emerald) or resolve any Edge Encounter crossed.",
       "Step 4 — Mission Cargo Pickup & Delivery: Upon arriving in a neighborhood—BEFORE any Center Tile Encounter triggers—you may load or deliver matching Mission Cargo!",
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
       "Step 6 — One Transaction (1 Good/Hr (T), or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here) at its bold Green (SELL_SYM) price—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4) at its italic Red (BUY_SYM) price, OR Gamble once at a Stadium tile (up to 20(d) wager).",
-      "Step 7 — End-of-Turn Scout: After completing your Move and Transaction actions, you may Scout one time at the end of your turn by peeking at the top unrevealed tile of any neighborhood stack or the top card of any deck. Committing to your Scout action immediately advances the turn so the next merchant in sequence can begin their turn while you finish examining the scouted tile or card (though the next merchant may choose to wait if they want to see whether you react or move toward that area).",
+      "Step 7 — Flexible Free Scout (Once Per Turn, Anytime): Once per Delivery turn—before or after Moving and before or after Transacting—you may Scout by peeking at the top unrevealed tile of any neighborhood stack or the top card of any of the 6 decks (Patricii, Legiones, Nefarii, Goods & Guards, Missiones, or Influence). Scouting NEVER forces your turn to end; continue taking remaining actions afterward or click End Turn from the Scout preview.",
       "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via Rome's 5 intra-urban Stone Bridges (in use in 211 A.D.): Pons Aelius (A1↔B1), Pons Neronianus (A1↔A2), Pons Agrippae (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
     ],
   },
@@ -16998,17 +18041,17 @@ const RULEBOOK_SECTIONS = [
       {
         img: "./assets/icons/patricii_icon.png",
         title: "Patricii Encounter",
-        desc: "Wealthy senators and aristocrats. Friendly Patricii offer lucrative Missions or trade deals; Hostile Patricii demand bribes, wine, or marble.",
+        desc: "Wealthy senators & magistrates (30 cards: Julia Domna 8, Aurelius 8, Geta 5, Plautilla 3, Caracalla 2, Events 4). Friendly nobles offer Missions and Denarii; hostile nobles demand bribes or luxury goods.",
       },
       {
         img: "./assets/icons/legiones_icon.png",
         title: "Legiones Encounter",
-        desc: "Praetorian guards and urban cohorts. Heavily aligned with Caracalla; gain +2 CP when Army Pay Hike is active.",
+        desc: "Praetorian guards, vigiles & cohorts (30 cards: Caracalla 9, Plautilla 8, Geta 5, Domna 3, Aurelius 3, Events 2; +2 CP under Army Pay Hike). Historically, Roman soldiers extorted bribes and were often as dangerous to merchants as street criminals.",
       },
       {
         imgs: ["./assets/icons/nefarii_icon.png", "./assets/icons/nefarii_3_icon.png"],
-        title: "Nefarii & 3× Syndicate",
-        desc: "Cutthroats, thieves, and nocturnal syndicates. A 3-Dagger icon draws 3 Nefarii cards in succession!",
+        title: "Nefarii & 1×–3× Combat Icons",
+        desc: "Cutthroats, thieves & syndicates (29 cards: Plautilla 8, Caracalla 5, Geta 5, Domna 5, Aurelius 3, Events 3). ANY 1×, 2×, or 3× Patricii/Legiones/Nefarii icon ALWAYS draws 1 card; the icon count (1–3) sets X in Combat (e.g., 3 Daggers = 3(R)+3 CP).",
       },
       {
         img: "./assets/icons/angry_mob.png",
@@ -17047,10 +18090,11 @@ const RULEBOOK_SECTIONS = [
       },
     ],
     bullets: [
-      "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
+      "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. Drawing on any 1×, 2×, or 3× Patricii, Legiones, or Nefarii icon ALWAYS draws 1 Encounter card; the icon count (1–3) sets X in X(R)+X Combat. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
       "Combat Power (CP) & Cargo Gear: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals (including Ostrich or negative-die beasts!), and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). Note that crated Loricae body armor carries 0 CP in street ambushes (too slow to don mid-attack, compensated by lucrative trade margins). If Player CP ≥ Opponent CP against an NPC, you win!",
       "Armor, Guards, & Driver Fate (Damage Deficit Note): If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP − Player CP). Note that wounds from combat are always determined by the signed damage deficit between the two sides—even when one or both CP totals are negative (for example, if your overall CP is -2 and your opponent's CP is -1, you suffer 1 Wound). Shields/Helmets reduce Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
       "1(R) Street Charts: Angry Mob (0: lose all Wine; I: lose all Grain; II: lose most expensive Good; III: safe), Theater Troupe (0: lose all positive Friendly Favor; I: lose all negative Hostile Favor; II: lose rest of turn & next turn; III: draw 1(R) Influence), Soothsayer (take mandatory Mission + seal 1(R) Influence cards).",
+      "Casus Belli — Encounter vs. Proactive PvP Combat: Inside your initial NPC Encounter pre-decision window, Casus Belli unlocks Combat against a non-threatening NPC (usable even on Turn 1 without consuming a Transaction). Outside encounters on Turn 2+ of your Night Delivery turn (strictly prohibited on Turn 1), you may play Casus Belli against an active rival merchant on your same neighborhood cell (A1–F6): this immediately exhausts your hourly Transaction (T) for the turn (blocked if you already transacted, gambled, or ended your turn). Both combatants choose consumable Weapons before rolling simultaneous Combat Dice (R) + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (+1 CP per positive Ruby) + pre/post-roll Influence cards (Gladiator's Intervention +1(R) CP, Flying Chamber Pot +1 CP). Ties inflict no Wounds or Spoils; if the Attacker loses by CP, their turn ends immediately. Any unblocked Wounds reaching the loser's Driver trigger a 1(R) Driver Fate Chart roll where the Winner claims Spoils (0/I: all Goods, discarding Mission Cargo; II: all Denarii; III: all Influence cards), and only a Roll of 0 ends the loser's night for the Season.",
       "Stadium Gambling: On a tile with the Dice icon, wager 1(d) to 20(d) (capped at 20(d) per gamble action) and roll 1(R) to win Wager × Roll!",
     ],
   },
@@ -17075,7 +18119,7 @@ const RULEBOOK_SECTIONS = [
       "Step 1 — Unfinished Missions Fail: Incomplete Missions fail first (applying Encounter Hostile Favor and -10(d) each if Bonded Couriers is active); remaining mission cargo is discarded.",
       "Step 2 — Cart Liquidation & Loans: Remaining non-mission Goods liquidate at Abundant (>>) (SELL_SYM) Sell Price, then unpaid Spring (-45(d)) and Summer (-60(d)) Loans are deducted.",
       "Step 3 — Imperial Proscription FIRST, Then Political Climate Settlement: If Imperial Proscription (Caracalla Option 1) is enacted, it resolves FIRST—eliminating the merchant with Least Caracalla Favor BEFORE any other Most/Least awards, penalties, steals, or percentages! Eliminated merchants cannot win or suffer subsequent Most/Least awards and rank below all survivors. Then resolve Flat Gem/Mission Modifiers & Least Penalties → Exile's Informants Steal → Domna +20% Wealth.",
-      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: pre-roll cards (Mercenary Ambush, Distraction removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot, Gladiator's Intervention) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
+      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: pre-roll cards (Mercenary Ambush +2(R), Distraction -1(R) removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot +1 CP, Gladiator's Intervention +1(R) CP) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
     ],
     table: {
       headers: ["Caracalla", "Geta", "Julia Domna", "Plautilla", "Aurelians", "Missions"],
@@ -17167,9 +18211,14 @@ const RULEBOOK_SECTIONS = [
           "Fanned Card Deck + Roman Arca Chest — mandatory (!) or optional (?) unseen Mission drawn from the top of the Missiones deck.",
         ],
         [
-          "Green / Red Bar",
+          "(GREEN_BAR)",
           "Tile Edge",
-          "Open Street (free movement) / Barricaded Alley (impassable without Shortcut).",
+          "Open Street — passable movement between connected neighborhoods without a Shortcut card.",
+        ],
+        [
+          "(RED_BAR)",
+          "Tile Edge",
+          "Barricaded Alley — impassable barrier unless crossing with a Shortcut Influence card.",
         ],
         [
           "2(d) Badge",
@@ -17192,14 +18241,430 @@ const RULEBOOK_SECTIONS = [
           "Hover over any tile you have Scouted (or click any face-up tile) to inspect its zoomed street layout.",
         ],
         [
-          "Paid (d)X • Net ±(d)Y",
-          "Loaded Cart Cards & Sell Buttons",
-          "Tracks what you paid for each Good and your exact net profit at the current buyer.",
+          "Highlighted Scarcity & Paid/Net",
+          "Cart Mat, Card Detail Modal, & Sell Buttons",
+          "Loaded Cart Goods & Guards highlight the Scarcity column (<< to >>) where you acquired them; click any Card or inspect its Sell button to view the exact Purchase Price Paid and Net Profit.",
         ],
       ],
     },
   },
+  {
+    id: "catalog-goods",
+    title: "11. Goods & Guards Cards",
+    catalogKey: "market",
+    paragraphs: [
+      "Complete reference catalog of all 84 Cargo & Guard cards across Ostia's 6 Market tracks (Marble, Wine, Animals, Weapons, Grain, and Guards). No Scarcity column is pre-highlighted in this reference catalog; click any card to inspect its full buy and sell tables.",
+    ],
+  },
+  {
+    id: "catalog-influence",
+    title: "12. Influence Cards",
+    catalogKey: "influence",
+    paragraphs: [
+      "Complete reference catalog of all 43 unique Influence cards found in the Influence deck. Filter by tactical role or use the Rulebook search box to find specific effects.",
+    ],
+  },
+  {
+    id: "catalog-missions",
+    title: "13. Mission Cards",
+    catalogKey: "missiones",
+    paragraphs: [
+      "Complete reference catalog of all 55 Missiones deck cards (Delivery, Trade/Sell, Combat/Regicide, and Expose contracts). Filter by Patron Faction favor or Mission Kind.",
+    ],
+  },
+  {
+    id: "catalog-encounters",
+    title: "14. Encounter Cards",
+    catalogKey: "encounters",
+    paragraphs: [
+      "Complete reference catalog of all 89 Roman Street Encounter cards across the Patricii (30), Legiones (30), and Nefarii (29) decks. Inspect each deck's mechanical profile, Roman historical context (including Praetorian and legionary extortion often rivaling street crime), and five-faction gem composition below—or click any deck card to filter.",
+    ],
+  },
 ];
+
+function getInfluenceCatalogCategory(c) {
+  const ec = String((c && c.effectCode) || "");
+  if (ec.startsWith("faction_favor_") || ec === "temp_favor_plus_2") return "Favor";
+  if (
+    ec === "casus_belli" ||
+    ec.startsWith("combat_") ||
+    ec === "free_guard_1r"
+  ) {
+    return "Combat";
+  }
+  if (
+    ec === "reroll_die" ||
+    ec === "chart_roll_plus_1" ||
+    ec === "gambling_plus_1r" ||
+    ec === "ignore_mob" ||
+    ec === "ignore_theater_troupe" ||
+    ec === "trigger_soothsayer"
+  ) {
+    return "Dice & Charts";
+  }
+  if (
+    ec === "move_twice" ||
+    ec === "pass_edge_as_green" ||
+    ec === "shift_category_scarcity_right" ||
+    ec === "increase_own_sale_scarcity" ||
+    ec === "reduce_fine" ||
+    ec === "redraw_occupied_tile" ||
+    ec === "reorder_top_3_any"
+  ) {
+    return "Movement & Scarcity";
+  }
+  return "Trade & Cart";
+}
+
+function getMissionCatalogKindLabel(m) {
+  const k = String((m && m.kind) || "");
+  if (k === "delivery") return "Delivery";
+  if (k === "sell") return "Sell";
+  if (k === "expose") return "Expose";
+  if (k === "kill" || k === "kill_emperor" || k === "kill_emperor_cancel") return "Combat / Kill";
+  return k || "Other";
+}
+
+function getCatalogSearchBlob(card, catalogKey) {
+  if (!card) return "";
+  if (catalogKey === "market") {
+    return [
+      card.name,
+      card.subtitle,
+      card.category,
+      card.subcategory,
+      card.track,
+      card.combatText,
+      card.abilityText,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+  if (catalogKey === "influence") {
+    return [card.name, card.effectText, getInfluenceCatalogCategory(card), card.bio]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+  if (catalogKey === "missiones") {
+    return [
+      card.name,
+      card.kind,
+      getMissionCatalogKindLabel(card),
+      card.item,
+      card.category,
+      card.pickupCell,
+      card.deliverCell,
+      card.cell,
+      card.rewardText,
+      card.text,
+      card.description,
+      ...(Array.isArray(card.favor) ? card.favor : []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+  const m = card.mission || {};
+  return [
+    card.name,
+    card.deck,
+    card.type,
+    card.faction,
+    card.bio,
+    card.combatFormula,
+    card.friendlyReward,
+    card.combatReward,
+    card.actionText,
+    m.name,
+    m.text,
+    ...(Array.isArray(card.friendlyFavor) ? card.friendlyFavor : []),
+    ...(Array.isArray(card.hostileFavor) ? card.hostileFavor : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getCatalogAllItemsForKey(catalogKey) {
+  const cat = appState.cardsCatalog;
+  if (!cat) return [];
+  if (catalogKey === "market") return Array.isArray(cat.market) ? cat.market : [];
+  if (catalogKey === "influence") return Array.isArray(cat.influence) ? cat.influence : [];
+  if (catalogKey === "missiones") return Array.isArray(cat.missiones) ? cat.missiones : [];
+  if (catalogKey === "encounters") {
+    return [
+      ...(Array.isArray(cat.patricii) ? cat.patricii : []),
+      ...(Array.isArray(cat.legiones) ? cat.legiones : []),
+      ...(Array.isArray(cat.nefarii) ? cat.nefarii : []),
+    ];
+  }
+  return [];
+}
+
+function getRulebookCatalogCardsFiltered(catalogKey, searchQuery, applyPillFilters = true) {
+  const all = getCatalogAllItemsForKey(catalogKey);
+  const q = String(searchQuery || "").trim().toLowerCase();
+  const f = appState.rulebookCatalogFilters || {};
+  return all.filter((card) => {
+    if (q && !getCatalogSearchBlob(card, catalogKey).includes(q)) return false;
+    if (!applyPillFilters) return true;
+    if (catalogKey === "market") {
+      if (f.marketTrack && f.marketTrack !== "All") {
+        const track = card.track || card.category || "";
+        if (track !== f.marketTrack) return false;
+      }
+    } else if (catalogKey === "influence") {
+      if (f.influenceCategory && f.influenceCategory !== "All") {
+        if (getInfluenceCatalogCategory(card) !== f.influenceCategory) return false;
+      }
+    } else if (catalogKey === "missiones") {
+      if (f.missionFaction && f.missionFaction !== "All") {
+        const fav = Array.isArray(card.favor) ? card.favor : [];
+        if (f.missionFaction === "No Favor") {
+          if (fav.length > 0) return false;
+        } else if (f.missionFaction === "Hostile") {
+          if (!fav.some((x) => String(x || "").trim().startsWith("-"))) return false;
+        } else {
+          if (!fav.some((x) => String(x || "").replace(/^[-+!]/, "").trim() === f.missionFaction)) return false;
+        }
+      }
+      if (f.missionKind && f.missionKind !== "All") {
+        if (getMissionCatalogKindLabel(card) !== f.missionKind) return false;
+      }
+    } else if (catalogKey === "encounters") {
+      if (f.encounterDeck && f.encounterDeck !== "All") {
+        if (String(card.deck || "").toLowerCase() !== f.encounterDeck.toLowerCase()) return false;
+      }
+      if (f.encounterFaction && f.encounterFaction !== "All") {
+        if (f.encounterFaction === "Event (Unaligned)") {
+          if (card.type !== "event") return false;
+        } else {
+          if (String(card.faction || "") !== f.encounterFaction) return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
+function buildRulebookFilterRowNode(labelText, options, currentVal, onSelect) {
+  return el(
+    "div",
+    { className: "rulebook-filter-row" },
+    el("span", { className: "rulebook-filter-label", text: labelText }),
+    el(
+      "div",
+      { className: "rulebook-filter-pills" },
+      ...options.map((opt) =>
+        el("button", {
+          type: "button",
+          className: `rulebook-filter-pill ${(currentVal || "All") === opt ? "active" : ""}`,
+          text: opt,
+          onClick: () => onSelect(opt),
+        })
+      )
+    )
+  );
+}
+
+function renderRulebookCatalogSectionBody(sec, searchQuery, onRefresh) {
+  const key = sec.catalogKey;
+  if (!appState.cardsCatalog && !appState.cardsCatalogLoading && !appState.cardsCatalogError) {
+    ensureCardsCatalogLoaded();
+  }
+  if (appState.cardsCatalogError && !appState.cardsCatalog) {
+    return el(
+      "div",
+      { className: "rulebook-catalog-status error" },
+      el("span", { text: `Unable to load card catalog: ${appState.cardsCatalogError}` }),
+      el("button", {
+        type: "button",
+        className: "btn btn-sm",
+        text: "Retry",
+        onClick: () => {
+          appState.cardsCatalogError = null;
+          ensureCardsCatalogLoaded();
+        },
+      })
+    );
+  }
+  if (!appState.cardsCatalog) {
+    return el("div", {
+      className: "rulebook-catalog-status",
+      text: "⏳ Loading physical card catalog (271 cards)...",
+    });
+  }
+
+  const f = appState.rulebookCatalogFilters;
+  const setFilter = (field, val) => {
+    appState.rulebookCatalogFilters[field] = val;
+    if (onRefresh) onRefresh();
+  };
+
+  const filterBars = [];
+  if (key === "market") {
+    filterBars.push(
+      buildRulebookFilterRowNode(
+        "Category:",
+        ["All", "Marble", "Wine", "Animals", "Weapons", "Grain", "Guards"],
+        f.marketTrack,
+        (val) => setFilter("marketTrack", val)
+      )
+    );
+  } else if (key === "influence") {
+    filterBars.push(
+      buildRulebookFilterRowNode(
+        "Role:",
+        ["All", "Favor", "Combat", "Dice & Charts", "Movement & Scarcity", "Trade & Cart"],
+        f.influenceCategory,
+        (val) => setFilter("influenceCategory", val)
+      )
+    );
+  } else if (key === "missiones") {
+    filterBars.push(
+      buildRulebookFilterRowNode(
+        "Faction:",
+        ["All", "Caracalla", "Geta", "Domna", "Plautilla", "Aurelius", "Hostile", "No Favor"],
+        f.missionFaction,
+        (val) => setFilter("missionFaction", val)
+      ),
+      buildRulebookFilterRowNode(
+        "Type:",
+        ["All", "Delivery", "Sell", "Combat / Kill", "Expose"],
+        f.missionKind,
+        (val) => setFilter("missionKind", val)
+      )
+    );
+  } else if (key === "encounters") {
+    filterBars.push(
+      buildRulebookFilterRowNode(
+        "Deck:",
+        ["All", "Patricii", "Legiones", "Nefarii"],
+        f.encounterDeck,
+        (val) => setFilter("encounterDeck", val)
+      ),
+      buildRulebookFilterRowNode(
+        "Alignment:",
+        ["All", "Caracalla", "Geta", "Domna", "Plautilla", "Aurelius", "Event (Unaligned)"],
+        f.encounterFaction,
+        (val) => setFilter("encounterFaction", val)
+      )
+    );
+  }
+
+  const allTotal = getCatalogAllItemsForKey(key).length;
+  const filteredCards = getRulebookCatalogCardsFiltered(key, searchQuery, true);
+
+  const cardNodes = filteredCards.map((card) => {
+    if (key === "market") {
+      const trackName = card.track || card.category || "Grain";
+      const isGuard = trackName === "Guards";
+      return el(
+        "div",
+        { className: "good-card-unit rulebook-catalog-good-unit" },
+        renderPhysicalMarketGoodCardFaceNode(card, {
+          trackName,
+          priceColIndex: -1,
+          isPriceIdxDirect: true,
+          extraCardClass: "catalog-good-card",
+          title: `Click to view ${card.name} details`,
+          onClick: () => {
+            if (isGuard) {
+              openCartGuardDetailModal(Object.assign({ isCatalogPreview: true }, card));
+            } else {
+              openCartGoodDetailModal(
+                Object.assign({ track: trackName, isCatalogPreview: true }, card),
+                null,
+                null,
+                true
+              );
+            }
+          },
+        })
+      );
+    }
+    if (key === "influence") {
+      return renderPhysicalInfluenceCardNode(card);
+    }
+    if (key === "missiones") {
+      return renderPhysicalMissionCardNode(card, { showStatusTag: false });
+    }
+    return renderPhysicalEncounterCardNode(card, null, { interactive: false });
+  });
+
+  const gridClass =
+    key === "market"
+      ? "rulebook-cards-grid rulebook-cards-grid-goods"
+      : "rulebook-cards-grid rulebook-cards-grid-phys";
+
+  const encounterDeckProfilesNode =
+    key === "encounters"
+      ? el(
+          "div",
+          { className: "encounter-deck-profiles-grid" },
+          ...["patricii", "legiones", "nefarii"].map((dk) => {
+            const prof = ENCOUNTER_DECK_PROFILES[dk];
+            const filterVal = prof.filterValue || prof.label;
+            const isSelected = f.encounterDeck === filterVal;
+            return el(
+              "button",
+              {
+                type: "button",
+                className: `encounter-deck-profile-card${isSelected ? " is-active" : ""}`,
+                style: { cursor: "pointer", font: "inherit", color: "inherit", width: "100%" },
+                title: isSelected
+                  ? `Showing ${prof.label} cards — click to show all Encounter decks`
+                  : `Click to filter Section 14 to ${prof.label} cards`,
+                onClick: () => setFilter("encounterDeck", isSelected ? "All" : filterVal),
+              },
+              el(
+                "div",
+                { className: "encounter-deck-profile-head" },
+                el("img", {
+                  className: "encounter-deck-profile-thumb",
+                  src: prof.img,
+                  alt: `${prof.label} Card Back`,
+                }),
+                el(
+                  "div",
+                  {},
+                  el("div", { className: "encounter-deck-profile-title", text: prof.label }),
+                  el("div", { className: "encounter-deck-profile-sub", text: prof.subtitle })
+                )
+              ),
+              renderEncounterDeckMetaBlockNode(null, dk, {
+                useLiveCounts: false,
+                includeHistory: true,
+                showFactionName: true,
+              })
+            );
+          })
+        )
+      : null;
+
+  return el(
+    "div",
+    { className: "rulebook-catalog-wrap" },
+    encounterDeckProfilesNode,
+    el(
+      "div",
+      { className: "rulebook-catalog-toolbar" },
+      ...filterBars,
+      el("div", {
+        className: "rulebook-catalog-count",
+        text: `Showing ${filteredCards.length} of ${allTotal} cards`,
+      })
+    ),
+    cardNodes.length > 0
+      ? el("div", { className: gridClass }, ...cardNodes)
+      : el("p", {
+          style: { color: "var(--text-muted)", fontStyle: "italic", padding: "0.75rem 0" },
+          text: "No cards match your current filters and search query.",
+        })
+  );
+}
 
 function renderRulebookIconVisualNode(item) {
   const wrap = el("div", { className: "rulebook-icon-visual" });
@@ -17216,9 +18681,9 @@ function renderRulebookIconVisualNode(item) {
     badge.appendChild(createDenariusSvgNode("1.55em"));
     wrap.appendChild(badge);
   } else if (item.symbolType === "move_sym") {
-    wrap.appendChild(createMoveActionCircleNode("1.9em"));
+    wrap.appendChild(createMoveActionCircleNode("Move Action (M)"));
   } else if (item.symbolType === "tx_sym") {
-    wrap.appendChild(createTransactionActionCircleNode("1.9em"));
+    wrap.appendChild(createTransactionActionCircleNode("Transaction Action (T)"));
   } else if (item.symbolType === "enc_deck_quest") {
     const badge = el("span", {
       className: "rulebook-symbol-pill",
@@ -17286,7 +18751,7 @@ function renderRulebookFormattedBulletNode(bulletText) {
   return li;
 }
 
-function buildRulebookSectionNodes(searchQuery) {
+function buildRulebookSectionNodes(searchQuery, onRefresh = null) {
   const q = (searchQuery || "").trim().toLowerCase();
   const filtered = q
     ? RULEBOOK_SECTIONS.filter(
@@ -17300,7 +18765,10 @@ function buildRulebookSectionNodes(searchQuery) {
               (ic.desc || "").toLowerCase().includes(q) ||
               (ic.badgeText || "").toLowerCase().includes(q)
           ) ||
-          (sec.table && sec.table.rows.some((r) => r.some((cell) => cell.toLowerCase().includes(q))))
+          (sec.table && sec.table.rows.some((r) => r.some((cell) => cell.toLowerCase().includes(q)))) ||
+          (sec.catalogKey &&
+            appState.cardsCatalog &&
+            getRulebookCatalogCardsFiltered(sec.catalogKey, q, false).length > 0)
       )
     : RULEBOOK_SECTIONS;
 
@@ -17309,7 +18777,7 @@ function buildRulebookSectionNodes(searchQuery) {
       el(
         "p",
         { style: { color: "var(--text-muted)", fontStyle: "italic", padding: "0.75rem 0" } },
-        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Grain, Favor,Sell, Buy, Loan, Curfew, or Winter.`
+        `No rulebook sections matched "${searchQuery}". Try searching for Tiber, Grain, Favor, Sell, Buy, Loan, Curfew, Winter, Casus Belli, or a card name.`
       ),
     ];
   }
@@ -17367,26 +18835,34 @@ function buildRulebookSectionNodes(searchQuery) {
               )
             )
           )
-        : null
+        : null,
+      sec.catalogKey ? renderRulebookCatalogSectionBody(sec, searchQuery, onRefresh) : null
     )
   );
 }
 
 function renderRulebookView() {
-  const sectionsContainer = el(
+  ensureCardsCatalogLoaded();
+  let sectionsContainer = null;
+  const refreshSections = () => {
+    if (sectionsContainer) {
+      sectionsContainer.replaceChildren(...buildRulebookSectionNodes(appState.rulebookSearch, refreshSections));
+    }
+  };
+  sectionsContainer = el(
     "div",
     { id: "rulebook-sections-list" },
-    ...buildRulebookSectionNodes(appState.rulebookSearch)
+    ...buildRulebookSectionNodes(appState.rulebookSearch, refreshSections)
   );
 
   const searchInput = el("input", {
     className: "form-input",
     type: "search",
-    placeholder: "Search rules (e.g. Tiber, Grain, Favor, Cargo, Loan, Winter)...",
+    placeholder: "Search rules & cards (e.g. Tiber, Casus Belli, Falernian)...",
     value: appState.rulebookSearch || "",
     onInput: (e) => {
       appState.rulebookSearch = e.target.value;
-      sectionsContainer.replaceChildren(...buildRulebookSectionNodes(appState.rulebookSearch));
+      refreshSections();
     },
   });
 
@@ -17419,7 +18895,7 @@ function renderRulebookView() {
           appState.rulebookSection = sec.id;
           appState.rulebookSearch = "";
           searchInput.value = "";
-          sectionsContainer.replaceChildren(...buildRulebookSectionNodes(""));
+          refreshSections();
           tocSidebar.querySelectorAll(".rulebook-toc-btn").forEach((btn, idx) => {
             btn.classList.toggle("active", RULEBOOK_SECTIONS[idx] && RULEBOOK_SECTIONS[idx].id === sec.id);
           });
@@ -18028,17 +19504,29 @@ function buildDiceOverlayInteractiveControls() {
   const encPlayer = gs.players[pend.playerIndex] || viewer;
   const isOtherPlayerEncounter = !isEncounterOwner;
   const oppName = (pend.card && pend.card.name) || "Opponent";
+  const singleReroll = getEligibleRerollTargets(pend).length === 1;
 
   const stage = pend.stage || "pre_decision";
   if (stage === "combat_post_roll") {
     const pCP = Number(pend.playerCP) || 0;
     const oCP = Number(pend.oppCP) || 0;
+    const isPvp = Boolean(pend.isPvp);
     const isVictory = pCP > oCP;
     const isTie = pCP === oCP;
-    const rawWounds = Math.max(0, oCP - pCP);
-    const ignoreWounds = Number(pend.ignoreWounds) || 0;
+    const defPlayer =
+      isPvp && pend.pvpDefenderIndex != null
+        ? (gs.players || []).find((p) => p.index === pend.pvpDefenderIndex) || (gs.players || [])[pend.pvpDefenderIndex]
+        : null;
+    const losingPlayer = isPvp && isVictory ? defPlayer : encPlayer;
+    const rawWounds = isVictory ? (isPvp ? pCP - oCP : 0) : isTie ? 0 : oCP - pCP;
+    const ignoreWounds = isPvp && isVictory ? Number(pend.oppIgnoreWounds) || 0 : Number(pend.ignoreWounds) || 0;
     const netWounds = Math.max(0, rawWounds - ignoreWounds);
-    const survivesByArmorOrGuard = !isVictory && !isTie && netWounds <= (encPlayer.guards || []).length;
+    const losingGuardsCount = isPvp && isVictory
+      ? Array.isArray(pend.oppGuardNames)
+        ? pend.oppGuardNames.length
+        : ((losingPlayer && losingPlayer.guards) || []).length
+      : (encPlayer.guards || []).length;
+    const survivesByArmorOrGuard = !isTie && rawWounds > 0 && netWounds <= losingGuardsCount;
     const postCards = (viewer.influence || []).filter((c) => {
       const nm = String(c.name || "");
       return (
@@ -18058,11 +19546,13 @@ function buildDiceOverlayInteractiveControls() {
         cardButtons.push(
           el("button", {
             className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
-            text: isArmed
+            text: singleReroll
+              ? "🎲 Twist Of Fate — Re-Roll Die"
+              : isArmed
               ? "👆 Click Any Die Above to Re-Roll (Twist Of Fate Armed)"
               : "🎲 Twist Of Fate — Click a Die Above to Re-Roll",
             onClick: () => {
-              armDieCardAction(rc, "reroll");
+              triggerTwistOfFateOrArm(gs, rc);
             },
           })
         );
@@ -18079,7 +19569,7 @@ function buildDiceOverlayInteractiveControls() {
             { style: { display: "flex", gap: "0.3rem", flexWrap: "wrap", justifyContent: "center" } },
             el("button", {
               className: "btn btn-sm btn-primary",
-              text: `🃏 ${nm} (${effShort} → ${isOtherPlayerEncounter ? encPlayer.name : "You"})`,
+              text: `🃏 ${nm} (${effShort} → ${isOtherPlayerEncounter || isPvp ? encPlayer.name : "You"})`,
               onClick: () => sendGameAction({ type: "play_influence", cardId: rc.id, targetSide: "player" }),
             }),
             el("button", {
@@ -18092,18 +19582,41 @@ function buildDiceOverlayInteractiveControls() {
       }
     });
 
+    const headerPrompt =
+      postCards.length > 0
+        ? isOtherPlayerEncounter
+          ? `⚡ Intervention Window on ${isPvp ? `${encPlayer.name} vs. ${oppName}` : `${encPlayer.name}'s Combat`} (${pCP} CP vs. ${oCP} CP): Click a die to re-roll, play a card, or pass!`
+          : `🃏 Post-Roll Influence Available (${pCP} CP vs. ${oCP} CP): Click a die to re-roll, play a card, or confirm the combat result!`
+        : `Combat Total: ${pCP} CP vs. ${oCP} CP — Click below to confirm result.`;
+
+    let confirmBtnText = "✅ Confirm Combat Victory";
+    if (isOtherPlayerEncounter && !(isPvp && viewer.index === pend.pvpDefenderIndex)) {
+      confirmBtnText = "✅ Pass Intervention / Confirm Combat Result";
+    } else if (isTie) {
+      confirmBtnText = isPvp ? "✅ Confirm PvP Tie (No Wounds, No Spoils)" : "✅ Confirm Combat Tie (Survive, No Bonus)";
+    } else if (isPvp) {
+      if (isVictory) {
+        confirmBtnText = survivesByArmorOrGuard
+          ? `✅ Confirm PvP Win (${oppName} Survived — No Spoils)`
+          : `⚔️ Confirm PvP Win & ${oppName}'s Fate Roll!`;
+      } else {
+        confirmBtnText = survivesByArmorOrGuard
+          ? "🛡️ Confirm PvP Loss (Survived — Turn Ends)"
+          : `💀 Confirm PvP Loss & ${encPlayer.name}'s Fate Roll`;
+      }
+    } else if (!isVictory) {
+      confirmBtnText = survivesByArmorOrGuard
+        ? "🛡️ Confirm Survival (No Roll on Defeat Chart)"
+        : "✅ Confirm Combat Result & Roll Defeat Chart";
+    }
+
     return el(
       "div",
       { className: "dice-post-roll-box" },
-      isOtherPlayerEncounter ? renderOpponentPublicCartSummaryNode(gs, encPlayer, viewer, "dark") : null,
+      isOtherPlayerEncounter && !isPvp ? renderOpponentPublicCartSummaryNode(gs, encPlayer, viewer, "dark") : null,
       el("div", {
         style: { fontSize: "0.8rem", fontWeight: "700", color: "#fde68a" },
-        text:
-          postCards.length > 0
-            ? isOtherPlayerEncounter
-              ? `⚡ Intervention Window on ${encPlayer.name}'s Combat (${pCP} CP vs. ${oCP} CP): Click a die to re-roll, play a card, or pass!`
-              : `🃏 Post-Roll Influence Available (${pCP} CP vs. ${oCP} CP): Click a die to re-roll, play a card, or confirm the combat result!`
-            : `Combat Total: ${pCP} CP vs. ${oCP} CP — Click below to confirm result.`,
+        text: headerPrompt,
       }),
       buildArmedDieBannerNode(),
       cardButtons.length > 0
@@ -18111,15 +19624,7 @@ function buildDiceOverlayInteractiveControls() {
         : null,
       el("button", {
         className: isVictory || isTie || survivesByArmorOrGuard ? "btn btn-sm btn-primary" : "btn btn-sm btn-crimson",
-        text: isOtherPlayerEncounter
-          ? "✅ Pass Intervention / Confirm Combat Result"
-          : isVictory
-          ? "✅ Confirm Combat Victory"
-          : isTie
-          ? "✅ Confirm Combat Tie (Survive, No Bonus)"
-          : survivesByArmorOrGuard
-          ? "🛡️ Confirm Survival (No Roll on Defeat Chart)"
-          : "✅ Confirm Combat Result & Roll Defeat Chart",
+        text: confirmBtnText,
         onClick: async () => {
           if (appState.diceRollQueue.length === 0) {
             dismissDiceOverlay();
@@ -18136,7 +19641,9 @@ function buildDiceOverlayInteractiveControls() {
       { className: "dice-post-roll-box", style: { borderColor: "#ef4444", background: "rgba(220, 38, 38, 0.18)" } },
       el("div", {
         style: { fontSize: "0.84rem", fontWeight: "700", color: "#fecaca" },
-        text: "💀 Your Driver Suffered an Unblocked Wound! Roll 1(R) on the Driver Fate (Death) Chart:",
+        text: pend.isPvp
+          ? `💀 PvP Combat Defeat (${pend.pvpLoserName || encPlayer.name} Wounded)! Roll 1(R) on the Driver Fate Chart (${pend.pvpWinnerName || "Winner"} claims Spoils):`
+          : "💀 Your Driver Suffered an Unblocked Wound! Roll 1(R) on the Driver Fate (Death) Chart:",
       }),
       el("button", {
         className: "btn btn-crimson",
@@ -18165,8 +19672,8 @@ function buildDiceOverlayInteractiveControls() {
         text:
           postChartCards.length > 0
             ? isOtherPlayerEncounter
-              ? `⚡ Intervention Window on ${encPlayer.name}'s ${cType === "soothsayer" ? "Soothsayer" : "Chart"} Roll: Click the die above to modify/re-roll, or pass!`
-              : `🃏 Post-Roll Influence Available: Click the die above to modify/re-roll, or confirm outcome!`
+              ? `⚡ Intervention Window on ${encPlayer.name}'s ${cType === "soothsayer" ? "Soothsayer" : pend.isPvp ? `Driver Fate (PvP Spoils → ${pend.pvpWinnerName || "Winner"})` : "Chart"} Roll: Click the die above to modify/re-roll, or pass!`
+              : `🃏 Post-Roll Influence Available${pend.isPvp ? ` (PvP Spoils → ${pend.pvpWinnerName || "Winner"})` : ""}: Click the die above to modify/re-roll, or confirm outcome!`
             : `Confirm Roll Outcome:`,
       }),
       buildArmedDieBannerNode(),
@@ -18187,8 +19694,12 @@ function buildDiceOverlayInteractiveControls() {
                 const isArmed = Boolean(appState.armedDieAction && appState.armedDieAction.cardId === rc.id);
                 return el("button", {
                   className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
-                  text: isArmed ? "👆 Click Die Above to Re-Roll (Twist Of Fate Armed)" : "🎲 Twist Of Fate — Click Die Above to Re-Roll",
-                  onClick: () => armDieCardAction(rc, "reroll"),
+                  text: singleReroll
+                    ? "🎲 Twist Of Fate — Re-Roll Die"
+                    : isArmed
+                    ? "👆 Click Die Above to Re-Roll (Twist Of Fate Armed)"
+                    : "🎲 Twist Of Fate — Click Die Above to Re-Roll",
+                  onClick: () => triggerTwistOfFateOrArm(gs, rc),
                 });
               }
               return el("button", {
@@ -18232,8 +19743,8 @@ function buildDiceOverlayInteractiveControls() {
         text:
           twistCards.length > 0
             ? isOtherPlayerEncounter
-              ? `⚡ Intervention Window on ${encPlayer.name}'s ${rollDesc}: Click the die you want to re-roll with Twist Of Fate, or pass!`
-              : `🃏 Twist Of Fate Available on Your ${rollDesc}: Click the die you want to re-roll, or confirm outcome!`
+              ? `⚡ Intervention Window on ${encPlayer.name}'s ${rollDesc}: ${singleReroll ? "Re-roll with Twist Of Fate, or pass!" : "Click the die you want to re-roll with Twist Of Fate, or pass!"}`
+              : `🃏 Twist Of Fate Available on Your ${rollDesc}: ${singleReroll ? "Re-roll with Twist Of Fate, or confirm outcome!" : "Click the die you want to re-roll, or confirm outcome!"}`
             : `Confirm ${rollDesc} Outcome:`,
       }),
       buildArmedDieBannerNode(),
@@ -18243,10 +19754,12 @@ function buildDiceOverlayInteractiveControls() {
             { style: { display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" } },
             el("button", {
               className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
-              text: isArmed
+              text: singleReroll
+                ? "🎲 Twist Of Fate — Re-Roll Die"
+                : isArmed
                 ? "👆 Click Any Die Above to Re-Roll (Twist Of Fate Armed)"
                 : "🎲 Twist Of Fate — Click a Die Above to Re-Roll",
-              onClick: () => armDieCardAction(firstTwist, "reroll"),
+              onClick: () => triggerTwistOfFateOrArm(gs, firstTwist),
             })
           )
         : null,
@@ -19446,6 +20959,14 @@ window.addEventListener("nightmerchant:update-available", () => {
 window.addEventListener("DOMContentLoaded", () => {
   installDelayedHoverTooltips();
   installGlobalHotkeys();
+  let resizeAbbrRaf = null;
+  window.addEventListener("resize", () => {
+    if (resizeAbbrRaf) cancelAnimationFrame(resizeAbbrRaf);
+    resizeAbbrRaf = requestAnimationFrame(() => {
+      resizeAbbrRaf = null;
+      abbreviateSingleDotRivalNames();
+    });
+  });
   bootstrap();
 });
 
