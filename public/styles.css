@@ -2381,6 +2381,12 @@ button, input, select {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
+.dyn-edge-toll.is-tiber-toll {
+  background: linear-gradient(180deg, #fef3c7 0%, #dbeafe 100%);
+  border-color: #0284c7;
+  color: #0c4a6e;
+}
+
 .inspector-preview .dyn-edge-toll {
   font-size: 0.68rem;
   padding: 2px 4px;
@@ -2396,6 +2402,15 @@ button, input, select {
   border-radius: 4px;
   padding: 1px 2px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.dyn-edge-enc-group.has-tiber-toll {
+  border-color: #0284c7;
+}
+
+.dyn-edge-E .dyn-edge-enc-group.has-tiber-toll,
+.dyn-edge-W .dyn-edge-enc-group.has-tiber-toll {
+  flex-direction: column;
 }
 
 .dyn-edge-enc-icon {
@@ -3722,6 +3737,78 @@ button, input, select {
 .mission-cancel-btn:hover:not(:disabled) {
   background: #dc2626;
   color: #ffffff;
+}
+
+.mission-overflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+  gap: 0.7rem;
+  align-items: stretch;
+  margin: 0.5rem 0;
+}
+
+.mission-overflow-card-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 2px solid rgba(139, 90, 43, 0.25);
+  background: rgba(255, 250, 238, 0.78);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.mission-overflow-card-wrap.is-selectable {
+  cursor: pointer;
+}
+
+.mission-overflow-card-wrap.is-selectable:hover {
+  border-color: rgba(185, 28, 28, 0.55);
+  transform: translateY(-2px);
+}
+
+.mission-overflow-card-wrap.is-new {
+  border-color: rgba(217, 119, 6, 0.72);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+}
+
+.mission-overflow-card-wrap.is-selected {
+  border-color: #b91c1c;
+  background: rgba(254, 226, 226, 0.9);
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.24);
+}
+
+.mission-overflow-card-wrap.is-locked {
+  opacity: 0.72;
+  background: rgba(226, 232, 240, 0.55);
+}
+
+.mission-overflow-tag {
+  font-size: 0.68rem;
+  line-height: 1.3;
+  text-align: center;
+  font-weight: 800;
+  padding: 0.22rem 0.35rem;
+  border-radius: 5px;
+}
+
+.mission-overflow-tag.is-free {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.mission-overflow-tag.is-penalty {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.mission-overflow-tag.is-locked {
+  background: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
 }
 
 /* =========================================================================
@@ -7253,7 +7340,7 @@ button, input, select {
 
 .bot-capital-icon {
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: -0.2em;
   flex-shrink: 0;
   margin-left: 1px;
   color: #7c521b;
@@ -7521,6 +7608,39 @@ button, input, select {
   font-weight: 700;
   color: var(--text-muted);
   padding-top: 0.15rem;
+}
+
+.rulebook-tier-icon-key {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0.48rem 0.68rem;
+  border-radius: 6px;
+  background: rgba(255, 252, 244, 0.9);
+  border: 1px solid rgba(154, 114, 62, 0.36);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #3f2814;
+}
+
+.rulebook-tier-icon-key-title {
+  font-weight: 800;
+  color: #6e2119;
+  font-size: 0.76rem;
+  letter-spacing: 0.01em;
+}
+
+.rulebook-tier-icon-key-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem 1rem;
+  align-items: center;
+}
+
+.rulebook-tier-icon-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
 }
 
 .rulebook-cards-grid {

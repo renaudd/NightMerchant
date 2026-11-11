@@ -1044,8 +1044,8 @@ const DEFAULT_POLITICAL_CLIMATE_OPTIONS = [
     optionNumber: 3,
     timing: "midgame",
     title: "Divided Tiber",
-    shortText: "Tiber Bridges cost 4d toll, waived with +1 Emerald",
-    description: "Tiber Bridges cost a 4d toll, waived with +1 Emerald or Shortcut.",
+    shortText: "Orthogonal Tiber crossings cost 4d toll (0d with +1 Emerald)",
+    description: "Crossing the Tiber orthogonally costs a 4d toll, waived with +1 Emerald or Shortcut.",
   },
   {
     id: "domna_1",
@@ -1236,15 +1236,26 @@ const TIBER_BRIDGES = {
   "B5|B4": "Pons Aemilius",
 };
 
+function isOrthogonalTiberCrossing(fromCoord, toCoord) {
+  if (!fromCoord || !toCoord || fromCoord === toCoord) return false;
+  if (WEST_BANK_CELLS.has(fromCoord) === WEST_BANK_CELLS.has(toCoord)) return false;
+  const fc = COLS.indexOf(fromCoord.slice(0, 1));
+  const fr = ROWS.indexOf(fromCoord.slice(1));
+  const tc = COLS.indexOf(toCoord.slice(0, 1));
+  const tr = ROWS.indexOf(toCoord.slice(1));
+  if (fc < 0 || fr < 0 || tc < 0 || tr < 0) return false;
+  return Math.abs(fc - tc) + Math.abs(fr - tr) === 1;
+}
+
 function getTiberBridgeName(fromCoord, toCoord) {
-  if (!fromCoord || !toCoord) return null;
-  return TIBER_BRIDGES[`${fromCoord}|${toCoord}`] || null;
+  if (!isOrthogonalTiberCrossing(fromCoord, toCoord)) return null;
+  return TIBER_BRIDGES[`${fromCoord}|${toCoord}`] || "Tiber Crossing";
 }
 
 function isTiberCrossingBlocked(fromCoord, toCoord) {
   if (!fromCoord || !toCoord || fromCoord === toCoord) return false;
   if (WEST_BANK_CELLS.has(fromCoord) === WEST_BANK_CELLS.has(toCoord)) return false;
-  return !getTiberBridgeName(fromCoord, toCoord);
+  return !isOrthogonalTiberCrossing(fromCoord, toCoord);
 }
 
 const DIR_DELTAS_8 = {
@@ -1387,8 +1398,8 @@ const BOT_DIFFICULTY_META = {
     shortLabel: "Doric",
     tier: "Easy",
     title: "Doric AI — Easy difficulty",
-    color: "#5f6e78",
-    accent: "#b5c1c9",
+    color: "#5d6f7d",
+    accent: "#d3dfe6",
   },
   ionic: {
     id: "ionic",
@@ -1397,7 +1408,7 @@ const BOT_DIFFICULTY_META = {
     tier: "Medium",
     title: "Ionic AI — Medium difficulty",
     color: "#9c6d27",
-    accent: "#e3bf76",
+    accent: "#efd082",
   },
   corinthian: {
     id: "corinthian",
@@ -1405,8 +1416,8 @@ const BOT_DIFFICULTY_META = {
     shortLabel: "Corinthian",
     tier: "Hard",
     title: "Corinthian AI — Hard difficulty",
-    color: "#7d2438",
-    accent: "#d98a9a",
+    color: "#841f35",
+    accent: "#df7f95",
   },
 };
 
@@ -1429,7 +1440,7 @@ function createSvgNode(tag, attrs = {}) {
  * Renders a classical Roman/Greek Column Capital SVG silhouette indicating AI difficulty:
  * Doric (Easy), Ionic (Medium), or Corinthian (Hard). Built cleanly with createElementNS.
  */
-function createColumnCapitalIconNode(difficulty, size = 15) {
+function createColumnCapitalIconNode(difficulty, size = 18) {
   const diff = normalizeBotDifficulty(difficulty);
   const meta = BOT_DIFFICULTY_META[diff];
   const svg = createSvgNode("svg", {
@@ -1446,125 +1457,159 @@ function createColumnCapitalIconNode(difficulty, size = 15) {
   titleNode.textContent = meta.title;
   svg.appendChild(titleNode);
 
-  if (diff === "doric") {
-    // Severe square abacus slab + curved echinus pillow + fluted shaft
+  const appendFlutedShaft = (x, y, w, h, fluteColor, strokeColor) => {
     svg.appendChild(createSvgNode("rect", {
-      x: "3", y: "4", width: "18", height: "3.3", rx: "0.7",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.9",
+      x: String(x),
+      y: String(y),
+      width: String(w),
+      height: String(h),
+      rx: "0.5",
+      fill: meta.color,
+      stroke: strokeColor,
+      "stroke-width": "0.9",
+    }));
+    const fluteTop = y + 0.8;
+    const fluteBot = y + h - 0.8;
+    for (const fx of [x + w * 0.33, x + w * 0.67]) {
+      svg.appendChild(createSvgNode("line", {
+        x1: fx.toFixed(1),
+        y1: fluteTop.toFixed(1),
+        x2: fx.toFixed(1),
+        y2: fluteBot.toFixed(1),
+        stroke: fluteColor,
+        "stroke-width": "1.05",
+        "stroke-linecap": "round",
+      }));
+    }
+  };
+
+  if (diff === "doric") {
+    const dark = "#231710";
+    appendFlutedShaft(8.0, 12.7, 8.0, 9.8, meta.accent, dark);
+    svg.appendChild(createSvgNode("rect", {
+      x: "7.2", y: "11.0", width: "9.6", height: "1.8", rx: "0.5",
+      fill: meta.color, stroke: dark, "stroke-width": "0.8",
     }));
     svg.appendChild(createSvgNode("path", {
-      d: "M4.5 7.3 C5.4 10.7 7.2 12 8.5 12.2 L15.5 12.2 C16.8 12 18.6 10.7 19.5 7.3 Z",
-      fill: meta.accent, stroke: "#2b1d12", "stroke-width": "0.9",
+      d: "M3.4 5.6 C4.4 9.2 6.5 10.8 8.0 11.0 L16.0 11.0 C17.5 10.8 19.6 9.2 20.6 5.6 Z",
+      fill: meta.accent, stroke: dark, "stroke-width": "0.9",
     }));
     svg.appendChild(createSvgNode("rect", {
-      x: "7.8", y: "12.2", width: "8.4", height: "1.6", rx: "0.4",
-      fill: meta.color,
-    }));
-    svg.appendChild(createSvgNode("rect", {
-      x: "8.4", y: "13.8", width: "7.2", height: "7.2", rx: "0.5",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.85",
-    }));
-    svg.appendChild(createSvgNode("line", {
-      x1: "10.8", y1: "14.4", x2: "10.8", y2: "20.4",
-      stroke: meta.accent, "stroke-width": "0.9", "stroke-linecap": "round",
-    }));
-    svg.appendChild(createSvgNode("line", {
-      x1: "13.2", y1: "14.4", x2: "13.2", y2: "20.4",
-      stroke: meta.accent, "stroke-width": "0.9", "stroke-linecap": "round",
+      x: "1.8", y: "2.0", width: "20.4", height: "3.6", rx: "0.7",
+      fill: meta.color, stroke: dark, "stroke-width": "0.9",
     }));
   } else if (diff === "ionic") {
-    // Twin spiral volutes + egg-and-dart necking + slender fluted shaft
+    const dark = "#231710";
+    appendFlutedShaft(8.2, 11.4, 7.6, 11.1, meta.accent, dark);
     svg.appendChild(createSvgNode("rect", {
-      x: "4.2", y: "3.8", width: "15.6", height: "2.3", rx: "0.6",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.85",
-    }));
-    svg.appendChild(createSvgNode("rect", {
-      x: "7.4", y: "6.1", width: "9.2", height: "4.6", rx: "0.8",
-      fill: meta.accent, stroke: "#2b1d12", "stroke-width": "0.85",
-    }));
-    // Left & right volute spirals
-    svg.appendChild(createSvgNode("circle", {
-      cx: "5.7", cy: "8.8", r: "3.4",
-      fill: meta.accent, stroke: "#2b1d12", "stroke-width": "0.9",
-    }));
-    svg.appendChild(createSvgNode("path", {
-      d: "M5.7 6.7 A2.1 2.1 0 1 1 3.9 9.4 A1.25 1.25 0 1 1 6.1 8.8",
-      fill: "none", stroke: "#2b1d12", "stroke-width": "0.95", "stroke-linecap": "round",
-    }));
-    svg.appendChild(createSvgNode("circle", {
-      cx: "18.3", cy: "8.8", r: "3.4",
-      fill: meta.accent, stroke: "#2b1d12", "stroke-width": "0.9",
-    }));
-    svg.appendChild(createSvgNode("path", {
-      d: "M18.3 6.7 A2.1 2.1 0 1 0 20.1 9.4 A1.25 1.25 0 1 0 17.9 8.8",
-      fill: "none", stroke: "#2b1d12", "stroke-width": "0.95", "stroke-linecap": "round",
+      x: "7.6", y: "9.7", width: "8.8", height: "1.7", rx: "0.45",
+      fill: meta.color, stroke: dark, "stroke-width": "0.8",
     }));
     svg.appendChild(createSvgNode("rect", {
-      x: "8.4", y: "10.8", width: "7.2", height: "1.6", rx: "0.4",
-      fill: meta.color,
+      x: "6.4", y: "4.5", width: "11.2", height: "5.2", rx: "0.7",
+      fill: meta.accent, stroke: dark, "stroke-width": "0.85",
     }));
     svg.appendChild(createSvgNode("rect", {
-      x: "8.7", y: "12.4", width: "6.6", height: "8.6", rx: "0.5",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.85",
+      x: "3.4", y: "2.0", width: "17.2", height: "2.5", rx: "0.6",
+      fill: meta.color, stroke: dark, "stroke-width": "0.9",
     }));
-    svg.appendChild(createSvgNode("line", {
-      x1: "11", y1: "13", x2: "11", y2: "20.4",
-      stroke: meta.accent, "stroke-width": "0.9",
-    }));
-    svg.appendChild(createSvgNode("line", {
-      x1: "13", y1: "13", x2: "13", y2: "20.4",
-      stroke: meta.accent, "stroke-width": "0.9",
-    }));
+    for (const [cx, arcD] of [
+      ["5.1", "M5.1 5.0 A2.35 2.35 0 1 1 3.1 8.1 A1.3 1.3 0 1 1 5.5 7.4"],
+      ["18.9", "M18.9 5.0 A2.35 2.35 0 1 0 20.9 8.1 A1.3 1.3 0 1 0 18.5 7.4"],
+    ]) {
+      svg.appendChild(createSvgNode("circle", {
+        cx, cy: "7.4", r: "3.8",
+        fill: meta.accent, stroke: dark, "stroke-width": "0.9",
+      }));
+      svg.appendChild(createSvgNode("path", {
+        d: arcD, fill: "none", stroke: dark, "stroke-width": "1.0", "stroke-linecap": "round",
+      }));
+    }
   } else {
-    // Corinthian: concave rosette abacus, corner volutes, layered acanthus crown
-    svg.appendChild(createSvgNode("path", {
-      d: "M2.8 3.8 Q12 5.9 21.2 3.8 L20.1 6.6 Q12 8 3.9 6.6 Z",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.85",
-    }));
-    svg.appendChild(createSvgNode("circle", {
-      cx: "12", cy: "5.2", r: "1.1", fill: meta.accent,
-    }));
-    // Bell & flaring acanthus petals
-    svg.appendChild(createSvgNode("path", {
-      d: "M5 6.8 C4.5 9.2 6.8 11.4 8.2 14.5 L15.8 14.5 C17.2 11.4 19.5 9.2 19 6.8 Q12 7.8 5 6.8 Z",
-      fill: meta.accent, stroke: "#2b1d12", "stroke-width": "0.85",
-    }));
-    // Left & right acanthus leaf tips + center acanthus plume
-    svg.appendChild(createSvgNode("path", {
-      d: "M5.3 9.2 Q3.2 8.2 4.6 6.7 M18.7 9.2 Q20.8 8.2 19.4 6.7",
-      fill: "none", stroke: "#2b1d12", "stroke-width": "1.05", "stroke-linecap": "round",
-    }));
-    svg.appendChild(createSvgNode("path", {
-      d: "M7.6 14.3 C6.7 11.6 7.5 9.7 9.2 9.1 C9.8 10.6 9.8 12.6 10.1 14.3 M16.4 14.3 C17.3 11.6 16.5 9.7 14.8 9.1 C14.2 10.6 14.2 12.6 13.9 14.3 M10.6 14.3 C10.8 11.2 11.4 9 12 8.1 C12.6 9 13.2 11.2 13.4 14.3",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.8", "stroke-linejoin": "round",
-    }));
+    // Ornate floral Corinthian: blooming acanthus fronds, golden corner helices, 4-petal rosette fleuron
+    const dark = "#241114";
+    const petalIvory = "#fff1f4";
+    const gold = "#f5cb66";
+    const abacusRose = "#b83b56";
+
+    appendFlutedShaft(8.1, 15.6, 7.8, 6.9, petalIvory, dark);
+    // Golden astragal collar ring
     svg.appendChild(createSvgNode("rect", {
-      x: "8.3", y: "14.5", width: "7.4", height: "1.6", rx: "0.4",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.75",
+      x: "6.9", y: "13.9", width: "10.2", height: "1.8", rx: "0.8",
+      fill: gold, stroke: dark, "stroke-width": "0.85",
     }));
-    svg.appendChild(createSvgNode("rect", {
-      x: "8.8", y: "16.1", width: "6.4", height: "5", rx: "0.5",
-      fill: meta.color, stroke: "#2b1d12", "stroke-width": "0.85",
+    // Crimson calyx bell cup
+    svg.appendChild(createSvgNode("path", {
+      d: "M4.8 4.9 L19.2 4.9 C19.0 9.0 17.5 11.8 16.1 13.9 L7.9 13.9 C6.5 11.8 5.0 9.0 4.8 4.9 Z",
+      fill: meta.color, stroke: dark, "stroke-width": "0.85",
     }));
+    // Molded concave abacus slab
+    svg.appendChild(createSvgNode("path", {
+      d: "M2.8 2.9 Q12 3.8 21.2 2.9 L20.6 5.0 Q12 5.7 3.4 5.0 Z",
+      fill: abacusRose, stroke: dark, "stroke-width": "0.85", "stroke-linejoin": "round",
+    }));
+    // Curled golden floral corner helices under the abacus
+    for (const [cx, arcD] of [
+      ["3.7", "M3.7 5.0 A0.95 0.95 0 1 1 2.8 6.4"],
+      ["20.3", "M20.3 5.0 A0.95 0.95 0 1 0 21.2 6.4"],
+    ]) {
+      svg.appendChild(createSvgNode("circle", {
+        cx, cy: "6.1", r: "2.0",
+        fill: gold, stroke: dark, "stroke-width": "0.8",
+      }));
+      svg.appendChild(createSvgNode("path", {
+        d: arcD, fill: "none", stroke: dark, "stroke-width": "0.85", "stroke-linecap": "round",
+      }));
+    }
+    // Three upper blooming ivory acanthus fronds
+    for (const d of [
+      "M7.8 13.9 C4.5 13.2 2.4 11.4 3.4 9.5 C4.2 8.2 6.4 8.7 8.3 10.9 L9.8 13.9 Z",
+      "M16.2 13.9 C19.5 13.2 21.6 11.4 20.6 9.5 C19.8 8.2 17.6 8.7 15.7 10.9 L14.2 13.9 Z",
+      "M9.3 13.9 C8.6 10.4 9.7 7.0 12.0 5.8 C14.3 7.0 15.4 10.4 14.7 13.9 Z",
+    ]) {
+      svg.appendChild(createSvgNode("path", {
+        d, fill: petalIvory, stroke: dark, "stroke-width": "0.85", "stroke-linejoin": "round",
+      }));
+    }
+    // Front alternating rose acanthus collar petals
+    for (const d of [
+      "M7.3 13.9 C7.0 11.4 8.0 10.2 9.4 10.4 C10.4 10.6 11.1 11.9 11.3 13.9 Z",
+      "M16.7 13.9 C17.0 11.4 16.0 10.2 14.6 10.4 C13.6 10.6 12.9 11.9 12.7 13.9 Z",
+    ]) {
+      svg.appendChild(createSvgNode("path", {
+        d, fill: meta.accent, stroke: dark, "stroke-width": "0.8", "stroke-linejoin": "round",
+      }));
+    }
+    // Central 4-petal golden flower fleuron rosette crowning the abacus
+    svg.appendChild(createSvgNode("path", {
+      d: "M12 1.2 L13.3 2.6 L14.9 3.6 L13.3 4.6 L12 6.0 L10.7 4.6 L9.1 3.6 L10.7 2.6 Z",
+      fill: gold, stroke: dark, "stroke-width": "0.8", "stroke-linejoin": "round",
+    }));
+    svg.appendChild(createSvgNode("circle", { cx: "12", cy: "3.6", r: "0.8", fill: meta.color }));
   }
 
   return svg;
 }
 
-function createPlayerNameNode(entity, { iconSize = 14, showDifficultyLabel = false } = {}) {
-  const frag = document.createDocumentFragment();
-  const name = (entity && (entity.name || entity.displayName || entity.label)) || "Merchant";
-  frag.appendChild(document.createTextNode(String(name)));
-  if (entity && entity.isBot) {
-    const diff = normalizeBotDifficulty(entity.botDifficulty);
-    frag.appendChild(document.createTextNode(" "));
-    frag.appendChild(createColumnCapitalIconNode(diff, iconSize));
-    if (showDifficultyLabel) {
-      const meta = BOT_DIFFICULTY_META[diff];
-      frag.appendChild(document.createTextNode(` (${meta.shortLabel})`));
-    }
+function createPlayerNameNode(entity, { iconSize = 17, showDifficultyLabel = false } = {}) {
+  const name = String((entity && (entity.name || entity.displayName || entity.label)) || "Merchant");
+  if (!entity || !entity.isBot) {
+    return document.createTextNode(name);
   }
-  return frag;
+  const diff = normalizeBotDifficulty(entity.botDifficulty);
+  const span = document.createElement("span");
+  span.className = "player-name-with-capital";
+  span.style.display = "inline-flex";
+  span.style.alignItems = "center";
+  span.style.gap = "3px";
+  span.style.whiteSpace = "nowrap";
+  span.appendChild(document.createTextNode(name));
+  span.appendChild(createColumnCapitalIconNode(diff, iconSize));
+  if (showDifficultyLabel) {
+    const meta = BOT_DIFFICULTY_META[diff];
+    span.appendChild(document.createTextNode(`(${meta.shortLabel})`));
+  }
+  return span;
 }
 
 function getChronicleSenderColor(colorId) {
@@ -1756,6 +1801,7 @@ const appState = {
   promptedNpcOfferId: null,
   promptedCartOverflowId: null,
   promptedMarketRewardId: null,
+  promptedMissionOverflowId: null,
   highlightedMarketTrack: null,
   swappedMissionStackIds: new Set(),
   shownScoutIds: new Set(),
@@ -1819,7 +1865,7 @@ function navigateToMarketBoardForCategory(category) {
 }
 
 /**
- * Fetch and cache the static 271-card Rulebook catalog JSON once.
+ * Fetch and cache the static 270-card Rulebook catalog JSON once.
  */
 function ensureCardsCatalogLoaded() {
   if (appState.cardsCatalog || appState.cardsCatalogLoading) {
@@ -1827,7 +1873,7 @@ function ensureCardsCatalogLoaded() {
   }
   appState.cardsCatalogLoading = true;
   appState.cardsCatalogError = null;
-  const p = fetch("./data/cards_catalog.json?v=54")
+  const p = fetch("./data/cards_catalog.json?v=56")
     .then((resp) => {
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status} loading card catalog`);
@@ -1913,6 +1959,67 @@ function getEligibleCasusBelliPvpTargets(gs, viewer) {
   });
 }
 
+const MAX_ACTIVE_MISSIONS = 5;
+
+function areAllMissionsSoothsayer(missions) {
+  return (
+    Array.isArray(missions) &&
+    missions.length > MAX_ACTIVE_MISSIONS &&
+    missions.every((m) => (m.source || "starting") === "soothsayer")
+  );
+}
+
+function hasMissionOverflow(player, gsOverride = null) {
+  if (!player) return false;
+  if (player.pendingMissionOverflow) return true;
+  const gs = gsOverride || appState.gameState;
+  if (gs && (gs.phase === "setup_discard" || gs.phase === "finished")) return false;
+  return Array.isArray(player.missions) && player.missions.length > MAX_ACTIVE_MISSIONS;
+}
+
+function isMissionCancelableClient(player, m) {
+  if (!m) return false;
+  if ((m.source || "starting") !== "soothsayer") return true;
+  return areAllMissionsSoothsayer(player ? player.missions : []);
+}
+
+function getMissionOverflowId(player) {
+  if (!player) return null;
+  if (player.pendingMissionOverflow && player.pendingMissionOverflow.id) {
+    return String(player.pendingMissionOverflow.id);
+  }
+  const ms = Array.isArray(player.missions) ? player.missions : [];
+  if (ms.length <= MAX_ACTIVE_MISSIONS) return null;
+  return `movf_${ms.length}_${ms.map((m) => m.id).join("_")}`;
+}
+
+function hasPlayerBlockingPrompt(player, includeTop3 = false, gsOverride = null) {
+  if (!player) return false;
+  if (
+    (Array.isArray(player.pendingNpcOffer)
+      ? player.pendingNpcOffer.length > 0
+      : Boolean(player.pendingNpcOffer)) ||
+    (Array.isArray(player.pendingCartOverflow)
+      ? player.pendingCartOverflow.length > 0
+      : Boolean(player.pendingCartOverflow)) ||
+    (Array.isArray(player.pendingMarketReward)
+      ? player.pendingMarketReward.length > 0
+      : Boolean(player.pendingMarketReward)) ||
+    hasMissionOverflow(player, gsOverride)
+  ) {
+    return true;
+  }
+  if (
+    includeTop3 &&
+    (Array.isArray(player.pendingTop3Reorder)
+      ? player.pendingTop3Reorder.length > 0
+      : Boolean(player.pendingTop3Reorder))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Validate whether Casus Belli can currently be played (NPC pre_decision OR Turn 2+ proactive PvP).
  */
@@ -1944,13 +2051,10 @@ function getCasusBelliProactiveDisabledReason(gs, viewer) {
   if (viewer.transactedThisTurn || viewer.gambledThisTurn) {
     return "Casus Belli exhausts your Transaction for this turn, and you have already transacted or gambled.";
   }
-  const hasBlockingPrompt =
-    (Array.isArray(viewer.pendingNpcOffer) ? viewer.pendingNpcOffer.length > 0 : Boolean(viewer.pendingNpcOffer)) ||
-    (Array.isArray(viewer.pendingCartOverflow) ? viewer.pendingCartOverflow.length > 0 : Boolean(viewer.pendingCartOverflow)) ||
-    (Array.isArray(viewer.pendingMarketReward) ? viewer.pendingMarketReward.length > 0 : Boolean(viewer.pendingMarketReward)) ||
-    (Array.isArray(viewer.pendingTop3Reorder) ? viewer.pendingTop3Reorder.length > 0 : Boolean(viewer.pendingTop3Reorder));
-  if (hasBlockingPrompt) {
-    return "Resolve your active Cart/Market prompt before playing Casus Belli.";
+  if (hasPlayerBlockingPrompt(viewer, true, gs)) {
+    return hasMissionOverflow(viewer, gs)
+      ? "Cancel 1 mission (5-mission limit exceeded) before playing Casus Belli."
+      : "Resolve your active Cart/Market prompt before playing Casus Belli.";
   }
   const targets = getEligibleCasusBelliPvpTargets(gs, viewer);
   if (targets.length === 0) {
@@ -2132,7 +2236,8 @@ function createDeckOfCardsIconNode(extraClass = "") {
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", "0 0 24 22");
   svg.setAttribute("class", `enc-tier-inline-svg deck-cards-icon-svg ${extraClass}`.trim());
-  svg.setAttribute("aria-label", "Deck of Cards");
+  svg.setAttribute("aria-label", "Missiones Deck (Unseen Card)");
+  svg.setAttribute("data-hover-title", "Missiones Deck (Draw Top Card Unseen)");
 
   const mkCardRect = (x, y, w, h, rot, fill, stroke) => {
     const r = document.createElementNS(svgNS, "rect");
@@ -2186,7 +2291,8 @@ function createAncientRomanChestIconNode(extraClass = "") {
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", "0 0 24 20");
   svg.setAttribute("class", `enc-tier-inline-svg roman-chest-icon-svg ${extraClass}`.trim());
-  svg.setAttribute("aria-label", "Ancient Roman Treasure Chest");
+  svg.setAttribute("aria-label", "Mission Quest Chest");
+  svg.setAttribute("data-hover-title", "Quest Chest (Mission Contract)");
 
   // Lower oak & bronze-bound coffer body
   const base = document.createElementNS(svgNS, "rect");
@@ -2571,20 +2677,70 @@ function buildEncounterFigureNodes(encStr, iconClass) {
   return figs;
 }
 
-function renderDynamicEdgeSlotNode(dir, edgeVal) {
+function getDividedTiberExtraToll(coord, dir, edgeVal) {
+  if (!coord || !dir || !["N", "S", "E", "W"].includes(dir)) return 0;
+  if (!edgeVal || edgeVal === "red" || edgeVal === "none" || edgeVal === "None") return 0;
+  const targetCoord = getNeighborCoordInDir(coord, dir);
+  if (!targetCoord || !isOrthogonalTiberCrossing(coord, targetCoord)) return 0;
+  const gs = typeof appState !== "undefined" ? appState.gameState : null;
+  if (!gs || !hasActiveClimateOption(gs, "geta_3")) return 0;
+  const viewer = getViewerPlayer(gs);
+  if (!viewer) return 0;
+  const emeraldFavor = Number(viewer.favor && viewer.favor.Geta) || 0;
+  return emeraldFavor < 1 ? 4 : 0;
+}
+
+function renderDynamicEdgeSlotNode(dir, edgeVal, coord = null) {
   if (!edgeVal) return null;
   let inner = null;
+  const extraTiberToll = coord ? getDividedTiberExtraToll(coord, dir, edgeVal) : 0;
   const tollAmt = parseTollAmount(edgeVal);
   if (edgeVal === "green") {
-    inner = el("span", { className: "dyn-edge-bar edge-green" });
+    if (extraTiberToll > 0) {
+      inner = el("span", {
+        className: "dyn-edge-toll is-tiber-toll",
+        title: `Divided Tiber Toll: ${extraTiberToll}(d) (waived with ≥ +1 Emerald)`,
+        text: `${extraTiberToll}(d)`,
+      });
+    } else {
+      inner = el("span", { className: "dyn-edge-bar edge-green" });
+    }
   } else if (edgeVal === "red") {
     inner = el("span", { className: "dyn-edge-bar edge-red" });
   } else if (tollAmt > 0) {
-    inner = el("span", { className: "dyn-edge-toll", text: `${tollAmt}(d)` });
+    const totalToll = tollAmt + extraTiberToll;
+    inner = el("span", {
+      className: `dyn-edge-toll${extraTiberToll > 0 ? " is-tiber-toll" : ""}`,
+      title:
+        extraTiberToll > 0
+          ? `${tollAmt}(d) Road Toll + ${extraTiberToll}(d) Divided Tiber Toll (waived with ≥ +1 Emerald)`
+          : `${tollAmt}(d) Road Toll`,
+      text: `${totalToll}(d)`,
+    });
   } else {
     const figs = buildEncounterFigureNodes(edgeVal, "dyn-edge-enc-icon");
     if (figs.length > 0) {
-      inner = el("span", { className: "dyn-edge-enc-group" }, ...figs);
+      const encChildren =
+        extraTiberToll > 0
+          ? [
+              ...figs,
+              el("span", {
+                className: "dyn-edge-toll is-tiber-toll",
+                text: `${extraTiberToll}(d)`,
+              }),
+            ]
+          : figs;
+      inner = el(
+        "span",
+        {
+          className: `dyn-edge-enc-group${extraTiberToll > 0 ? " has-tiber-toll" : ""}`,
+          title:
+            extraTiberToll > 0
+              ? `${formatEdgeLabel(edgeVal)} + ${extraTiberToll}(d) Divided Tiber Toll (waived with ≥ +1 Emerald)`
+              : formatEdgeLabel(edgeVal),
+        },
+        ...encChildren
+      );
     }
   }
   if (!inner) return null;
@@ -2604,7 +2760,7 @@ function renderDynamicTileCardNode(tile, coord, mode = "board") {
   const buys = tile.buys || [];
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
-  const edgeNodes = dirs.map((d) => renderDynamicEdgeSlotNode(d, edges[d])).filter(Boolean);
+  const edgeNodes = dirs.map((d) => renderDynamicEdgeSlotNode(d, edges[d], tileCoord)).filter(Boolean);
 
   const tradeBannerNodes = [];
   if (buys.length > 0) {
@@ -2923,6 +3079,7 @@ function renderPhysicalMissionCardNode(m, opts = {}) {
     canCancel = false,
     cancelLabel = "✕ Cancel Mission",
     soothsayerTotalCount = 0,
+    allSoothsayerOverflow = false,
   } = opts;
   const cubes = [];
   if (m.kind === "delivery") {
@@ -3188,7 +3345,7 @@ function renderPhysicalMissionCardNode(m, opts = {}) {
           className: `mission-cancel-btn ${m.source === "encounter" ? "penalty" : "free"}`,
           onClick: (e) => {
             e.stopPropagation();
-            openCancelMissionConfirmModal(m, soothsayerTotalCount);
+            openCancelMissionConfirmModal(m, Boolean(allSoothsayerOverflow));
           },
         },
         cancelLabel
@@ -3564,6 +3721,135 @@ function formatReactionTypeSymbol(rOrType) {
   return t;
 }
 
+const ENCOUNTER_REACTION_EXPLAINERS = {
+  deck_quest_demand: {
+    label: "Deck Quest Demand",
+    symbolDesc: "card icon + chest icon + !",
+    detail: "draw and accept the top Missiones card (unseen) as a Mission (refuse to suffer Hostile Favor)",
+  },
+  deck_quest_offer: {
+    label: "Optional Deck Quest Offer",
+    symbolDesc: "card icon + chest icon + ?",
+    detail: "optionally draw and accept the top Missiones card (unseen) as a Mission (decline with no penalty)",
+  },
+  mission_strict: {
+    label: "Strict Printed Mission Demand",
+    symbolDesc: "chest icon + !!",
+    detail: "accept this card's printed Mission (refusing initiates Combat!)",
+  },
+  mission_request: {
+    label: "Printed Mission Request",
+    symbolDesc: "chest icon + !",
+    detail: "accept this card's printed Mission (refuse to suffer Hostile Favor)",
+  },
+  mission_offer: {
+    label: "Optional Printed Mission Offer",
+    symbolDesc: "chest icon + ?",
+    detail: "optionally accept this card's printed Mission (decline with no penalty)",
+  },
+  mission_bonus: {
+    label: "Optional Printed Mission Offer",
+    symbolDesc: "chest icon + ?",
+    detail: "optionally accept this card's printed Mission (decline with no penalty)",
+  },
+  demand_strict: {
+    label: "Strict Demand (!!)",
+    symbolDesc: "!!",
+    detail: "fulfill this card's printed demand (refusing initiates Combat!)",
+  },
+  demand: {
+    label: "Demand (!)",
+    symbolDesc: "!",
+    detail: "fulfill this card's printed demand (refuse to suffer Hostile Favor)",
+  },
+  offer: {
+    label: "Optional Offer (?)",
+    symbolDesc: "?",
+    detail: "optionally accept this card's friendly offer (decline with no penalty)",
+  },
+  quest_optional: {
+    label: "Optional Offer (?)",
+    symbolDesc: "?",
+    detail: "optionally accept this card's friendly offer (decline with no penalty)",
+  },
+  combat: {
+    label: "Mandatory Combat",
+    symbolDesc: "crossed swords",
+    detail: "hostile reaction — fight using Combat Power!",
+  },
+};
+
+function inferTierReactionType(tier) {
+  if (!tier) return "demand";
+  if (tier.reactionType || tier.type) return String(tier.reactionType || tier.type);
+  const eff = String(tier.effect || "").trim();
+  if (eff.includes("⚔") || eff.includes("(COMBAT_ICON)") || eff.toLowerCase() === "combat") return "combat";
+  if ((eff.includes("(DECK_ICON)") || eff.includes("🃏")) && eff.includes("!")) return "deck_quest_demand";
+  if ((eff.includes("(DECK_ICON)") || eff.includes("🃏")) && eff.includes("?")) return "deck_quest_offer";
+  if (eff.includes("(QUEST_ICON)") || eff.includes("📦")) {
+    if (eff.includes("!!")) return "mission_strict";
+    if (eff.includes("?")) return "mission_offer";
+    return "mission_request";
+  }
+  if (eff === "!!") return "demand_strict";
+  if (eff === "!") return "demand";
+  if (eff === "?") return "offer";
+  if (/\(d\)|𐆖|\d+d\b/i.test(eff)) return "cash_reward";
+  return eff;
+}
+
+function getEncounterReactionInfo(rOrType) {
+  const isObj = typeof rOrType === "object" && rOrType !== null;
+  const rType = isObj ? inferTierReactionType(rOrType) : String(rOrType || "");
+  if (rType === "cash_reward") {
+    const rewardRaw = (isObj && (rOrType.reward || rOrType.effect)) || "(d)";
+    const rewardClean = String(rewardRaw).replace(/\(d\)/gi, "d").replace(/𐆖/g, "d");
+    return {
+      type: rType,
+      label: `Patronage Gift (${rewardClean})`,
+      symbolDesc: rewardClean,
+      detail: `collect ${rewardClean} from this Patron (and earn Friendly Favor)`,
+    };
+  }
+  const entry = ENCOUNTER_REACTION_EXPLAINERS[rType];
+  if (entry) {
+    return Object.assign({ type: rType }, entry);
+  }
+  return {
+    type: rType,
+    label: rType || "Encounter Tier",
+    symbolDesc: rType || "tier icon",
+    detail: "resolve this Encounter tier effect",
+  };
+}
+
+function formatEncounterTierHoverTitle(tier, { isCombatTier, isActive, interactive, canFight, combatMandatory }) {
+  const info = getEncounterReactionInfo(tier);
+  const condStr = tier && tier.cond ? `Favor ${tier.cond}` : "Reputation Tier";
+  if (isCombatTier && interactive) {
+    return canFight
+      ? `${condStr} — ${info.label}: Click to Fight in Combat!`
+      : `${condStr} — Combat Locked (Not Threatened)`;
+  }
+  const baseText = `${condStr} — ${info.label}: ${info.symbolDesc} means ${info.detail}.`;
+  if (interactive && isActive && !combatMandatory) {
+    return `Active Tier (${baseText}) Click to Comply / Accept.`;
+  }
+  return baseText;
+}
+
+function cleanEncounterActionText(rawText) {
+  if (!rawText) return "";
+  let s = String(rawText).trim();
+  if (/^[!?]?\s*:?\s*(?:Accept|Optional)\s+(?:the\s+)?top\s+(?:card\s+of\s+the\s+)?Missiones\b/i.test(s)) {
+    return "";
+  }
+  s = s
+    .replace(/\s*•\s*(?:\(DECK_ICON\)|🃏)?(?:\(QUEST_ICON\)|📦)?[!?]:\s*(?:Accept|Optional)\s+top\s+Missiones\s+card\s*\(unseen\)\.?/gi, "")
+    .trim();
+  return s;
+}
+
 function formatHostileFavorPenaltyText(cardOrMission) {
   const raw =
     Array.isArray(cardOrMission?.hostileFavor) && cardOrMission.hostileFavor.length > 0
@@ -3600,6 +3886,7 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
   const artId = card.id || "pat_1";
   const canFight = Boolean(pend && typeof pend === "object" && pend.canInitiateCombat);
   const combatMandatory = Boolean(pend && typeof pend === "object" && pend.combatMandatory);
+  const canFulfillOnCard = Boolean(interactive && !combatMandatory && (onFulfill || (pend && typeof pend === "object")));
 
   if (card && card.type === "event") {
     const deckDisplay =
@@ -3726,10 +4013,16 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
       ? card.reactions.map((r) => ({
           cond: formatReactionCondition(r.condition),
           effect: formatReactionTypeSymbol(r),
+          reactionType: r.type,
+          reward: r.reward,
         }))
       : [
-          { cond: "≤ -1", effect: "(COMBAT_ICON)" },
-          { cond: "≥ 0", effect: formatReactionTypeSymbol(pend ? pend.reaction || pend.reactionType : "demand") },
+          { cond: "≤ -1", effect: "(COMBAT_ICON)", reactionType: "combat" },
+          {
+            cond: "≥ 0",
+            effect: formatReactionTypeSymbol(pend ? pend.reaction || pend.reactionType : "demand"),
+            reactionType: (pend && typeof pend === "object" && (pend.reaction || pend.reactionType)) || "demand",
+          },
         ];
   const matchedIdx = pend && typeof pend.matchedTierIndex === "number" ? pend.matchedTierIndex : -1;
 
@@ -3740,71 +4033,46 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
       .replace(/⚔️|⚔/g, "(COMBAT_ICON)")
       .replace(/🃏/g, "(DECK_ICON)")
       .replace(/📦/g, "(QUEST_ICON)");
-    const isCombatTier = rawEff.includes("⚔") || eff.includes("(COMBAT_ICON)") || rawEff.toLowerCase() === "combat";
+    const isCombatTier =
+      t.reactionType === "combat" ||
+      rawEff.includes("⚔") ||
+      eff.includes("(COMBAT_ICON)") ||
+      rawEff.toLowerCase() === "combat";
     const clickCls =
       interactive && isCombatTier
         ? canFight
           ? "enc-clickable-section section-combat"
           : "enc-section-locked"
-        : interactive && isActive && !combatMandatory
+        : canFulfillOnCard && isActive
         ? "enc-clickable-section section-fulfill"
         : "";
+
+    const tierEffectEl = el("div", { className: "phys-enc-tier-effect", text: eff });
+    // Clear nested icon titles inside tier cells so hovering any icon shows the tier's full explanation
+    tierEffectEl.querySelectorAll("[data-hover-title]").forEach((node) => node.removeAttribute("data-hover-title"));
 
     return el(
       "div",
       {
         className: `phys-enc-tier-cell ${isActive ? "tier-active" : ""} ${clickCls}`,
-        title: isCombatTier
-          ? canFight
-            ? "Click to Fight in Combat!"
-            : "Combat Locked (Not Threatened)"
-          : isActive
-          ? "Your Active Reputation Tier — Click to Comply / Accept"
-          : `Reputation Tier (${t.cond})`,
-        onClick: isCombatTier ? handleCombatClick : isActive && !combatMandatory ? handleFulfillClick : null,
+        title: formatEncounterTierHoverTitle(t, {
+          isCombatTier,
+          isActive,
+          interactive,
+          canFight,
+          combatMandatory,
+        }),
+        onClick: isCombatTier ? handleCombatClick : canFulfillOnCard && isActive ? handleFulfillClick : null,
       },
-      el("div", { className: "phys-enc-tier-effect", text: eff }),
+      tierEffectEl,
       el("div", { className: "phys-enc-tier-cond", text: t.cond })
     );
   });
 
   const missionObj = card.mission || null;
-  const activeReactionType = String(
-    (pend && typeof pend === "object" && (pend.reaction || pend.reactionType)) || ""
-  );
-  const cardHasDeckQuestDemand =
-    !missionObj && Array.isArray(card.reactions) && card.reactions.some((r) => r.type === "deck_quest_demand");
-  const cardHasDeckQuestOffer =
-    !missionObj && Array.isArray(card.reactions) && card.reactions.some((r) => r.type === "deck_quest_offer");
-
-  const hasDeckQuestDemand = activeReactionType
-    ? activeReactionType === "deck_quest_demand"
-    : cardHasDeckQuestDemand;
-  const hasDeckQuestOffer = activeReactionType
-    ? activeReactionType === "deck_quest_offer"
-    : cardHasDeckQuestOffer;
-
-  let defaultActionText = "";
-  if (activeReactionType === "deck_quest_demand") {
-    defaultActionText = "!: Accept the top card of the Missiones deck (unseen) as a Mission.";
-  } else if (activeReactionType === "deck_quest_offer") {
-    defaultActionText = "?: Accept the top card of the Missiones deck (unseen) as a Mission.";
-  } else if (!activeReactionType && card.actionText && (cardHasDeckQuestDemand || cardHasDeckQuestOffer)) {
-    const dqNote = cardHasDeckQuestDemand
-      ? "(DECK_ICON)(QUEST_ICON)!: Accept top Missiones card (unseen)."
-      : "(DECK_ICON)(QUEST_ICON)?: Optional top Missiones card (unseen).";
-    defaultActionText = `${card.actionText} • ${dqNote}`;
-  } else {
-    defaultActionText =
-      card.actionText ||
-      formatMissionObjective(missionObj) ||
-      (hasDeckQuestDemand
-        ? "!: Accept the top card of the Missiones deck (unseen) as a Mission."
-        : hasDeckQuestOffer
-        ? "?: Accept the top card of the Missiones deck (unseen) as a Mission."
-        : "Encounter in the streets of Rome.");
-  }
-  defaultActionText = normalizeRelativeScarcityText(defaultActionText);
+  const cleanedActionText = cleanEncounterActionText(card.actionText);
+  const rawBodyText = cleanedActionText || formatMissionObjective(missionObj);
+  const defaultActionText = normalizeRelativeScarcityText(rawBodyText);
 
   return el(
     "div",
@@ -3818,9 +4086,9 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
       el(
         "div",
         {
-          className: `phys-card-bar ${interactive && !combatMandatory ? "enc-clickable-section section-fulfill" : ""}`,
-          title: interactive && !combatMandatory ? "Click to Comply / Accept Friendly Terms" : "",
-          onClick: !combatMandatory ? handleFulfillClick : null,
+          className: `phys-card-bar ${canFulfillOnCard ? "enc-clickable-section section-fulfill" : ""}`,
+          title: canFulfillOnCard ? "Click to Comply / Accept Friendly Terms" : "",
+          onClick: canFulfillOnCard ? handleFulfillClick : null,
         },
         el(
           "div",
@@ -3881,19 +4149,16 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
       el(
         "div",
         {
-          className: `phys-card-body ${
-            interactive && !combatMandatory ? "enc-clickable-section section-fulfill" : ""
-          }`,
-          title:
-            interactive && !combatMandatory
-              ? "Click this section of the card to Comply / Accept Offer / Accept Mission"
-              : "",
-          onClick: !combatMandatory ? handleFulfillClick : null,
+          className: `phys-card-body ${canFulfillOnCard ? "enc-clickable-section section-fulfill" : ""}`,
+          title: canFulfillOnCard
+            ? "Click this section of the card to Comply / Accept Offer / Accept Mission"
+            : "",
+          onClick: canFulfillOnCard ? handleFulfillClick : null,
         },
         el(
           "div",
           {},
-          interactive && !combatMandatory
+          canFulfillOnCard
             ? el(
                 "div",
                 { style: { marginBottom: "4px" } },
@@ -3903,35 +4168,12 @@ function renderPhysicalEncounterCardNode(card, pend, opts = {}) {
                 })
               )
             : null,
-          hasDeckQuestDemand || hasDeckQuestOffer
-            ? el(
-                "div",
-                {
-                  style: {
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                    background: hasDeckQuestDemand ? "rgba(180, 83, 9, 0.16)" : "rgba(21, 128, 61, 0.16)",
-                    border: hasDeckQuestDemand ? "1px solid rgba(180, 83, 9, 0.45)" : "1px solid rgba(21, 128, 61, 0.45)",
-                    fontSize: "0.62rem",
-                    fontWeight: "800",
-                    color: hasDeckQuestDemand ? "#92400e" : "#166534",
-                    marginBottom: "4px",
-                  },
-                },
-                el("span", {
-                  text: hasDeckQuestDemand
-                    ? "(DECK_ICON)(QUEST_ICON)! Deck Quest Demand"
-                    : "(DECK_ICON)(QUEST_ICON)? Optional Deck Quest Offer",
-                })
-              )
+          defaultActionText
+            ? el("div", {
+                style: { fontWeight: "700" },
+                text: defaultActionText,
+              })
             : null,
-          el("div", {
-            style: { fontWeight: "700" },
-            text: defaultActionText,
-          }),
           missionObj && missionObj.fencedSell ? renderFencedSellTableNode(missionObj.fencedSell) : null
         )
       ),
@@ -4967,7 +5209,7 @@ function openFinalScoringModal(standings, meta = {}) {
                 color: isEliminated ? "#991b1b" : entry.won ? "#6e2119" : "var(--text-main)",
               },
             },
-            createPlayerNameNode(entry, { iconSize: 15 })
+            createPlayerNameNode(entry, { iconSize: 18 })
           ),
           entry.isBot
             ? el("span", {
@@ -5314,7 +5556,7 @@ function renderCompletedGamesView() {
                       },
                     },
                     p.won ? "👑 " : null,
-                    createPlayerNameNode(p, { iconSize: 14 })
+                    createPlayerNameNode(p, { iconSize: 17 })
                   )
                 ),
                 el("strong", {
@@ -5397,6 +5639,21 @@ function checkPostActionModals(state) {
       }
     } else {
       appState.promptedNpcOfferId = null;
+    }
+
+    // 0C. Check if player exceeds the 5 active mission limit and must cancel 1 mission
+    if (hasMissionOverflow(vp, state)) {
+      if (!appState.activeDiceOverlay) {
+        const ovfId = getMissionOverflowId(vp);
+        if (ovfId && appState.promptedMissionOverflowId !== ovfId) {
+          appState.promptedMissionOverflowId = ovfId;
+          openPendingMissionOverflowModal(state, vp);
+          return;
+        }
+      }
+      return;
+    } else {
+      appState.promptedMissionOverflowId = null;
     }
 
     // 1. Check if a new scouted tile/card was just revealed
@@ -6776,7 +7033,7 @@ function renderPortalView() {
       const iconWrap = el(
         "span",
         { className: "bot-capital-wrap", title: BOT_DIFFICULTY_META[currDiff].title },
-        createColumnCapitalIconNode(currDiff, 15)
+        createColumnCapitalIconNode(currDiff, 18)
       );
 
       const sel = el(
@@ -6806,7 +7063,7 @@ function renderPortalView() {
           onChange: (e) => {
             const nextDiff = normalizeBotDifficulty(e.target.value);
             appState.portalBotDifficulties[i] = nextDiff;
-            iconWrap.replaceChildren(createColumnCapitalIconNode(nextDiff, 15));
+            iconWrap.replaceChildren(createColumnCapitalIconNode(nextDiff, 18));
           },
         },
         ...BOT_DIFFICULTIES.map((dKey) => {
@@ -7304,7 +7561,7 @@ function renderLobbyItem(g) {
         : el(
           "span",
           {},
-          createPlayerNameNode({ name: s.name, isBot: s.isBot, botDifficulty: s.botDifficulty }, { iconSize: 14 })
+          createPlayerNameNode({ name: s.name, isBot: s.isBot, botDifficulty: s.botDifficulty }, { iconSize: 17 })
         ),
       isLobby && isHost && s.isBot
         ? el(
@@ -7337,7 +7594,7 @@ function renderLobbyItem(g) {
         )
         : null,
       isLobby && isHost && s.isBot
-        ? createColumnCapitalIconNode(s.botDifficulty, 14)
+        ? createColumnCapitalIconNode(s.botDifficulty, 17)
         : null,
       isLobby && isHost && s.seatIndex >= 0
         ? el("button", {
@@ -7861,6 +8118,9 @@ function renderTabletopView() {
   if (viewer && viewer.pendingNpcOffer) {
     mainBoards.push(renderPendingNpcOfferPanel(gs, viewer));
   }
+  if (viewer && hasMissionOverflow(viewer, gs)) {
+    mainBoards.push(renderPendingMissionOverflowPanel(gs, viewer));
+  }
   if (viewer && gs.phase === "cleanup" && !viewer.cleanupDone) {
     mainBoards.push(renderCleanupPhasePanel(gs, viewer));
   }
@@ -7961,7 +8221,7 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
         "span",
         { className: "badge" },
         "🦅 1st Player: ",
-        createPlayerNameNode(firstPlayer, { iconSize: 13 })
+        createPlayerNameNode(firstPlayer, { iconSize: 16 })
       ),
       el(
         "span",
@@ -7970,7 +8230,7 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
           style: { borderColor: "#16a34a", color: "#14532d", background: "#ecfdf5" },
         },
         "▶ Active Turn: ",
-        createPlayerNameNode(activePlayer, { iconSize: 13 })
+        createPlayerNameNode(activePlayer, { iconSize: 16 })
       ),
       speedBadge,
       countdownBadge,
@@ -8134,13 +8394,15 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
             })
           );
         }
+        const promptBlocked = Boolean(gs.pendingEncounter) || hasPlayerBlockingPrompt(viewer, true, gs);
+        const overflowActive = hasMissionOverflow(viewer, gs);
         extraActions.push(
           el("button", {
             type: "button",
             className: "btn btn-sm",
             title: "Free once-per-turn Scout: peek at the top unrevealed tile of any stack or top card of any of the 6 decks (usable before or after Moving/Transacting without ending your turn)",
             text: "👁️ Scout",
-            disabled: viewer.scoutedThisTurn,
+            disabled: viewer.scoutedThisTurn || promptBlocked,
             onClick: () => openScoutModal(gs, viewer),
           }),
           el("button", {
@@ -8148,15 +8410,30 @@ function renderContextualPromptBanner(gs, viewer, activePlayer) {
             className: "btn btn-sm",
             title: "Discard 1 Influence card (once per turn, before or after moving) to trash an exposed face-up tile, top unrevealed stack tile, or top card of any of the 6 decks",
             text: "🗑️ Trash Tile/Card",
-            disabled: viewer.trashedThisTurn || viewer.influence.length === 0,
+            disabled: viewer.trashedThisTurn || viewer.influence.length === 0 || promptBlocked,
             onClick: () => openTrashModal(gs, viewer),
           }),
           el("button", {
             type: "button",
             className: "btn btn-sm btn-crimson",
-            title: "End your hourly turn",
+            title: overflowActive
+              ? "Cannot end turn with more than 5 active missions — cancel 1 mission first"
+              : promptBlocked
+              ? "Resolve your active prompt before ending your turn"
+              : "End your hourly turn",
             text: "End Turn ⏭️",
+            disabled: promptBlocked,
             onClick: () => sendGameAction({ type: "delivery_end_turn" }),
+          })
+        );
+      }
+      if (hasMissionOverflow(viewer, gs)) {
+        extraActions.push(
+          el("button", {
+            type: "button",
+            className: "btn btn-sm btn-primary",
+            text: `⚠️ ${(viewer.missions || []).length}/5 Missions — Cancel 1`,
+            onClick: () => openPendingMissionOverflowModal(gs, viewer),
           })
         );
       }
@@ -8430,7 +8707,7 @@ function renderPoliticalClimateBoard(gs, viewer) {
                 style: { borderColor: "#d97706", color: "#78350f", background: "#fffbeb" },
               },
               "Waiting on ",
-              createPlayerNameNode(waitingPlayer, { iconSize: 13 })
+              createPlayerNameNode(waitingPlayer, { iconSize: 16 })
             )
           : el("span", {
               className: "badge",
@@ -8467,7 +8744,7 @@ function renderPoliticalClimateBoard(gs, viewer) {
                 className: `climate-draft-chip ${pickDone ? "done" : pickCurr ? "current" : "upcoming"}`,
                 title: pickInfo ? `Picked ${pickInfo.factor}: ${pickInfo.title}` : `Pick #${idx + 1}`,
               },
-              el("strong", {}, `#${idx + 1} `, createPlayerNameNode(pl, { iconSize: 13 })),
+              el("strong", {}, `#${idx + 1} `, createPlayerNameNode(pl, { iconSize: 16 })),
               pickInfo ? el("span", { text: ` • ${pickInfo.factor}` }) : null
             );
           })
@@ -10577,14 +10854,31 @@ function renderPendingEncounterPanelCore(gs, viewer) {
               })
             : null,
           el("span", { className: "badge", text: `Effective Favor: ${pend.favorScore > 0 ? `+${pend.favorScore}` : pend.favorScore}` }),
-          el("span", {
-            className: "badge",
-            text: `Active Tier: ${
-              pend.matchedTier
-                ? `${formatReactionCondition(pend.matchedTier.condition || pend.matchedTier.cond)} → ${formatReactionTypeSymbol(pend.matchedTier)}`
-                : formatReactionTypeSymbol(pend.reaction || pend.reactionType)
-            }`,
-          }),
+          (() => {
+            const rTypeKey =
+              pend.reaction ||
+              pend.reactionType ||
+              (pend.matchedTier && (pend.matchedTier.reactionType || pend.matchedTier.type || pend.matchedTier.effect)) ||
+              "";
+            const info = getEncounterReactionInfo(rTypeKey || pend.matchedTier);
+            const sym = pend.matchedTier
+              ? formatReactionTypeSymbol(pend.matchedTier)
+              : formatReactionTypeSymbol(rTypeKey);
+            const condPrefix = pend.matchedTier
+              ? `${formatReactionCondition(pend.matchedTier.condition || pend.matchedTier.cond)} → `
+              : "";
+            return el(
+              "span",
+              {
+                className: "badge",
+                title: `${info.label}: ${info.detail}`,
+                style: { display: "inline-flex", alignItems: "center", gap: "0.24rem", flexWrap: "wrap" },
+              },
+              `Active Tier: ${condPrefix}`,
+              sym,
+              ` (${info.label})`
+            );
+          })(),
           el("span", { className: "badge", text: `NPC Combat: ${card.combatFormula || "X(R)"} (X=${pend.xCount})` }),
           activeCombatMods.length > 0
             ? el("span", {
@@ -10634,6 +10928,35 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                 style: { fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.35rem", fontSize: "0.85rem" },
                 text: "Interactive Card Section Guide:",
               }),
+              (() => {
+                const rTypeKey =
+                  pend.reaction ||
+                  pend.reactionType ||
+                  (pend.matchedTier && (pend.matchedTier.reactionType || pend.matchedTier.type || pend.matchedTier.effect)) ||
+                  "";
+                const info = getEncounterReactionInfo(rTypeKey || pend.matchedTier);
+                const sym = pend.matchedTier
+                  ? formatReactionTypeSymbol(pend.matchedTier)
+                  : formatReactionTypeSymbol(rTypeKey);
+                return el(
+                  "div",
+                  {
+                    style: {
+                      fontSize: "0.8rem",
+                      marginBottom: "0.3rem",
+                      color: "#3f2814",
+                      lineHeight: "1.45",
+                    },
+                  },
+                  el("strong", { text: "• Active Tier Icon (" }),
+                  el("span", {
+                    style: { display: "inline-flex", alignItems: "center", gap: "0.15rem", verticalAlign: "-0.12em" },
+                    text: sym,
+                  }),
+                  el("strong", { text: ` = ${info.label}): ` }),
+                  el("span", { text: `${info.detail}.` })
+                );
+              })(),
               !combatMandatory
                 ? el("div", {
                     style: { fontSize: "0.8rem", marginBottom: "0.25rem", color: "#15803d", fontWeight: "600" },
@@ -10657,10 +10980,10 @@ function renderPendingEncounterPanelCore(gs, viewer) {
                 text: (() => {
                   const rType = pend.reaction || pend.reactionType || "";
                   if (rType === "deck_quest_demand") {
-                    return "(DECK_ICON)(QUEST_ICON)! Accept Top Missiones Card (Unseen)";
+                    return "(DECK_ICON)(QUEST_ICON)! Draw & Accept Top Missiones Card (Unseen)";
                   }
                   if (rType === "deck_quest_offer") {
-                    return "(DECK_ICON)(QUEST_ICON)? Accept Top Missiones Card (Unseen)";
+                    return "(DECK_ICON)(QUEST_ICON)? Draw & Accept Top Missiones Card (Unseen)";
                   }
                   if (
                     (rType === "mission_strict" ||
@@ -10985,6 +11308,58 @@ function renderPendingCartOverflowPanel(gs, viewer) {
   );
 }
 
+function renderPendingMissionOverflowPanel(gs, viewer) {
+  const missions = (viewer && Array.isArray(viewer.missions) ? viewer.missions : []);
+  if (missions.length <= MAX_ACTIVE_MISSIONS) return null;
+  const ovf = (viewer && viewer.pendingMissionOverflow) || {};
+  const allSooth = areAllMissionsSoothsayer(missions);
+  const triggerText = ovf.newMissionName
+    ? `You took on "${ovf.newMissionName}" (${ovf.sourceLabel || "Mission"}), bringing you to ${missions.length}/${MAX_ACTIVE_MISSIONS} active missions.`
+    : `You currently hold ${missions.length}/${MAX_ACTIVE_MISSIONS} active missions.`;
+  const soothRuleText = allSooth
+    ? "All 6 active missions are Soothsayer prophecies — pick any 1 Soothsayer mission to cancel at no penalty."
+    : "Soothsayer missions are locked unless all 6 active missions are Soothsayer missions — pick 1 Starting or Encounter mission to cancel.";
+  return el(
+    "div",
+    { className: "panel", style: { borderColor: "#b45309", background: "rgba(255, 247, 237, 0.96)" } },
+    el(
+      "h3",
+      { className: "panel-title" },
+      el("span", {
+        text: `📜 Active Mission Limit (${missions.length}/${MAX_ACTIVE_MISSIONS}) — Choose 1 Mission to Cancel`,
+      }),
+      el("button", {
+        type: "button",
+        className: "btn btn-sm btn-primary",
+        text: "⚖️ Choose Mission to Cancel",
+        onClick: () => openPendingMissionOverflowModal(gs, viewer),
+      })
+    ),
+    el(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+          fontSize: "0.85rem",
+        },
+      },
+      el("span", {
+        text: `${triggerText} ${soothRuleText} You cannot end your turn until you hold at most ${MAX_ACTIVE_MISSIONS} active missions.`,
+      }),
+      el("button", {
+        type: "button",
+        className: "btn btn-sm btn-crimson",
+        text: "📜 Pick 1 of 6 Missions to Cancel",
+        onClick: () => openPendingMissionOverflowModal(gs, viewer),
+      })
+    )
+  );
+}
+
 function renderCleanupPhasePanel(gs, viewer) {
   if (appState.cleanupInitializedSeason !== gs.season) {
     appState.cleanupInitializedSeason = gs.season;
@@ -11093,6 +11468,10 @@ function renderCleanupPhasePanel(gs, viewer) {
       : null,
     el("button", {
       className: "btn btn-crimson",
+      disabled: hasMissionOverflow(viewer, gs),
+      title: hasMissionOverflow(viewer, gs)
+        ? "Cannot finish Clean-Up with more than 5 active missions — cancel 1 mission first"
+        : "Finish Clean-Up and advance",
       text:
         gs.season === "Fall"
           ? "✓ Complete Clean-Up & Enter December 211 Winter Reckoning"
@@ -12260,7 +12639,7 @@ function openPlayerCartModal(gs, targetPlayer, viewer) {
           el(
             "h3",
             { style: { margin: "0", color: "var(--gold-bright)", fontSize: "1.15rem" } },
-            createPlayerNameNode(targetPlayer, { iconSize: 16 }),
+            createPlayerNameNode(targetPlayer, { iconSize: 20 }),
             `'s Merchant Cart${isViewer ? " (You)" : ""}`
           ),
           el("div", {
@@ -12502,8 +12881,7 @@ function hasAvailableDeliveryTransactionNow(gs, viewer) {
   if (!hasViewerEnteredRomeForDelivery(gs, viewer)) return false;
   if (gs.activePlayerIndex !== viewer.index) return false;
   if (viewer.transactedThisTurn || viewer.gambledThisTurn) return false;
-  if (gs.pendingEncounter || viewer.pendingNpcOffer) return false;
-  if (Array.isArray(viewer.pendingCartOverflow) && viewer.pendingCartOverflow.length > 0) return false;
+  if (gs.pendingEncounter || hasPlayerBlockingPrompt(viewer, false, gs)) return false;
 
   const cell = gs.romeBoard && gs.romeBoard[viewer.position];
   const rev = cell && cell.revealed;
@@ -12587,7 +12965,7 @@ function renderMarketHeaderDenariiCounts(gs, viewer) {
             className: "denarii-pill-name",
             style: { color: swatchColor },
           },
-          createPlayerNameNode(p, { iconSize: 13 }),
+          createPlayerNameNode(p, { iconSize: 16 }),
           isMe ? " (You):" : ":"
         ),
         el("strong", {
@@ -12905,13 +13283,7 @@ function renderOstiaMarketBoard(gs, viewer) {
   );
 }
 
-const TIBER_UNBRIDGED_CELL_CLASSES = {
-  B3: ["tiber-block-S"],
-  B4: ["tiber-block-N"],
-  A5: ["tiber-block-E", "tiber-block-S"],
-  B5: ["tiber-block-W"],
-  A6: ["tiber-block-N"],
-};
+const TIBER_UNBRIDGED_CELL_CLASSES = {};
 
 const TIBER_BRIDGE_BADGES_BY_CELL = {
   A1: [
@@ -13283,9 +13655,7 @@ function renderRomeNightBoard(gs, viewer) {
         viewer.movesRemaining > 0 &&
         passableExitDir &&
         !gs.pendingEncounter &&
-        !viewer.pendingNpcOffer &&
-        !((viewer.pendingCartOverflow || []).length > 0) &&
-        !((viewer.pendingMarketReward || []).length > 0)
+        !hasPlayerBlockingPrompt(viewer, false, gs)
           ? el(
               "button",
               {
@@ -13303,13 +13673,15 @@ function renderRomeNightBoard(gs, viewer) {
             )
           : null;
 
-      const bridgeBadgeNodes = (TIBER_BRIDGE_BADGES_BY_CELL[coord] || []).map((bSpec) =>
-        el("span", {
-          className: `tiber-bridge-pill bridge-dir-${bSpec.pos}`,
-          title: `${bSpec.label} — Stone Bridge across the Tiber`,
-          text: bSpec.label,
-        })
-      );
+      const bridgeBadgeNodes = !rev
+        ? (TIBER_BRIDGE_BADGES_BY_CELL[coord] || []).map((bSpec) =>
+            el("span", {
+              className: `tiber-bridge-pill bridge-dir-${bSpec.pos}`,
+              title: `${bSpec.label} — Stone Bridge across the Tiber`,
+              text: bSpec.label,
+            })
+          )
+        : [];
 
       gridCells.push(
         el(
@@ -13887,7 +14259,7 @@ function renderPlayerSidebar(gs, viewer) {
               { style: { display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: "700", flexWrap: "wrap" } },
               renderCartIconNode(p.color, "", `${p.name}'s Cart`),
               p.eliminated ? el("span", { text: "☠️ " }) : null,
-              createPlayerNameNode(p, { iconSize: 13 })
+              createPlayerNameNode(p, { iconSize: 16 })
             ),
             el("div", {
               style: { color: p.eliminated ? "#b91c1c" : swatchColor, fontWeight: "800", marginTop: "0.2rem" },
@@ -14133,7 +14505,8 @@ function renderPlayerSidebar(gs, viewer) {
       const soothsayerMissions = allMissions.filter((m) => m.source === "soothsayer");
       const canActivelyCancel =
         gs.phase !== "setup_discard" && gs.phase !== "setup_climate" && gs.phase !== "finished";
-      const canCancelSoothsayer = canActivelyCancel && soothsayerMissions.length > 5;
+      const allSoothOverflow = areAllMissionsSoothsayer(allMissions);
+      const canCancelSoothsayer = canActivelyCancel && allSoothOverflow;
       const bondedCouriersActive = hasActiveClimateOption(gs, "missions_3");
 
       const activeGroups = [
@@ -14156,7 +14529,13 @@ function renderPlayerSidebar(gs, viewer) {
         {
           key: "soothsayer",
           title: `Soothsayer (${soothsayerMissions.length})`,
-          sub: canCancelSoothsayer ? "Cancel 1 Free" : bondedCouriersActive ? "🔒 2× Cash / -10d" : "🔒 Mandatory",
+          sub: canCancelSoothsayer
+            ? "Cancel 1 Free"
+            : allMissions.length > MAX_ACTIVE_MISSIONS
+            ? "🔒 Locked (Not All 6 Soothsayer)"
+            : bondedCouriersActive
+            ? "🔒 2× Cash / -10d"
+            : "🔒 Mandatory",
           missions: soothsayerMissions,
           canCancel: canCancelSoothsayer,
           cancelLabel: "✕ Cancel Overflow (Free)",
@@ -14196,6 +14575,7 @@ function renderPlayerSidebar(gs, viewer) {
                   canCancel: g.canCancel,
                   cancelLabel: g.cancelLabel,
                   soothsayerTotalCount: soothsayerMissions.length,
+                  allSoothsayerOverflow: allSoothOverflow,
                 })
               )
             )
@@ -14211,19 +14591,25 @@ function renderPlayerSidebar(gs, viewer) {
           { className: "panel-title" },
           el(
             "span",
-            { text: `📜 Active Missions (${allMissions.length})${bondedCouriersActive ? " [2× Cash / -10d Fail]" : ""}` }
+            { text: `📜 Active Missions (${allMissions.length}/${MAX_ACTIVE_MISSIONS})${bondedCouriersActive ? " [2× Cash / -10d Fail]" : ""}` }
           ),
-          soothsayerMissions.length > 5
-            ? el("span", {
+          allMissions.length > MAX_ACTIVE_MISSIONS
+            ? el("button", {
+                type: "button",
+                className: "btn btn-sm",
                 style: {
                   fontSize: "0.72rem",
                   background: "#b45309",
                   color: "#fff",
-                  padding: "2px 6px",
+                  padding: "2px 8px",
                   borderRadius: "4px",
                   fontWeight: "700",
+                  border: "1px solid #92400e",
                 },
-                text: "⚠️ 6 Soothsayer Missions — Cancel 1 Free!",
+                text: allSoothOverflow
+                  ? `⚠️ ${allMissions.length}/5 Soothsayer Missions — Cancel 1 Free`
+                  : `⚠️ ${allMissions.length}/5 Active Missions — Cancel 1 Now`,
+                onClick: () => openPendingMissionOverflowModal(gs, viewer),
               })
             : el("span", {
                 style: {
@@ -14294,9 +14680,7 @@ function renderPlayerSidebar(gs, viewer) {
                 !viewer.nightEnded &&
                 Number(viewer.movesRemaining || 0) > 0 &&
                 !pend &&
-                !viewer.pendingNpcOffer &&
-                !viewer.pendingCartOverflow &&
-                !viewer.pendingMarketReward &&
+                !hasPlayerBlockingPrompt(viewer, true, gs) &&
                 !(viewer.turnEffects && viewer.turnEffects.shortcut);
               const pendStage = pend ? pend.stage || "pre_decision" : null;
               const isViewerInPostRoll =
@@ -14611,6 +14995,17 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
       !shortcutActive &&
       tollAmt <= 0 &&
       Boolean(adjInfo.edge && !["green", "red", "None"].includes(String(adjInfo.edge)));
+    const dividedTiberActive = Boolean(
+      bridgeName && (Number(adjInfo.bridgeTollCost) > 0 || hasActiveClimateOption(gs, "geta_3"))
+    );
+    const bridgeTollWaived = Boolean(
+      dividedTiberActive && (shortcutActive || (Number(viewer.favor && viewer.favor.Geta) || 0) >= 1)
+    );
+    const bridgeTollSuffix = dividedTiberActive
+      ? bridgeTollWaived
+        ? " • Divided Tiber Waived (+1 Emerald)"
+        : " + 4(d) Divided Tiber Toll"
+      : "";
     if (riverBlocked) {
       crossingNote = `🌊 Blocked by Tiber River (${viewer.position} → ${coord})`;
     } else if (!isPassable) {
@@ -14618,12 +15013,15 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
     } else if (shortcutActive && !adjInfo.passable) {
       crossingNote = `✨ Shortcut Bypasses Barricade (${dir})`;
     } else if (tollAmt > 0) {
-      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Road Toll: ${tollAmt}(d) (${dir})`;
+      const roadTollLabel = bridgeTollSuffix
+        ? `${tollAmt}(d) Road Toll${bridgeTollSuffix}`
+        : `Road Toll: ${tollAmt}(d)`;
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}${roadTollLabel} (${dir})`;
     } else if (isHazard) {
-      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${formatEdgeLabel(adjInfo.edge)} (${dir})`;
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${formatEdgeLabel(adjInfo.edge)}${bridgeTollSuffix} (${dir})`;
     } else {
       crossingNote = bridgeName
-        ? `🌉 Cross ${bridgeName} — Open Street (${dir})`
+        ? `🌉 Cross ${bridgeName} — Open Street${bridgeTollSuffix} (${dir})`
         : `✓ Open Street (${viewer.position} → ${coord})`;
     }
   }
@@ -14638,15 +15036,18 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
       !viewer.exitedRome &&
       !viewer.nightEnded
   );
+  const tileModalPromptBlocked = Boolean(gs && (gs.pendingEncounter || hasPlayerBlockingPrompt(viewer, true, gs)));
+  const tileModalMissionOverflow = Boolean(gs && hasMissionOverflow(viewer, gs));
   const isGateCell = Boolean(cell && cell.isGate);
-  const isGateEntrance = Boolean(isEntryPhase && isGateCell && isMyTurn);
-  const canScoutTile = Boolean(isMyTurn && !viewer.scoutedThisTurn && unrevealedCount > 0);
-  const canScoutDeck = Boolean(isMyTurn && !viewer.scoutedThisTurn);
+  const isGateEntrance = Boolean(isEntryPhase && isGateCell && isMyTurn && !tileModalPromptBlocked);
+  const canScoutTile = Boolean(isMyTurn && !viewer.scoutedThisTurn && unrevealedCount > 0 && !tileModalPromptBlocked);
+  const canScoutDeck = Boolean(isMyTurn && !viewer.scoutedThisTurn && !tileModalPromptBlocked);
   const canTrashThisTile = Boolean(
     !isEntryPhase &&
       isDeliveryPhase &&
       isMyTurn &&
       !viewer.trashedThisTurn &&
+      !tileModalPromptBlocked &&
       Array.isArray(viewer.influence) &&
       viewer.influence.length > 0 &&
       (exposedTile || unrevealedCount > 0)
@@ -14662,10 +15063,11 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
       isDeliveryPhase &&
       isMyTurn &&
       moveDir &&
-      Number(viewer.movesRemaining || 0) > 0
+      Number(viewer.movesRemaining || 0) > 0 &&
+      !tileModalPromptBlocked
   );
   const canMoveHere = Boolean(canMoveStep || isGateEntrance);
-  const canEndTurnHere = Boolean(!isEntryPhase && isDeliveryPhase && isMyTurn);
+  const canEndTurnHere = Boolean(!isEntryPhase && isDeliveryPhase && isMyTurn && !tileModalPromptBlocked);
 
   const showGateEntryEndTurn = Boolean(isEntryPhase);
   const hasEnteredRome = hasViewerEnteredRomeForDelivery(gs, viewer);
@@ -14757,7 +15159,7 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
             el(
               "span",
               { style: { marginLeft: "0.3rem" } },
-              createPlayerNameNode(p, { iconSize: 13 }),
+              createPlayerNameNode(p, { iconSize: 16 }),
               viewer && p.index === viewer.index ? " (Your Cart)" : null
             )
           )
@@ -14999,7 +15401,11 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
                 type: "button",
                 className: "btn btn-crimson",
                 disabled: !canEndTurnHere,
-                title: canEndTurnHere
+                title: tileModalMissionOverflow
+                  ? "End Turn is unavailable while holding more than 5 active missions — cancel 1 mission first"
+                  : tileModalPromptBlocked
+                  ? "End Turn is unavailable until you resolve your active prompt"
+                  : canEndTurnHere
                   ? "End your hourly turn"
                   : "End Turn is unavailable when it is not your turn (or before selecting a starting Via Gate)",
                 text: "⏭️ End Turn",
@@ -15606,7 +16012,8 @@ function openScoutResultModal(si) {
     typeof gs.viewerPlayerIndex === "number" &&
     gs.phase === "delivery" &&
     gs.activePlayerIndex === gs.viewerPlayerIndex &&
-    !gs.pendingEncounter;
+    !gs.pendingEncounter &&
+    !hasPlayerBlockingPrompt(getViewerPlayer(gs), true, gs);
   const scoutViewer =
     canEndTurnFromScout && Array.isArray(gs.players)
       ? gs.players[gs.viewerPlayerIndex]
@@ -15763,10 +16170,16 @@ function openDeliverCargoPromptModal(m, _viewer) {
   );
 }
 
-function openCancelMissionConfirmModal(m, soothsayerTotalCount = 0) {
+function openCancelMissionConfirmModal(m, allSoothsayerOrCount = false) {
   const src = m.source || "starting";
-  if (src === "soothsayer" && soothsayerTotalCount <= 5) {
-    showToast("Canceling or failing a Soothsayer mission is impossible unless you already have 5 active Soothsayer missions and take on a 6th!", true);
+  const vp = appState.gameState ? getViewerPlayer(appState.gameState) : null;
+  const allowSoothsayer = vp
+    ? areAllMissionsSoothsayer(vp.missions)
+    : typeof allSoothsayerOrCount === "boolean"
+    ? allSoothsayerOrCount
+    : Number(allSoothsayerOrCount || 0) > MAX_ACTIVE_MISSIONS;
+  if (src === "soothsayer" && !allowSoothsayer) {
+    showToast("A Soothsayer mission can only be canceled if all six (6) active missions are Soothsayer missions!", true);
     return;
   }
 
@@ -15779,7 +16192,7 @@ function openCancelMissionConfirmModal(m, soothsayerTotalCount = 0) {
     const hList = formatHostileFavorPenaltyText(m);
     ruleExplanation = `Per the rulebook, canceling or failing an Encounter Mission incurs its Thumbs-Down reputational consequences (${hList}).`;
   } else if (src === "soothsayer") {
-    ruleExplanation = "Because you hold more than 5 active Soothsayer missions, you may cancel one active Soothsayer mission with no penalty.";
+    ruleExplanation = "Because all 6 of your active missions are Soothsayer missions, you may cancel one Soothsayer mission with no penalty (its sealed Influence cards return to the deck).";
   } else {
     ruleExplanation = "Per the rulebook, Starting Missions can be canceled voluntarily at any time with no penalty.";
   }
@@ -16468,6 +16881,224 @@ function openPendingCartOverflowModal(_gs, viewer) {
       });
     },
   });
+}
+
+function openPendingMissionOverflowModal(gs, viewer) {
+  const vp = viewer || (gs ? getViewerPlayer(gs) : null);
+  if (!vp || !Array.isArray(vp.missions) || vp.missions.length <= MAX_ACTIVE_MISSIONS) {
+    closeModal();
+    return;
+  }
+  const missions = vp.missions;
+  const ovf = vp.pendingMissionOverflow || {};
+  const allSooth = areAllMissionsSoothsayer(missions);
+  const bondedCouriersActive = hasActiveClimateOption(gs, "missions_3");
+  const eligibleMissions = missions.filter((m) => isMissionCancelableClient(vp, m));
+
+  let selectedMissionId =
+    eligibleMissions.length === 1 ? eligibleMissions[0].id : null;
+
+  const describeCancelCost = (m) => {
+    const src = m.source || "starting";
+    if (src === "soothsayer") {
+      return allSooth
+        ? "No penalty (sealed Influence cards return to the deck)"
+        : "Locked unless all 6 active missions are Soothsayer";
+    }
+    if (src === "encounter") {
+      const hostileTxt = formatHostileFavorPenaltyText(m);
+      return bondedCouriersActive
+        ? `Hostile Favor (${hostileTxt}) + -10(d) Fine`
+        : `Hostile Favor (${hostileTxt})`;
+    }
+    return bondedCouriersActive ? "-10(d) Bonded Couriers Fine" : "No penalty";
+  };
+
+  const confirmBtn = el("button", {
+    type: "button",
+    className: "btn btn-crimson",
+    disabled: !selectedMissionId,
+    text: "✕ Cancel Selected Mission",
+    onClick: () => {
+      if (!selectedMissionId) return;
+      closeModal();
+      sendGameAction({
+        type: "cancel_mission",
+        missionId: selectedMissionId,
+      });
+    },
+  });
+
+  const selectionSummaryNode = el("div", {
+    style: {
+      fontSize: "0.84rem",
+      fontWeight: "600",
+      color: "var(--text-main)",
+    },
+    text: "",
+  });
+
+  const cardWraps = new Map();
+
+  const updateSelectionUi = () => {
+    const sel = missions.find((m) => m.id === selectedMissionId) || null;
+    for (const [mId, wrap] of cardWraps.entries()) {
+      wrap.classList.toggle("is-selected", mId === selectedMissionId);
+    }
+    if (!sel) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Select a Mission Above to Cancel";
+      selectionSummaryNode.textContent =
+        eligibleMissions.length === 0
+          ? "No eligible missions to cancel."
+          : "Click one of the eligible missions above to preview its cancellation effect.";
+      return;
+    }
+    const costText = describeCancelCost(sel);
+    const cargoNote = sel.pickedUp ? ` • Discards loaded "${sel.item || "cargo"}"` : "";
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = `✕ Cancel "${sel.name}" (${costText})`;
+    selectionSummaryNode.textContent = `Selected: "${sel.name}" — ${costText}${cargoNote}`;
+  };
+
+  const gridNode = el(
+    "div",
+    { className: "mission-overflow-grid" },
+    ...missions.map((m) => {
+      const src = m.source || "starting";
+      const cancelable = isMissionCancelableClient(vp, m);
+      const isNew = Boolean(ovf.newMissionId && ovf.newMissionId === m.id);
+      const isPenalty = src === "encounter" || (src !== "soothsayer" && bondedCouriersActive);
+      const tagClass = !cancelable
+        ? "is-locked"
+        : isPenalty
+        ? "is-penalty"
+        : "is-free";
+      const tagText = !cancelable
+        ? "🔒 Soothsayer Locked (Not All 6 Soothsayer)"
+        : src === "soothsayer"
+        ? "✓ Free to Cancel (All 6 Soothsayer)"
+        : src === "encounter"
+        ? `👎 ${formatHostileFavorPenaltyText(m)}${bondedCouriersActive ? " + -10d" : ""}`
+        : bondedCouriersActive
+        ? "-10(d) Bonded Couriers Fine"
+        : "✓ Free to Cancel (Starting)";
+
+      const wrap = el(
+        "div",
+        {
+          className: [
+            "mission-overflow-card-wrap",
+            cancelable ? "is-selectable" : "is-locked",
+            isNew ? "is-new" : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          onClick: cancelable
+            ? () => {
+                selectedMissionId = m.id;
+                updateSelectionUi();
+              }
+            : undefined,
+        },
+        el(
+          "div",
+          {
+            style: {
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.25rem",
+              minHeight: "1.15rem",
+            },
+          },
+          el("span", {
+            style: {
+              fontSize: "0.66rem",
+              fontWeight: "800",
+              textTransform: "uppercase",
+              color: src === "soothsayer" ? "#5b21b6" : src === "encounter" ? "#b45309" : "#1e3a8a",
+            },
+            text: src === "soothsayer" ? "🔮 Soothsayer" : src === "encounter" ? "⚔️ Encounter" : "📜 Starting",
+          }),
+          isNew
+            ? el("span", {
+                style: {
+                  fontSize: "0.64rem",
+                  fontWeight: "800",
+                  background: "#f59e0b",
+                  color: "#fff",
+                  padding: "1px 5px",
+                  borderRadius: "4px",
+                },
+                text: "NEW 6th",
+              })
+            : null
+        ),
+        renderPhysicalMissionCardNode(m, {
+          showStatusTag: true,
+          canCancel: false,
+          allSoothsayerOverflow: allSooth,
+        }),
+        el("div", {
+          className: `mission-overflow-tag ${tagClass}`,
+          text: m.pickedUp && cancelable ? `${tagText} • Drops cargo` : tagText,
+        })
+      );
+      cardWraps.set(m.id, wrap);
+      return wrap;
+    })
+  );
+
+  updateSelectionUi();
+
+  const headerDesc = ovf.newMissionName
+    ? `You took on "${ovf.newMissionName}"${ovf.sourceLabel ? ` (${ovf.sourceLabel})` : ""}, giving you ${missions.length} active missions (max ${MAX_ACTIVE_MISSIONS}).`
+    : `You currently have ${missions.length} active missions (max ${MAX_ACTIVE_MISSIONS}).`;
+  const ruleDesc = allSooth
+    ? "All 6 active missions are Soothsayer missions, so you may choose ANY 1 Soothsayer mission to cancel at no penalty (any sealed Influence cards return to the Influence deck)."
+    : "Choose 1 active Starting or Encounter mission to cancel immediately. A Soothsayer mission can only be canceled if all six (6) active missions are Soothsayer missions. You cannot end your turn until you have 5 or fewer active missions.";
+
+  showModal(
+    `📜 6th Active Mission — Cancel 1 of ${missions.length} Missions`,
+    el(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: "0.75rem" } },
+      el("div", {
+        className: "banner-warning",
+        style: { margin: "0", fontSize: "0.86rem", lineHeight: "1.45" },
+        text: `${headerDesc} ${ruleDesc}`,
+      }),
+      gridNode,
+      el(
+        "div",
+        {
+          style: {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+            paddingTop: "0.35rem",
+            borderTop: "1px solid var(--border-subtle)",
+          },
+        },
+        selectionSummaryNode,
+        el(
+          "div",
+          { style: { display: "flex", gap: "0.5rem", alignItems: "center" } },
+          el("button", {
+            type: "button",
+            className: "btn",
+            text: "Inspect Board",
+            onClick: closeModal,
+          }),
+          confirmBtn
+        )
+      )
+    ),
+    { wide: true }
+  );
 }
 
 function openProphecyTargetModal(gs, viewer, card) {
@@ -18018,16 +18649,17 @@ const RULEBOOK_SECTIONS = [
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
       "Step 6 — One Transaction (1 Good/Hr (T), or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here) at its bold Green (SELL_SYM) price—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4) at its italic Red (BUY_SYM) price, OR Gamble once at a Stadium tile (up to 20(d) wager).",
       "Step 7 — Flexible Free Scout (Once Per Turn, Anytime): Once per Delivery turn—before or after Moving and before or after Transacting—you may Scout by peeking at the top unrevealed tile of any neighborhood stack or the top card of any of the 6 decks (Patricii, Legiones, Nefarii, Goods & Guards, Missiones, or Influence). Scouting NEVER forces your turn to end; continue taking remaining actions afterward or click End Turn from the Scout preview.",
-      "Tiber River & 5 Stone Bridges: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber and unbridged orthogonal river borders are completely impassable (even with Shortcut). Carts may cross ONLY via Rome's 5 intra-urban Stone Bridges (in use in 211 A.D.): Pons Aelius (A1↔B1), Pons Neronianus (A1↔A2), Pons Agrippae (A3↔A4), Pons Fabricius (B4↔C4), and Pons Aemilius (B4↔B5).",
+      "Tiber River & Stone Crossings: The Tiber divides the West Bank (A1, A4, B4, A5) from the East Bank. All diagonal crossings over the Tiber (NW, NE, SE, SW) are completely impassable (even with Shortcut). Carts may cross between the West Bank and East Bank orthogonally (N, S, E, or W) along any passable tile edge (using the face-up tile's edge indicator as the source of truth), including across Rome's Stone Bridges (A1↔B1 Pons Aelius, A1↔A2 Pons Neronianus, A3↔A4 Pons Agrippae, B4↔C4 Pons Fabricius, B4↔B5 Pons Aemilius) and adjacent orthogonal river crossings (B3↔B4, A5↔B5, A5↔A6).",
     ],
   },
   {
     id: "missions",
     title: "6. Missions, Mission Cargo, & Regicide",
     bullets: [
+      "5-Mission Active Limit: You may hold at most 5 active missions at a time. As soon as you take on a 6th active mission (from an Encounter, Combat defeat, or Soothsayer), you are immediately prompted to choose 1 of the 6 missions to cancel, and you cannot end your turn while holding more than 5 active missions.",
       "Starting Missions: Kept during Setup (3 per merchant). Can be canceled voluntarily without Favor penalty (unless Bonded Couriers is active, which fines -10(d) on any failed/canceled/unfinished mission!). Starting Mission Cargo can NEVER be sold or fenced.",
       "Encounter Missions: Drawn from NPC encounters. Encounter Mission Cargo displays a bold Green (SELL_SYM) Fence price row—fencing it to a matching buyer sells 1 card for quick Denarii, applies Patron Hostile Favor, and FAILS the mission (unless Smuggler's Fence is active, which boosts Fence Scarcity by +1 step and prevents fencing from counting as a Failed Mission!).",
-      "Soothsayer Missions: Mandatory prophecies with 1(R) face-down Influence cards sealed underneath until completed. Cannot be voluntarily canceled unless holding 6 Soothsayer Missions simultaneously.",
+      "Soothsayer Missions: Mandatory prophecies with 1(R) face-down Influence cards sealed underneath until completed. A Soothsayer mission can only be canceled if all six (6) of your active missions are Soothsayer missions (returning its sealed Influence cards to the deck with no penalty).",
       "Regicide & Regime Change ('Any Player' Clauses): Two high-stakes Encounter Missions—Regicide (defeating Emperor Caracalla in combat) and Regime Change (defeating Co-Emperor Geta in combat)—trigger if ANY Player defeats that Emperor in combat while you hold the Mission! Completing Regicide immediately ends the game in an instant assassination victory for the Regicide holder; completing Regime Change awards 100(d) and +2 Rubies (+1 Diamond) while continuing the year.",
     ],
   },
@@ -18076,7 +18708,7 @@ const RULEBOOK_SECTIONS = [
       {
         symbolType: "enc_deck_quest",
         title: "Encounter Deck & Quest Chest",
-        desc: "Mid-card Encounter tier icons: the Fanned Deck + Roman Arca Chest ((DECK_ICON)(QUEST_ICON)! / ?) draws an unseen Missiones card; the Arca Chest alone ((QUEST_ICON)! / ?) assigns the card's printed Mission.",
+        desc: "Center-bar Encounter tier icons: Card + Chest + ! ((DECK_ICON)(QUEST_ICON)!) means a Deck Quest Demand (draw and accept top Missiones card unseen; refuse = Hostile Favor); Card + Chest + ? ((DECK_ICON)(QUEST_ICON)?) means an Optional Deck Quest Offer; Chest alone ((QUEST_ICON)! / ?) assigns the card's printed Mission.",
       },
       {
         symbolType: "rome_die",
@@ -18142,7 +18774,7 @@ const RULEBOOK_SECTIONS = [
         ],
         [
           "Army Pay Hike: Legiones gain +2 CP. Each +Ruby gives your Cart +1 CP.",
-          "Divided Tiber: Crossing any of the 5 Tiber Bridges costs a 4(d) toll, waived with +1 Emerald or Shortcut.",
+          "Divided Tiber: Crossing the Tiber orthogonally costs a 4(d) toll, waived with +1 Emerald or Shortcut.",
           "Empress Mediator: Exchange +Diamonds 1-for-1 into +Rubies or +Emeralds anytime.",
           "Smuggler's Fence: Fenced cargo sells +1 Scarcity step higher and does not fail the Mission.",
           "Senatorial Privilege: Spend +Amethysts when selling Goods (including Bulk Grain) for +1 Scarcity step per gem.",
@@ -18261,7 +18893,7 @@ const RULEBOOK_SECTIONS = [
     title: "12. Influence Cards",
     catalogKey: "influence",
     paragraphs: [
-      "Complete reference catalog of all 43 unique Influence cards found in the Influence deck. Filter by tactical role or use the Rulebook search box to find specific effects.",
+      "Complete reference catalog of all 42 Influence cards found in the Influence deck. Filter by tactical role or use the Rulebook search box to find specific effects.",
     ],
   },
   {
@@ -18308,7 +18940,6 @@ function getInfluenceCatalogCategory(c) {
     ec === "shift_category_scarcity_right" ||
     ec === "increase_own_sale_scarcity" ||
     ec === "reduce_fine" ||
-    ec === "redraw_occupied_tile" ||
     ec === "reorder_top_3_any"
   ) {
     return "Movement & Scarcity";
@@ -18367,6 +18998,15 @@ function getCatalogSearchBlob(card, catalogKey) {
       .toLowerCase();
   }
   const m = card.mission || {};
+  const reactionKeywords = Array.isArray(card.reactions)
+    ? card.reactions.map((r) => {
+        const info = getEncounterReactionInfo(r);
+        const rt = r && (r.type || inferTierReactionType(r));
+        const extra =
+          rt === "deck_quest_demand" || rt === "deck_quest_offer" ? "missiones unseen" : "";
+        return `${rt || ""} ${info.label} ${extra}`;
+      })
+    : [];
   return [
     card.name,
     card.deck,
@@ -18379,6 +19019,7 @@ function getCatalogSearchBlob(card, catalogKey) {
     card.actionText,
     m.name,
     m.text,
+    ...reactionKeywords,
     ...(Array.isArray(card.friendlyFavor) ? card.friendlyFavor : []),
     ...(Array.isArray(card.hostileFavor) ? card.hostileFavor : []),
   ]
@@ -18493,7 +19134,7 @@ function renderRulebookCatalogSectionBody(sec, searchQuery, onRefresh) {
   if (!appState.cardsCatalog) {
     return el("div", {
       className: "rulebook-catalog-status",
-      text: "⏳ Loading physical card catalog (271 cards)...",
+      text: "⏳ Loading physical card catalog (270 cards)...",
     });
   }
 
@@ -18644,6 +19285,45 @@ function renderRulebookCatalogSectionBody(sec, searchQuery, onRefresh) {
         )
       : null;
 
+  const encounterTierIconKeyNode =
+    key === "encounters"
+      ? el(
+          "div",
+          { className: "rulebook-tier-icon-key" },
+          el("div", {
+            className: "rulebook-tier-icon-key-title",
+            text: "Center Bar Icon Key (hover any card's tier cell for full details):",
+          }),
+          el(
+            "div",
+            { className: "rulebook-tier-icon-key-items" },
+            ...[
+              [
+                "(DECK_ICON)(QUEST_ICON)!",
+                "Deck Quest Demand (draw & accept top Missiones card unseen; refuse = Hostile Favor)",
+              ],
+              [
+                "(DECK_ICON)(QUEST_ICON)?",
+                "Optional Deck Quest Offer (draw & accept top Missiones card unseen; decline freely)",
+              ],
+              ["(QUEST_ICON)!!", "Strict Printed Mission"],
+              ["(QUEST_ICON)!", "Printed Mission Request"],
+              ["(QUEST_ICON)?", "Optional Printed Mission"],
+              ["!! / ! / ?", "Strict Demand / Request / Offer"],
+              ["(COMBAT_ICON)", "Mandatory Combat"],
+            ].map(([tok, desc]) =>
+              el(
+                "span",
+                { className: "rulebook-tier-icon-key-item" },
+                el("span", { text: tok }),
+                el("strong", { text: "=" }),
+                el("span", { text: desc })
+              )
+            )
+          )
+        )
+      : null;
+
   return el(
     "div",
     { className: "rulebook-catalog-wrap" },
@@ -18652,6 +19332,7 @@ function renderRulebookCatalogSectionBody(sec, searchQuery, onRefresh) {
       "div",
       { className: "rulebook-catalog-toolbar" },
       ...filterBars,
+      encounterTierIconKeyNode,
       el("div", {
         className: "rulebook-catalog-count",
         text: `Showing ${filteredCards.length} of ${allTotal} cards`,
@@ -20397,12 +21078,7 @@ function isViewerActionRequired(gs) {
         : pend.playerIndex;
     return actorIdx === vIdx;
   }
-  if (
-    (viewer.pendingCartOverflow || []).length > 0 ||
-    (viewer.pendingMarketReward || []).length > 0 ||
-    viewer.pendingNpcOffer ||
-    viewer.pendingTop3Reorder
-  ) {
+  if (hasPlayerBlockingPrompt(viewer, true, gs)) {
     return true;
   }
   return gs.activePlayerIndex === vIdx;
@@ -20510,7 +21186,7 @@ function renderNpcPacingBanner() {
           style: { color: "#6e2119", fontFamily: "Cinzel, Georgia, serif", fontSize: "0.86rem" },
         },
         `⏳ AI Turn (${stepNum}/${totalNum}) — `,
-        createPlayerNameNode(npcEntity, { iconSize: 13 }),
+        createPlayerNameNode(npcEntity, { iconSize: 16 }),
         ":"
       ),
       el("span", {
@@ -20919,6 +21595,14 @@ function installGlobalHotkeys() {
         }
         if (hk.endTurn && k === hk.endTurn && gs.phase === "delivery" && gs.activePlayerIndex === viewer.index && !gs.pendingEncounter) {
           e.preventDefault();
+          if (hasMissionOverflow(viewer, gs)) {
+            openPendingMissionOverflowModal(gs, viewer);
+            return;
+          }
+          if (hasPlayerBlockingPrompt(viewer, true, gs)) {
+            showToast("Resolve your active prompt before ending your turn.", true);
+            return;
+          }
           sendGameAction({ type: "delivery_end_turn" });
           return;
         }

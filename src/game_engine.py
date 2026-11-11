@@ -206,22 +206,36 @@ def parse_edge_toll(edge_val: Optional[str]) -> Optional[int]:
     return int(m.group(1)) if m else None
 
 
+def is_orthogonal_tiber_crossing(from_cell: Optional[str], target_cell: Optional[str]) -> bool:
+    src = normalize_cell_id(from_cell)
+    dst = normalize_cell_id(target_cell)
+    if not src or not dst or src == dst:
+        return False
+    if len(src) != 2 or len(dst) != 2 or src[0] not in COLS or src[1] not in ROWS or dst[0] not in COLS or dst[1] not in ROWS:
+        return False
+    if (src in WEST_BANK_CELLS) == (dst in WEST_BANK_CELLS):
+        return False
+    dc = abs(COLS.index(src[0]) - COLS.index(dst[0]))
+    dr = abs(ROWS.index(src[1]) - ROWS.index(dst[1]))
+    return (dc + dr) == 1
+
+
 def is_tiber_crossing_blocked(from_cell: Optional[str], target_cell: Optional[str]) -> bool:
     src = normalize_cell_id(from_cell)
     dst = normalize_cell_id(target_cell)
-    if not src or not dst:
+    if not src or not dst or src == dst:
         return False
     if (src in WEST_BANK_CELLS) != (dst in WEST_BANK_CELLS):
-        return frozenset({src, dst}) not in TIBER_BRIDGES
+        return not is_orthogonal_tiber_crossing(src, dst)
     return False
 
 
 def get_tiber_bridge_name(from_cell: Optional[str], target_cell: Optional[str]) -> Optional[str]:
     src = normalize_cell_id(from_cell)
     dst = normalize_cell_id(target_cell)
-    if not src or not dst:
+    if not is_orthogonal_tiber_crossing(src, dst):
         return None
-    return TIBER_BRIDGE_NAMES.get(frozenset({src, dst}))
+    return TIBER_BRIDGE_NAMES.get(frozenset({src, dst}), "Tiber Crossing")
 
 
 def get_effective_tile_edges(coord: str, tile: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -351,8 +365,8 @@ POLITICAL_CLIMATE_OPTIONS: List[Dict[str, Any]] = [
         "optionNumber": 3,
         "timing": "midgame",
         "title": "Divided Tiber",
-        "shortText": "Tiber Bridges cost 4d toll, waived with +1 Emerald",
-        "description": "Tiber Bridges cost a 4d toll, waived with +1 Emerald or Shortcut.",
+        "shortText": "Orthogonal Tiber crossings cost 4d toll (0d with +1 Emerald)",
+        "description": "Crossing the Tiber orthogonally costs a 4d toll, waived with +1 Emerald or Shortcut.",
     },
     # Domna (Diamond)
     {
@@ -1379,6 +1393,7 @@ def create_initial_game_state(
             "turnEffects": {},
             "scoutedInfo": [],
             "last stolen": None,
+            "pendingMissionOverflow": None,
             "stats": _default_player_stats(),
         }
         state["players"].append(player_obj)
@@ -1401,6 +1416,40 @@ def create_initial_game_state(
     sync_turn_activity_timestamps(state)
     _record_turn_start_snapshot(state)
     return state
+
+
+MAX_ACTIVE_MISSIONS = 5
+
+
+def _has_mission_overflow(player: Optional[Dict[str, Any]], phase: Optional[str] = None) -> bool:
+    """Returns True if the player holds more than 5 active missions (outside setup_discard) or has a pending overflow prompt."""
+    if not isinstance(player, dict):
+        return False
+    if player.get("pendingMissionOverflow"):
+        return True
+    if phase == "setup_discard":
+        return False
+    return len(player.get("missions") or []) > MAX_ACTIVE_MISSIONS
+
+
+def _player_has_blocking_prompt(
+    player: Optional[Dict[str, Any]],
+    include_top3: bool = False,
+    phase: Optional[str] = None,
+) -> bool:
+    """Returns True if a player has any unresolved modal/overflow prompt blocking progression."""
+    if not isinstance(player, dict):
+        return False
+    if (
+        player.get("pendingNpcOffer")
+        or player.get("pendingCartOverflow")
+        or player.get("pendingMarketReward")
+        or _has_mission_overflow(player, phase=phase)
+    ):
+        return True
+    if include_top3 and player.get("pendingTop3Reorder"):
+        return True
+    return False
 
 
 def get_blocking_player_indices(state: Dict[str, Any]) -> List[int]:
@@ -1427,13 +1476,7 @@ def get_blocking_player_indices(state: Dict[str, Any]) -> List[int]:
     prompt_blockers = [
         int(p["index"])
         for p in players
-        if not p.get("isBot")
-        and (
-            p.get("pendingCartOverflow")
-            or p.get("pendingMarketReward")
-            or p.get("pendingNpcOffer")
-            or p.get("pendingTop3Reorder")
-        )
+        if not p.get("isBot") and _player_has_blocking_prompt(p, include_top3=True, phase=phase)
     ]
     if prompt_blockers:
         return prompt_blockers
@@ -1599,6 +1642,9 @@ def _resolve_converted_bot_subprompts(state: Dict[str, Any], bot: Dict[str, Any]
 
     if bot.get("pendingNpcOffer"):
         bot["pendingNpcOffer"] = None
+
+    if bot.get("pendingMissionOverflow") or len(bot.get("missions") or []) > MAX_ACTIVE_MISSIONS:
+        _sync_mission_overflow(state, bot, source_label="Converted to Bot")
 
 
 def replace_human_with_ionic_bot(
@@ -2626,6 +2672,102 @@ def _fail_mission(
     return notes
 
 
+def _are_all_missions_soothsayer(missions: List[Dict[str, Any]]) -> bool:
+    """Returns True when holding >5 active missions and every active mission is a Soothsayer mission."""
+    return len(missions) > MAX_ACTIVE_MISSIONS and all(
+        (m.get("source") or "starting") == "soothsayer" for m in missions
+    )
+
+
+def _is_mission_cancelable(player: Dict[str, Any], m: Dict[str, Any]) -> Tuple[bool, str]:
+    """Enforces mission cancellation rules: Soothsayer missions can only be canceled if all 6 are Soothsayer."""
+    missions = player.get("missions") or []
+    src = m.get("source") or "starting"
+    if src != "soothsayer":
+        return True, ""
+    if not _are_all_missions_soothsayer(missions):
+        if len(missions) > MAX_ACTIVE_MISSIONS:
+            return (
+                False,
+                "A Soothsayer mission can only be canceled if all six active missions are Soothsayer missions — please cancel a non-Soothsayer mission instead.",
+            )
+        return (
+            False,
+            "Canceling or failing a Soothsayer mission is impossible unless all six active missions are Soothsayer missions.",
+        )
+    return True, ""
+
+
+def _bot_pick_overflow_mission_to_cancel(player: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Selects which mission an AI bot cancels when exceeding the 5-mission limit."""
+    missions = player.get("missions") or []
+    cancelable = [m for m in missions if _is_mission_cancelable(player, m)[0]]
+    if not cancelable:
+        return None
+
+    def _keep_score(m: Dict[str, Any]) -> Tuple[int, int, int, int]:
+        kind = str(m.get("kind") or "")
+        nm_low = str(m.get("name") or "").lower()
+        if kind in ("kill_emperor", "regicide", "regime_change") or "regicide" in nm_low or "regime change" in nm_low:
+            return (10, 0, 0, 0)
+        picked_up = 1 if m.get("pickedUp") else 0
+        src = m.get("source") or "starting"
+        src_rank = 2 if src == "encounter" else (3 if src == "soothsayer" else 1)
+        under_cnt = len(m.get("underInfluence") or []) if src == "soothsayer" else 0
+        m_rwd = m.get("reward")
+        cash_est = int(m_rwd.get("cash", 6) or 6) if isinstance(m_rwd, dict) else 6
+        return (picked_up, src_rank, under_cnt, cash_est)
+
+    return min(cancelable, key=_keep_score)
+
+
+def _sync_mission_overflow(
+    state: Dict[str, Any],
+    player: Dict[str, Any],
+    source_label: str = "",
+    new_mission: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Enforces the 5-mission limit: auto-cancels for bots and sets/clears pendingMissionOverflow for humans."""
+    if state.get("phase") in ("setup_discard", "finished"):
+        player["pendingMissionOverflow"] = None
+        return
+
+    while player.get("isBot") and len(player.get("missions") or []) > MAX_ACTIVE_MISSIONS:
+        victim = _bot_pick_overflow_mission_to_cancel(player)
+        if not victim:
+            break
+        v_src = victim.get("source") or "starting"
+        reason = "6th Soothsayer mission overflow" if v_src == "soothsayer" else "exceeded 5 active mission limit"
+        _fail_mission(state, player, victim, reason=reason)
+        player["pendingMissionOverflow"] = None
+
+    missions = player.get("missions") or []
+    if not player.get("isBot") and len(missions) > MAX_ACTIVE_MISSIONS:
+        all_sooth = _are_all_missions_soothsayer(missions)
+        cur_ids = [str(m.get("id")) for m in missions]
+        cur_ovf = player.get("pendingMissionOverflow")
+        if isinstance(cur_ovf, dict) and cur_ovf.get("missionIds") == cur_ids:
+            cur_ovf["count"] = len(missions)
+            cur_ovf["allSoothsayer"] = all_sooth
+            if source_label:
+                cur_ovf["sourceLabel"] = source_label
+            if new_mission and not cur_ovf.get("newMissionId"):
+                cur_ovf["newMissionId"] = new_mission.get("id")
+                cur_ovf["newMissionName"] = new_mission.get("name")
+        else:
+            player["pendingMissionOverflow"] = {
+                "id": f"movf_{secrets.token_hex(4)}",
+                "count": len(missions),
+                "allSoothsayer": all_sooth,
+                "missionIds": cur_ids,
+                "newMissionId": new_mission.get("id") if new_mission else None,
+                "newMissionName": new_mission.get("name") if new_mission else None,
+                "sourceLabel": source_label or "Active Mission Limit",
+            }
+    else:
+        player["pendingMissionOverflow"] = None
+
+
 def _remove_cart_item(
     state: Dict[str, Any],
     player: Dict[str, Any],
@@ -3416,9 +3558,6 @@ def _apply_table_encounter_outcome(
         goal["pickedUp"] = False
         goal["completed"] = False
         goal["underInfluence"] = under_cards
-        if len(player["missions"]) >= 5 and player.get("isBot"):
-            replaced = next((m for m in player["missions"] if m.get("source") != "soothsayer"), player["missions"][0])
-            _fail_mission(state, player, replaced, reason="replaced by Soothsayer mission")
         player["missions"].append(goal)
         msg = f"{player['name']} encountered a Soothsayer! Received mandatory Mission '{goal['name']}' with {len(under_cards)} Influence card(s) sealed beneath it (rolled ®={r_rom})."
         add_log(state, msg, "encounter")
@@ -3457,6 +3596,7 @@ def _apply_table_encounter_outcome(
                 },
             )
         check_passive_missions(state, player)
+        _sync_mission_overflow(state, player, source_label="Soothsayer Prophecy", new_mission=goal)
         return {"type": "soothsayer", "roll": r, "mission": goal["name"], "underCards": len(under_cards)}
 
     if enc_type == "mob":
@@ -3619,6 +3759,13 @@ def _normalize_encounter_card_data(card: Optional[Dict[str, Any]]) -> None:
             card["hostileFavor"] = ["-Aurelius"]
     m_sub = card.get("mission")
     act_str = str(card.get("actionText") or "")
+    if re.match(
+        r"^\s*[!?]?\s*:?\s*(?:Accept|Optional)\s+(?:the\s+)?top\s+(?:card\s+of\s+the\s+)?Missiones\b",
+        act_str,
+        re.IGNORECASE,
+    ):
+        card["actionText"] = ""
+        act_str = ""
     is_fixed_npc_sell = (
         (isinstance(m_sub, dict) and m_sub.get("kind") == "buy_from_npc" and "relative" not in act_str.lower())
         or ("will sell" in act_str.lower() and "relative" not in act_str.lower())
@@ -4066,6 +4213,75 @@ def _describe_combat_outcome(player: Dict[str, Any], card: Dict[str, Any], c_sta
     )
 
 
+def _draw_encounter_mission_from_deck(
+    state: Dict[str, Any],
+    card: Dict[str, Any],
+    hostile_favor_list: List[str],
+) -> Optional[Dict[str, Any]]:
+    """Draws the top Missiones card for an Encounter Deck Quest / Quest offer."""
+    if not state["decks"].get("missiones"):
+        return None
+    drawn_m = copy.deepcopy(state["decks"]["missiones"].pop(0))
+    drawn_m["source"] = "encounter"
+    drawn_m["hasDrawnMissionCard"] = True
+    drawn_m["encounterCard"] = _prepare_attached_encounter_card(state, card)
+    drawn_m["patronName"] = card["name"]
+    drawn_m["patronFaction"] = card.get("faction")
+    drawn_m["patronRewardText"] = card.get("friendlyReward") or ""
+    drawn_m["favor"] = list((drawn_m.get("favor") or []) + (card.get("friendlyFavor") or []))
+    drawn_m["hostileFavor"] = copy.deepcopy(hostile_favor_list)
+    return drawn_m
+
+
+def _build_embedded_encounter_mission(
+    state: Dict[str, Any],
+    card: Dict[str, Any],
+    action_text: str,
+    hostile_favor_list: List[str],
+) -> Tuple[Dict[str, Any], str]:
+    """Constructs an Encounter Mission object from an Encounter card with an embedded mission."""
+    m_data = copy.deepcopy(card.get("mission") or {})
+    raw_kind = m_data.get("kind", "sell")
+    if (
+        (raw_kind == "kill" and (m_data.get("target") or "").lower() == "the emperor")
+        or "kill the emperor" in action_text.lower()
+    ):
+        raw_kind = "kill_emperor"
+    norm_m_cell = normalize_cell_id(m_data.get("cell") or m_data.get("deliverCell")) or "C3"
+    norm_p_cell = normalize_cell_id(m_data.get("pickupCell")) if m_data.get("pickupCell") else None
+    norm_d_cell = normalize_cell_id(m_data.get("deliverCell")) if m_data.get("deliverCell") else None
+    norm_act_txt = _normalize_relative_scarcity_text(action_text)
+    m_obj = {
+        "id": f"enc_{card['id']}_{secrets.token_hex(2)}",
+        "name": m_data.get("name") or f"{card['name']}'s Task",
+        "source": "encounter",
+        "hasDrawnMissionCard": False,
+        "encounterCard": _prepare_attached_encounter_card(state, card),
+        "patronName": card["name"],
+        "patronFaction": card.get("faction"),
+        "kind": raw_kind,
+        "item": m_data.get("item", "Cargo"),
+        "category": m_data.get("category", "Wine"),
+        "modifier": normalize_scarcity_modifier(m_data.get("modifier") or "+"),
+        "target": m_data.get("target"),
+        "targetDeck": m_data.get("targetDeck"),
+        "cell": norm_m_cell,
+        "pickupCell": norm_p_cell,
+        "deliverCell": norm_d_cell,
+        "blocks": m_data.get("cargoSize") or m_data.get("blocks", 1),
+        "fencedSell": m_data.get("payoutTable") or m_data.get("fencedSell"),
+        "pickedUp": False,
+        "completed": False,
+        "description": norm_act_txt,
+        "text": norm_act_txt,
+        "rewardText": card.get("friendlyReward", "6(d)"),
+        "reward": None,
+        "favor": card.get("friendlyFavor", []),
+        "hostileFavor": copy.deepcopy(hostile_favor_list),
+    }
+    return m_obj, norm_act_txt
+
+
 def _enforce_refused_demand_after_defeat(state: Dict[str, Any], player: Dict[str, Any], card: Dict[str, Any]) -> List[str]:
     """
     Rulebook Combat Defeat on Refused (!!) Demand:
@@ -4136,71 +4352,27 @@ def _enforce_refused_demand_after_defeat(state: Dict[str, Any], player: Dict[str
         return notes
 
     # 2. Deck Quest or Embedded Mission Strict Demand
-    sooth_cnt = sum(1 for m in player["missions"] if m.get("source") == "soothsayer")
-    non_sooth_cnt = len(player["missions"]) - sooth_cnt
     reactions = card.get("reactions") or []
     is_deck_quest = any(r.get("type") == "deck_quest_demand" for r in reactions) or (not card.get("mission") and not action_text)
     if is_deck_quest:
-        if state["decks"]["missiones"] and non_sooth_cnt < 5:
-            drawn_m = copy.deepcopy(state["decks"]["missiones"].pop(0))
-            drawn_m["source"] = "encounter"
-            drawn_m["hasDrawnMissionCard"] = True
-            drawn_m["encounterCard"] = _prepare_attached_encounter_card(state, card)
-            drawn_m["patronName"] = card["name"]
-            drawn_m["patronFaction"] = card.get("faction")
-            drawn_m["patronRewardText"] = card.get("friendlyReward") or ""
-            drawn_m["favor"] = list((drawn_m.get("favor") or []) + (card.get("friendlyFavor") or []))
-            drawn_m["hostileFavor"] = copy.deepcopy(hostile_favor_list)
+        drawn_m = _draw_encounter_mission_from_deck(state, card, hostile_favor_list)
+        if drawn_m:
             player["missions"].append(drawn_m)
             msg = f"Defeated after refusing demand: {card['name']} forced {player['name']} to take Deck Quest '{drawn_m['name']}'!"
             add_log(state, msg, "mission")
             notes.append(msg)
             check_passive_missions(state, player)
+            _sync_mission_overflow(state, player, source_label=f"{card['name']} (Combat Defeat)", new_mission=drawn_m)
         return notes
 
     if card.get("mission"):
-        if non_sooth_cnt < 5:
-            m_data = copy.deepcopy(card["mission"])
-            raw_kind = m_data.get("kind", "sell")
-            if raw_kind == "kill" and (m_data.get("target") or "").lower() == "the emperor" or "kill the emperor" in action_text.lower():
-                raw_kind = "kill_emperor"
-            norm_m_cell = normalize_cell_id(m_data.get("cell") or m_data.get("deliverCell")) or "C3"
-            norm_p_cell = normalize_cell_id(m_data.get("pickupCell")) if m_data.get("pickupCell") else None
-            norm_d_cell = normalize_cell_id(m_data.get("deliverCell")) if m_data.get("deliverCell") else None
-            norm_act_txt = _normalize_relative_scarcity_text(action_text)
-            m_obj = {
-                "id": f"enc_{card['id']}_{secrets.token_hex(2)}",
-                "name": m_data.get("name") or f"{card['name']}'s Task",
-                "source": "encounter",
-                "hasDrawnMissionCard": False,
-                "encounterCard": _prepare_attached_encounter_card(state, card),
-                "patronName": card["name"],
-                "patronFaction": card.get("faction"),
-                "kind": raw_kind,
-                "item": m_data.get("item", "Cargo"),
-                "category": m_data.get("category", "Wine"),
-                "modifier": normalize_scarcity_modifier(m_data.get("modifier") or "+"),
-                "target": m_data.get("target"),
-                "targetDeck": m_data.get("targetDeck"),
-                "cell": norm_m_cell,
-                "pickupCell": norm_p_cell,
-                "deliverCell": norm_d_cell,
-                "blocks": m_data.get("cargoSize") or m_data.get("blocks", 1),
-                "fencedSell": m_data.get("payoutTable") or m_data.get("fencedSell"),
-                "pickedUp": False,
-                "completed": False,
-                "description": norm_act_txt,
-                "text": norm_act_txt,
-                "rewardText": card.get("friendlyReward", "6(d)"),
-                "reward": None,
-                "favor": card.get("friendlyFavor", []),
-                "hostileFavor": copy.deepcopy(hostile_favor_list),
-            }
-            player["missions"].append(m_obj)
-            msg = f"Defeated after refusing demand: {card['name']} forced {player['name']} to accept Mission '{m_obj['name']}'!"
-            add_log(state, msg, "mission")
-            notes.append(msg)
-            check_passive_missions(state, player)
+        m_obj, _ = _build_embedded_encounter_mission(state, card, action_text, hostile_favor_list)
+        player["missions"].append(m_obj)
+        msg = f"Defeated after refusing demand: {card['name']} forced {player['name']} to accept Mission '{m_obj['name']}'!"
+        add_log(state, msg, "mission")
+        notes.append(msg)
+        check_passive_missions(state, player)
+        _sync_mission_overflow(state, player, source_label=f"{card['name']} (Combat Defeat)", new_mission=m_obj)
         return notes
 
     # 3. Influence, Cash, or Goods Strict Demand
@@ -6648,10 +6820,7 @@ def _get_casus_belli_pvp_targets(state: Dict[str, Any], player: Dict[str, Any]) 
         or player.get("transactedThisTurn")
         or player.get("gambledThisTurn")
         or state.get("pendingEncounter")
-        or player.get("pendingNpcOffer")
-        or player.get("pendingCartOverflow")
-        or player.get("pendingMarketReward")
-        or player.get("pendingTop3Reorder")
+        or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase"))
     ):
         return []
     my_cell = normalize_cell_id(player.get("position"))
@@ -7559,19 +7728,8 @@ def resolve_pending_encounter_choice(
             add_log(state, f"{player['name']} refused {card['name']}'s Deck Quest demand ({pen_str}).", "encounter")
             return True, f"Refused {card['name']}'s Deck Quest demand ({pen_str})."
 
-        sooth_cnt = sum(1 for m in player["missions"] if m.get("source") == "soothsayer")
-        non_sooth_cnt = len(player["missions"]) - sooth_cnt
-        if state["decks"]["missiones"] and non_sooth_cnt < 5:
-            drawn_m = copy.deepcopy(state["decks"]["missiones"].pop(0))
-            drawn_m["source"] = "encounter"
-            drawn_m["hasDrawnMissionCard"] = True
-            drawn_m["encounterCard"] = _prepare_attached_encounter_card(state, card)
-            drawn_m["patronName"] = card["name"]
-            drawn_m["patronFaction"] = card.get("faction")
-            drawn_m["patronRewardText"] = card.get("friendlyReward") or ""
-            combined_fav = list((drawn_m.get("favor") or []) + (card.get("friendlyFavor") or []))
-            drawn_m["favor"] = combined_fav
-            drawn_m["hostileFavor"] = copy.deepcopy(hostile_favor_list)
+        drawn_m = _draw_encounter_mission_from_deck(state, card, hostile_favor_list)
+        if drawn_m is not None:
             player["missions"].append(drawn_m)
             add_log(
                 state,
@@ -7579,8 +7737,9 @@ def resolve_pending_encounter_choice(
                 "mission",
             )
             check_passive_missions(state, player)
+            _sync_mission_overflow(state, player, source_label=f"{card['name']} Deck Quest", new_mission=drawn_m)
             return True, f"Accepted Deck Quest from {card['name']}: drew '{drawn_m['name']}'!"
-        add_log(state, f"{player['name']} accepted {card['name']}'s Deck Quest (Mission hand full or deck empty).", "mission")
+        add_log(state, f"{player['name']} accepted {card['name']}'s Deck Quest (Missiones deck empty).", "mission")
         return True, "Deck Quest resolved."
 
     # Check if this card is an immediate NPC Purchase/Sale Offer ("?: Will Sell..." or "?: Will Buy..." with no delivery cell)
@@ -7656,64 +7815,21 @@ def resolve_pending_encounter_choice(
             return True, f"Refused {card['name']}'s mission demand ({pen_str})."
 
         # Check if this is a Quest card that draws from the Missiones deck (no embedded mission on card)
-        sooth_cnt = sum(1 for m in player["missions"] if m.get("source") == "soothsayer")
         if not card.get("mission") and not action_text.strip():
-            if state["decks"]["missiones"] and (len(player["missions"]) < 5 or (not player.get("isBot") and sooth_cnt < 5)):
-                drawn_m = copy.deepcopy(state["decks"]["missiones"].pop(0))
-                drawn_m["source"] = "encounter"
-                drawn_m["hasDrawnMissionCard"] = True
-                drawn_m["encounterCard"] = _prepare_attached_encounter_card(state, card)
-                drawn_m["patronName"] = card["name"]
-                drawn_m["patronFaction"] = card.get("faction")
-                drawn_m["patronRewardText"] = card.get("friendlyReward") or ""
-                drawn_m["favor"] = list((drawn_m.get("favor") or []) + (card.get("friendlyFavor") or []))
-                drawn_m["hostileFavor"] = copy.deepcopy(hostile_favor_list)
+            drawn_m = _draw_encounter_mission_from_deck(state, card, hostile_favor_list)
+            if drawn_m is not None:
                 player["missions"].append(drawn_m)
                 add_log(state, f"{player['name']} accepted a Quest from {card['name']} and drew Mission '{drawn_m['name']}'!", "mission")
                 check_passive_missions(state, player)
+                _sync_mission_overflow(state, player, source_label=f"{card['name']} Quest", new_mission=drawn_m)
                 return True, f"Accepted Quest '{drawn_m['name']}'."
             return True, "Quest resolved."
 
-        m_data = copy.deepcopy(card.get("mission") or {})
-        raw_kind = m_data.get("kind", "sell")
-        if raw_kind == "kill" and (m_data.get("target") or "").lower() == "the emperor" or "kill the emperor" in action_text.lower():
-            raw_kind = "kill_emperor"
-        norm_m_cell = normalize_cell_id(m_data.get("cell") or m_data.get("deliverCell")) or "C3"
-        norm_p_cell = normalize_cell_id(m_data.get("pickupCell")) if m_data.get("pickupCell") else None
-        norm_d_cell = normalize_cell_id(m_data.get("deliverCell")) if m_data.get("deliverCell") else None
-        norm_act_txt = _normalize_relative_scarcity_text(action_text)
-        if len(player["missions"]) < 5 or (not player.get("isBot") and sooth_cnt < 5):
-            m_obj = {
-                "id": f"enc_{card['id']}_{secrets.token_hex(2)}",
-                "name": m_data.get("name") or f"{card['name']}'s Task",
-                "source": "encounter",
-                "hasDrawnMissionCard": False,
-                "encounterCard": _prepare_attached_encounter_card(state, card),
-                "patronName": card["name"],
-                "patronFaction": card.get("faction"),
-                "kind": raw_kind,
-                "item": m_data.get("item", "Cargo"),
-                "category": m_data.get("category", "Wine"),
-                "modifier": normalize_scarcity_modifier(m_data.get("modifier") or "+"),
-                "target": m_data.get("target"),
-                "targetDeck": m_data.get("targetDeck"),
-                "cell": norm_m_cell,
-                "pickupCell": norm_p_cell,
-                "deliverCell": norm_d_cell,
-                "blocks": m_data.get("cargoSize") or m_data.get("blocks", 1),
-                "fencedSell": m_data.get("payoutTable") or m_data.get("fencedSell"),
-                "pickedUp": False,
-                "completed": False,
-                "description": norm_act_txt,
-                "text": norm_act_txt,
-                "rewardText": card.get("friendlyReward", "6(d)"),
-                "reward": None,
-                "favor": card.get("friendlyFavor", []),
-                "hostileFavor": copy.deepcopy(hostile_favor_list),
-            }
-            player["missions"].append(m_obj)
-            add_log(state, f"{player['name']} accepted Mission from {card['name']}: {norm_act_txt}", "mission")
-            check_passive_missions(state, player)
+        m_obj, norm_act_txt = _build_embedded_encounter_mission(state, card, action_text, hostile_favor_list)
+        player["missions"].append(m_obj)
+        add_log(state, f"{player['name']} accepted Mission from {card['name']}: {norm_act_txt}", "mission")
+        check_passive_missions(state, player)
+        _sync_mission_overflow(state, player, source_label=card["name"], new_mission=m_obj)
         return True, f"Accepted mission from {card['name']}."
 
     # Offer (?)
@@ -8048,7 +8164,7 @@ def _run_tile_encounter_and_refresh_loop(state: Dict[str, Any], player: Dict[str
             else:
                 trigger_deck_encounter(state, player, enc, source_label=src_lbl)
 
-        if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+        if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
             if rev.get("refresh", False):
                 state["pendingPostEncounterRefresh"] = {
                     "playerIndex": player["index"],
@@ -8064,7 +8180,12 @@ def _run_tile_encounter_and_refresh_loop(state: Dict[str, Any], player: Dict[str
             cell_state["stack"].append(rev)
             cell_state["revealed"] = cell_state["stack"].pop(0) if cell_state["stack"] else None
             check_passive_missions(state, player)
-            if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward") or player["nightEnded"] or player["turnStep"] == "done":
+            if (
+                state.get("pendingEncounter")
+                or _player_has_blocking_prompt(player, phase=state.get("phase"))
+                or player["nightEnded"]
+                or player["turnStep"] == "done"
+            ):
                 break
         else:
             break
@@ -8093,7 +8214,7 @@ def resolve_tile_entry(state: Dict[str, Any], player: Dict[str, Any], cell: str)
 
 def _finish_pending_encounter_continuations(state: Dict[str, Any], player: Dict[str, Any]) -> None:
     """Completes any deferred edge move or Refresh (⤿) tile cycle after an encounter/combat/NPC offer finishes."""
-    if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+    if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
         return
 
     # 1. Deferred move after an Edge Encounter
@@ -8124,7 +8245,7 @@ def _finish_pending_encounter_continuations(state: Dict[str, Any], player: Dict[
             bridge_suffix = f" via {bridge_lbl}" if bridge_lbl else ""
             add_log(state, f"{player['name']} moved {direction} from {curr_cell} to {target_cell} ({NEIGHBORHOOD_NAMES.get(target_cell, target_cell)}){bridge_suffix}.", "action")
             resolve_tile_entry(state, player, target_cell)
-            if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+            if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
                 return
 
     # 2. Deferred Refresh (⤿) tile cycling after a Tile Encounter
@@ -8142,7 +8263,7 @@ def _finish_pending_encounter_continuations(state: Dict[str, Any], player: Dict[
                     cell_state["revealed"] = cell_state["stack"].pop(0) if cell_state["stack"] else None
                     check_passive_missions(state, player)
                     _run_tile_encounter_and_refresh_loop(state, player, r_cell)
-                    if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+                    if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
                         return
 
     # 3. If a human player's turn/night was ended by the encounter (e.g. Road Blocked, Theater II, Combat Defeat, or Driver Death), advance turn automatically
@@ -8200,9 +8321,7 @@ def _begin_night_delivery_turn_1(state: Dict[str, Any]) -> None:
     if (
         (first_p.get("nightEnded") or first_p.get("turnStep") == "done")
         and not state.get("pendingEncounter")
-        and not first_p.get("pendingNpcOffer")
-        and not first_p.get("pendingCartOverflow")
-        and not first_p.get("pendingMarketReward")
+        and not _player_has_blocking_prompt(first_p, phase=state.get("phase"))
     ):
         advance_delivery_turn(state)
 
@@ -8262,7 +8381,7 @@ def _refund_unused_shortcut(state: Dict[str, Any], p: Dict[str, Any], manual: bo
 def advance_delivery_turn(state: Dict[str, Any]) -> None:
     if state["pendingEncounter"] or state["phase"] == "finished":
         return
-    if any(p.get("pendingNpcOffer") or p.get("pendingCartOverflow") or p.get("pendingMarketReward") for p in state["players"] if not p.get("isBot")):
+    if any(_player_has_blocking_prompt(p, phase=state.get("phase")) for p in state["players"] if not p.get("isBot")):
         return
 
     n = len(state["players"])
@@ -8342,9 +8461,7 @@ def advance_delivery_turn(state: Dict[str, Any]) -> None:
                 if (
                     (cand_p.get("nightEnded") or cand_p.get("turnStep") == "done")
                     and not state.get("pendingEncounter")
-                    and not cand_p.get("pendingNpcOffer")
-                    and not cand_p.get("pendingCartOverflow")
-                    and not cand_p.get("pendingMarketReward")
+                    and not _player_has_blocking_prompt(cand_p, phase=state.get("phase"))
                 ):
                     advance_delivery_turn(state)
             return
@@ -9570,7 +9687,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                 f"{target_p['name']} refused {'Guard' if is_guard else 'Good'} '{card.get('name', 'Item')}' (Cart space full).",
                 "action",
             )
-            if not target_p.get("pendingCartOverflow"):
+            if not _player_has_blocking_prompt(target_p, phase=state.get("phase")):
                 _finish_pending_encounter_continuations(state, target_p)
             run_bots_until_human(state)
             return True, f"Refused {card.get('name', 'item')}."
@@ -9619,7 +9736,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             if prev_int is not None:
                 state["pendingEncounter"]["interveningPlayerIndex"] = prev_int
 
-        if not target_p.get("pendingCartOverflow") and not target_p.get("pendingMarketReward"):
+        if not _player_has_blocking_prompt(target_p, phase=state.get("phase")):
             _finish_pending_encounter_continuations(state, target_p)
         run_bots_until_human(state)
         return True, f"Added {card.get('name', 'item')} to your Cart!"
@@ -9652,7 +9769,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                 f"{target_p['name']} declined Market Board reward ({cat_lbl}).",
                 "action",
             )
-            if not target_p.get("pendingMarketReward") and not target_p.get("pendingCartOverflow"):
+            if not _player_has_blocking_prompt(target_p, phase=state.get("phase")):
                 _finish_pending_encounter_continuations(state, target_p)
             run_bots_until_human(state)
             return True, f"Declined {cat_lbl} reward."
@@ -9662,7 +9779,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         if not candidates:
             target_p["pendingMarketReward"] = [r for r in queue if r.get("id") != rwd.get("id")]
             _prune_empty_pending_market_rewards(state, target_p)
-            if not target_p.get("pendingMarketReward") and not target_p.get("pendingCartOverflow"):
+            if not _player_has_blocking_prompt(target_p, phase=state.get("phase")):
                 _finish_pending_encounter_continuations(state, target_p)
             run_bots_until_human(state)
             return False, f"No matching {cat_lbl} remains on the Ostia Market Board."
@@ -9726,7 +9843,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             if prev_int is not None:
                 state["pendingEncounter"]["interveningPlayerIndex"] = prev_int
 
-        if not target_p.get("pendingMarketReward") and not target_p.get("pendingCartOverflow"):
+        if not _player_has_blocking_prompt(target_p, phase=state.get("phase")):
             _finish_pending_encounter_continuations(state, target_p)
         run_bots_until_human(state)
         return True, f"Claimed {claimed_card.get('name', 'item')} from the Ostia Market Board!"
@@ -9856,6 +9973,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         )
         if not target_p:
             return False, err_owner
+        if _has_mission_overflow(target_p, phase=state.get("phase")):
+            return False, "You have more than 5 active missions — cancel 1 mission before taking other actions."
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
@@ -9899,6 +10018,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         )
         if not target_p:
             return False, err_owner
+        if _has_mission_overflow(target_p, phase=state.get("phase")):
+            return False, "You have more than 5 active missions — cancel 1 mission before taking other actions."
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
@@ -9982,7 +10103,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         ok, msg = resolve_pending_encounter_choice(state, enc_player, pend, decision, use_consumable_ids=use_cons_list)
         if not ok:
             return False, msg
-        if not state.get("pendingEncounter") and not enc_player.get("pendingNpcOffer") and not enc_player.get("pendingCartOverflow") and not enc_player.get("pendingMarketReward"):
+        if not state.get("pendingEncounter") and not _player_has_blocking_prompt(enc_player, phase=state.get("phase")):
             _finish_pending_encounter_continuations(state, enc_player)
         run_bots_until_human(state)
         return True, msg
@@ -10048,6 +10169,8 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return False, "Cannot repay that loan right now."
 
         if act_type == "cleanup_finish":
+            if _has_mission_overflow(player, phase=state.get("phase")):
+                return False, "You have more than 5 active missions — cancel 1 mission before finishing Clean-Up."
             if "allowWinterPvpInfluence" in action:
                 player["allowWinterPvpInfluence"] = bool(action.get("allowWinterPvpInfluence"))
             keep_guard_ids = set(action.get("keepGuardIds", [g["id"] for g in player["guards"]]))
@@ -10070,8 +10193,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             _check_all_cleanups_done(state)
             return True, "Clean-Up completed."
 
-    # Voluntary Mission Cancellation (Starting: no penalty; Encounter: Hostile Favor penalty; Soothsayer: only if >5 active Soothsayer missions)
-    if act_type == "cancel_mission":
+    # Voluntary / Mandatory Overflow Mission Cancellation (Starting: no penalty; Encounter: Hostile Favor penalty; Soothsayer: only if all 6 active are Soothsayer)
+    if act_type in ("cancel_mission", "resolve_mission_overflow"):
+        if state.get("phase") in ("setup_discard", "finished"):
+            return False, "Cannot cancel missions right now."
         mission_id = action.get("missionId", "")
         target_p, err_owner = _resolve_mission_action_player(
             state, user_id, mission_id, "You can only cancel your own Missions."
@@ -10081,22 +10206,32 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         m = next((x for x in target_p.get("missions", []) if x.get("id") == mission_id), None)
         if not m:
             return False, "Mission not found."
+        ok_cancel, err_cancel = _is_mission_cancelable(target_p, m)
+        if not ok_cancel:
+            return False, err_cancel
+        was_overflowing = _has_mission_overflow(target_p, phase=state.get("phase"))
         src = m.get("source") or "starting"
         if src == "soothsayer":
-            sooth_count = sum(1 for x in target_p.get("missions", []) if x.get("source") == "soothsayer")
-            if sooth_count <= 5:
-                return (
-                    False,
-                    "Canceling or failing a Soothsayer mission is impossible unless you already have 5 active Soothsayer missions and take on an additional Soothsayer mission.",
-                )
             _fail_mission(state, target_p, m, reason="6th Soothsayer mission overflow")
-            return True, f"Canceled Soothsayer Mission '{m.get('name', 'Mission')}' with no penalty."
-        if src == "encounter":
-            h_notes = _fail_mission(state, target_p, m, reason="voluntarily canceled")
-            return True, f"Canceled Encounter Mission '{m.get('name', 'Mission')}' ({' '.join(h_notes) or 'Reputational consequences applied'})."
-        s_notes = _fail_mission(state, target_p, m, reason="voluntarily canceled")
-        suffix = f" ({' '.join(s_notes)})" if s_notes else " with no penalty"
-        return True, f"Canceled Starting Mission '{m.get('name', 'Mission')}'{suffix}."
+            msg_out = f"Canceled Soothsayer Mission '{m.get('name', 'Mission')}' with no penalty."
+        elif src == "encounter":
+            fail_reason = "exceeded 5 active mission limit" if was_overflowing else "voluntarily canceled"
+            h_notes = _fail_mission(state, target_p, m, reason=fail_reason)
+            msg_out = f"Canceled Encounter Mission '{m.get('name', 'Mission')}' ({' '.join(h_notes) or 'Reputational consequences applied'})."
+        else:
+            fail_reason = "exceeded 5 active mission limit" if was_overflowing else "voluntarily canceled"
+            s_notes = _fail_mission(state, target_p, m, reason=fail_reason)
+            suffix = f" ({' '.join(s_notes)})" if s_notes else " with no penalty"
+            msg_out = f"Canceled Starting Mission '{m.get('name', 'Mission')}'{suffix}."
+        _sync_mission_overflow(state, target_p)
+        if (
+            state.get("phase") == "delivery"
+            and not state.get("pendingEncounter")
+            and not _player_has_blocking_prompt(target_p, phase=state.get("phase"))
+        ):
+            _finish_pending_encounter_continuations(state, target_p)
+        run_bots_until_human(state)
+        return True, msg_out
 
     # Confirm Top 3 Reorder from Informants ("Look at the top three cards of any deck or the top three tiles of any stack...")
     if act_type == "reorder_top_3":
@@ -10274,6 +10409,11 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     player = state["players"][state["activePlayerIndex"]]
     if player["isBot"] or (user_id is not None and player.get("userId") != user_id):
         return False, f"It is currently {player['name']}'s turn."
+    if act_type != "return_shortcut" and _has_mission_overflow(player, phase=state.get("phase")):
+        return (
+            False,
+            "You have more than 5 active missions — cancel 1 mission before taking other actions or ending your turn.",
+        )
 
     # Play Influence Card (can be played anytime on turn)
     if act_type == "play_influence":
@@ -10403,7 +10543,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
     # 6. Delivery Phase Turn Actions
     if state["phase"] == "delivery":
         if act_type == "delivery_trash":
-            if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+            if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
                 return False, "Resolve the active Encounter or pending choice before using Trash."
             if player.get("trashedThisTurn"):
                 return False, "Already used Trash action this turn."
@@ -10510,7 +10650,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             if is_tiber_crossing_blocked(curr_cell, target_cell):
                 return (
                     False,
-                    "Cannot cross the Tiber River here — carts may only cross orthogonally via Rome's five stone bridges (A1↔B1 Pons Aelius, A1↔A2 Pons Neronianus, A3↔A4 Pons Agrippae, B4↔C4 Pons Fabricius, B4↔B5 Pons Aemilius).",
+                    "Cannot cross the Tiber River diagonally — carts may only cross the Tiber orthogonally (N, S, E, or W) along passable tile edges.",
                 )
 
             rev_tile = state["romeBoard"][curr_cell].get("revealed")
@@ -10572,7 +10712,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                 else:
                     trigger_deck_encounter(state, player, edge_val, source_label=src_lbl)
 
-                if state.get("pendingEncounter") or player.get("pendingNpcOffer") or player.get("pendingCartOverflow") or player.get("pendingMarketReward"):
+                if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
                     state["pendingPostEncounterMove"] = {
                         "playerIndex": player["index"],
                         "fromCell": curr_cell,
@@ -10610,7 +10750,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             bridge_suffix = f" via {bridge_lbl}" if bridge_lbl else ""
             add_log(state, f"{player['name']} moved {direction} from {curr_cell} to {target_cell} ({NEIGHBORHOOD_NAMES.get(target_cell, target_cell)}){bridge_suffix}.", "action")
             resolve_tile_entry(state, player, target_cell)
-            if (player["nightEnded"] or player["turnStep"] == "done") and not state.get("pendingEncounter") and not player.get("pendingNpcOffer") and not player.get("pendingCartOverflow") and not player.get("pendingMarketReward"):
+            if (player["nightEnded"] or player["turnStep"] == "done") and not state.get("pendingEncounter") and not _player_has_blocking_prompt(player, phase=state.get("phase")):
                 advance_delivery_turn(state)
             run_bots_until_human(state)
             return True, f"Moved to {target_cell}."
@@ -10912,7 +11052,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return _apply_gamble_roll_outcome(state, player, gamble_state, emit_dice_event=True)
 
         if act_type == "delivery_scout":
-            if state.get("pendingEncounter") or player.get("pendingMarketReward") or player.get("pendingCartOverflow") or player.get("pendingNpcOffer"):
+            if state.get("pendingEncounter") or _player_has_blocking_prompt(player, phase=state.get("phase")):
                 return False, "Please finish resolving your pending encounter, reward, or offer before scouting."
             if player.get("scoutedThisTurn"):
                 return False, "Already used your Scout action this turn."
@@ -10921,8 +11061,10 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             return _record_scout_target(state, player, target_type, str(raw_key), int(state.get("turn", 1)), is_initial=False)
 
         if act_type == "delivery_end_turn":
-            if player.get("pendingMarketReward") or player.get("pendingCartOverflow") or player.get("pendingNpcOffer"):
-                return False, "Please finish choosing your pending reward or offer before ending your turn."
+            if _has_mission_overflow(player, phase=state.get("phase")):
+                return False, "You cannot end your turn with more than 5 active missions — cancel 1 mission first."
+            if _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
+                return False, "Please finish resolving your pending prompt before ending your turn."
             advance_delivery_turn(state)
             run_bots_until_human(state)
             return True, "Turn ended."
@@ -10975,6 +11117,14 @@ def _record_scout_target(
             or top_c.get("rewardText")
             or top_c.get("category", "")
         )
+        if not c_summary and isinstance(top_c.get("reactions"), list):
+            rtypes = {r.get("type") for r in top_c["reactions"] if isinstance(r, dict)}
+            if "deck_quest_demand" in rtypes:
+                c_summary = "Deck Quest Demand (!): Draw & accept top Missiones card (unseen)"
+            elif "deck_quest_offer" in rtypes:
+                c_summary = "Optional Deck Quest Offer (?): Draw & accept top Missiones card (unseen)"
+        if not c_summary:
+            c_summary = top_c.get("bio") or deck_disp
         player["scoutedThisTurn"] = True
         player["scoutedInfo"].append({
             "id": f"scout_{secrets.token_hex(4)}",
@@ -10982,7 +11132,7 @@ def _record_scout_target(
             "targetType": "deck",
             "targetKey": t_key,
             "label": f"{'Initial Scout' if is_initial else 'Scout'} (Deck {deck_disp})",
-            "summary": f"{top_c.get('name', 'Card')} — {c_summary}",
+            "summary": f"{top_c.get('name', 'Card')} — {c_summary}" if c_summary else top_c.get("name", "Card"),
             "revealedData": copy.deepcopy(top_c),
         })
         if is_initial:
@@ -11164,12 +11314,8 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 False,
                 "Lucky Break is a reactive card — play it after rolling on the Death, Angry Mob, or Theater Troupe chart (+1 to roll).",
             )
-    if "Prophecy" in cname and pend is not None:
-        return False, "Resolve the current encounter or die roll before playing Prophecy."
-    if "Change Of Plans" in cname:
-        curr_cell = player.get("position")
-        if not curr_cell or curr_cell not in state.get("romeBoard", {}) or not state["romeBoard"][curr_cell].get("revealed"):
-            return False, "Change Of Plans can only be played while your Cart is on a revealed neighborhood tile in Rome."
+    if "Prophecy" in cname and (pend is not None or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase"))):
+        return False, "Resolve the current encounter or prompt before playing Prophecy."
     if "Shortcut" in cname:
         if (
             state.get("phase") != "delivery"
@@ -11183,12 +11329,7 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 False,
                 "Shortcut can only be played on your Night Delivery turn while your Cart is in Rome and ready to move.",
             )
-        if (
-            pend is not None
-            or player.get("pendingNpcOffer")
-            or player.get("pendingCartOverflow")
-            or player.get("pendingMarketReward")
-        ):
+        if pend is not None or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
             return (
                 False,
                 "Resolve the current encounter or prompt before playing Shortcut to move.",
@@ -11294,13 +11435,8 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 return False, "Your Cart must be active inside Rome to initiate Casus Belli PvP combat."
             if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
                 return False, "Casus Belli exhausts your Transaction for this turn, and you have already transacted or gambled."
-            if (
-                player.get("pendingNpcOffer")
-                or player.get("pendingCartOverflow")
-                or player.get("pendingMarketReward")
-                or player.get("pendingTop3Reorder")
-            ):
-                return False, "Resolve your active Cart/Market prompt before playing Casus Belli."
+            if _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
+                return False, "Resolve your active prompt before playing Casus Belli."
             pvp_targets = _get_casus_belli_pvp_targets(state, player)
             if not pvp_targets:
                 return False, f"No eligible opponent merchant is present in {normalize_cell_id(player.get('position'))} to challenge with Casus Belli."
@@ -11624,8 +11760,8 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
         return True, "Added Free Guard (Thug) to Cart."
     if "Shortcut" in cname:
         player["turnEffects"]["shortcut"] = True
-        add_log(state, f"{player['name']} played '{cname}' — next passable/bridged edge this turn is treated as Green!", "action")
-        return True, "Next edge movement this turn ignores red blocks, tolls, and edge encounters (cannot cross unbridged Tiber borders)."
+        add_log(state, f"{player['name']} played '{cname}' — next passable or orthogonal edge this turn is treated as Green!", "action")
+        return True, "Next edge movement this turn ignores red blocks, tolls, and edge encounters (cannot cross the Tiber diagonally)."
     if "Make Haste" in cname:
         player["movesRemaining"] = player.get("movesRemaining", 0) + 1
         player["turnEffects"]["makeHasteExtraTransact"] = True
@@ -11653,25 +11789,6 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
         player["turnEffects"]["friendInGuard"] = True
         add_log(state, f"{player['name']} played '{cname}' (waives all Edge Tolls this Night, and halves Daybreak Fine or waives Gate Fine).", "action")
         return True, "All Edge Tolls waived this Night, plus Daybreak/Gate Fine protection active."
-    if "Change Of Plans" in cname:
-        curr_cell = player.get("position")
-        cell_state = state["romeBoard"][curr_cell]
-        old_rev = cell_state.get("revealed")
-        if old_rev:
-            cell_state["stack"].append(old_rev)
-            cell_state["revealed"] = None
-        if cell_state["stack"]:
-            cell_state["revealed"] = cell_state["stack"].pop(0)
-        player["cash"] += 2
-        new_rev = cell_state.get("revealed") or {}
-        add_log(
-            state,
-            f"{player['name']} played 'Change Of Plans' in {curr_cell} — cycled {old_rev.get('id', 'tile')} to the bottom, revealed {new_rev.get('id', 'tile')}, and gained +2(d)!",
-            "action",
-        )
-        check_passive_missions(state, player)
-        _run_tile_encounter_and_refresh_loop(state, player, curr_cell)
-        return True, f"Cycled tile in {curr_cell}, revealed {new_rev.get('id', 'new tile')}, and gained +2(d)!"
     if "Minor Supplicant" in cname:
         enc_player["tempFavor"] = enc_player.get("tempFavor", 0) + 1
         add_log(state, f"{player['name']} played '{cname}' (+1 Favor for {enc_player['name']}'s encounter).", "action")
@@ -11865,13 +11982,9 @@ def _bot_distance_to_exit(cell: str, state: Optional[Dict[str, Any]] = None) -> 
 def _clear_any_bot_subprompts(state: Dict[str, Any]) -> bool:
     """Clears any dangling human-style subprompts on bot seats and returns True if any were resolved."""
     changed = False
+    phase = state.get("phase", "")
     for pl in state.get("players", []):
-        if pl.get("isBot") and (
-            pl.get("pendingTop3Reorder")
-            or pl.get("pendingCartOverflow")
-            or pl.get("pendingMarketReward")
-            or pl.get("pendingNpcOffer")
-        ):
+        if pl.get("isBot") and phase != "finished" and _player_has_blocking_prompt(pl, include_top3=True, phase=phase):
             _resolve_converted_bot_subprompts(state, pl)
             if not state.get("pendingEncounter"):
                 _finish_pending_encounter_continuations(state, pl)
@@ -12032,7 +12145,7 @@ def run_bots_until_human(state: Dict[str, Any]) -> None:
             break
         _clear_any_bot_subprompts(state)
         if any(
-            p.get("pendingNpcOffer") or p.get("pendingCartOverflow") or p.get("pendingMarketReward") or p.get("pendingTop3Reorder")
+            _player_has_blocking_prompt(p, include_top3=True, phase=state.get("phase"))
             for p in state["players"]
             if not p.get("isBot")
         ):
@@ -13175,9 +13288,7 @@ def sanitize_state_for_player(
             and not p.get("transactedThisTurn")
             and not p.get("gambledThisTurn")
             and not pend_live
-            and not p.get("pendingNpcOffer")
-            and not p.get("pendingCartOverflow")
-            and not p.get("pendingMarketReward")
+            and not _player_has_blocking_prompt(p, phase=state.get("phase"))
         )
 
         for m_obj in p_copy.get("missions", []):
@@ -13194,6 +13305,7 @@ def sanitize_state_for_player(
             m_obj["text"] = _format_mission_text(m_obj)
             if (
                 state["phase"] == "delivery"
+                and not _has_mission_overflow(p, phase=state.get("phase"))
                 and not m_obj.get("completed")
                 and m_obj.get("kind") == "delivery"
                 and not m_obj.get("pickedUp")
@@ -13209,6 +13321,7 @@ def sanitize_state_for_player(
 
             if (
                 state["phase"] == "delivery"
+                and not _has_mission_overflow(p, phase=state.get("phase"))
                 and not m_obj.get("completed")
                 and m_obj.get("kind") == "delivery"
                 and m_obj.get("pickedUp")
@@ -13400,6 +13513,30 @@ def sanitize_state_for_player(
             rwd_cp["candidates"] = rwd_cands
             enriched_mkt_rewards.append(rwd_cp)
         p_copy["pendingMarketReward"] = enriched_mkt_rewards
+        raw_m_ovf = copy.deepcopy(p.get("pendingMissionOverflow"))
+        if (
+            is_owner
+            and state["phase"] not in ("setup_discard", "finished")
+            and len(p.get("missions") or []) > MAX_ACTIVE_MISSIONS
+            and not isinstance(raw_m_ovf, dict)
+        ):
+            raw_m = p.get("missions") or []
+            raw_m_ovf = {
+                "id": f"movf_{len(raw_m)}_{str(raw_m[-1].get('id', 'last'))}",
+                "count": len(raw_m),
+                "allSoothsayer": _are_all_missions_soothsayer(raw_m),
+                "missionIds": [str(x.get("id")) for x in raw_m],
+                "newMissionId": raw_m[-1].get("id"),
+                "newMissionName": raw_m[-1].get("name"),
+                "sourceLabel": "Active Mission Limit",
+            }
+        elif state["phase"] in ("setup_discard", "finished") or len(p.get("missions") or []) <= MAX_ACTIVE_MISSIONS:
+            raw_m_ovf = None
+        if isinstance(raw_m_ovf, dict):
+            raw_m = p.get("missions") or []
+            raw_m_ovf["count"] = len(raw_m)
+            raw_m_ovf["allSoothsayer"] = _are_all_missions_soothsayer(raw_m)
+        p_copy["pendingMissionOverflow"] = raw_m_ovf
         p_copy["statsSummary"] = _format_player_stats_summary(p)
 
         if not is_owner and state["phase"] != "finished":
@@ -13410,6 +13547,7 @@ def sanitize_state_for_player(
             p_copy["pendingNpcOffer"] = None
             p_copy["pendingCartOverflow"] = []
             p_copy["pendingMarketReward"] = []
+            p_copy["pendingMissionOverflow"] = None
         players_view.append(p_copy)
 
     is_spectator = viewer_player_index is None

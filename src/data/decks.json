@@ -101,7 +101,7 @@
           "type": "deck_quest_demand"
         }
       ],
-      "actionText": "!: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "actionText": "",
       "mission": null
     },
     {
@@ -323,7 +323,7 @@
           "reward": "7(d)"
         }
       ],
-      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "actionText": "",
       "mission": null
     },
     {
@@ -669,7 +669,7 @@
           "reward": "7(d)"
         }
       ],
-      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "actionText": "",
       "mission": null
     },
     {
@@ -700,7 +700,7 @@
           "type": "deck_quest_offer"
         }
       ],
-      "actionText": "?: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "actionText": "",
       "mission": null
     },
     {
@@ -995,7 +995,7 @@
           "type": "deck_quest_demand"
         }
       ],
-      "actionText": "!: Accept the top card of the Missiones deck (unseen) as a Mission.",
+      "actionText": "",
       "mission": null
     },
     {
@@ -3192,14 +3192,6 @@
       "name": "Procurer",
       "effectText": "Choose any Good in the Goods deck and buy it onto your Cart at its Common (>) buying price",
       "effectCode": "buy_from_deck_uncommon",
-      "favorGain": null,
-      "sellTable": null
-    },
-    {
-      "id": "inf_8",
-      "name": "Change Of Plans",
-      "effectText": "Cycle the revealed tile in your current neighborhood to the bottom of its stack, reveal a new tile, and gain 2(d)",
-      "effectCode": "redraw_occupied_tile",
       "favorGain": null,
       "sellTable": null
     },
