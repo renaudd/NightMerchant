@@ -813,7 +813,7 @@ button, input, select {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-template-rows: repeat(6, minmax(188px, auto));
   min-width: 820px;
-  background-image: url("./assets/icons/ostia_market_board_bg.jpg?v=7");
+  background-image: url("./assets/icons/ostia_market_board_bg.jpg?v=58");
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
@@ -1414,7 +1414,7 @@ button, input, select {
   gap: 0;
   padding: 0;
   aspect-ratio: 1 / 1;
-  background-image: url("./assets/icons/rome_211_map_bg_v2.jpg?v=26");
+  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=58");
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
@@ -2263,7 +2263,7 @@ button, input, select {
   margin: 0 auto;
   border-radius: 8px;
   border: 2px solid var(--gold);
-  background-image: url("./assets/icons/rome_211_map_bg_v2.jpg?v=26");
+  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=58");
   background-size: 600% 600%;
   background-repeat: no-repeat;
   position: relative;

@@ -1022,8 +1022,8 @@ const DEFAULT_POLITICAL_CLIMATE_OPTIONS = [
     optionNumber: 1,
     timing: "endgame",
     title: "Brother's Grudge",
-    shortText: "Least Geta favor loses 25d",
-    description: "End of game: Least Geta favor loses 25d.",
+    shortText: "Most Geta favor loses 25d",
+    description: "End of game: Most Geta favor loses 25d.",
   },
   {
     id: "geta_2",
@@ -1043,9 +1043,9 @@ const DEFAULT_POLITICAL_CLIMATE_OPTIONS = [
     gemName: "Emerald",
     optionNumber: 3,
     timing: "midgame",
-    title: "Divided Tiber",
-    shortText: "Orthogonal Tiber crossings cost 4d toll (0d with +1 Emerald)",
-    description: "Crossing the Tiber orthogonally costs a 4d toll, waived with +1 Emerald or Shortcut.",
+    title: "Opulence",
+    shortText: "All players start with +1 Emerald",
+    description: "All players start with +1 Emerald.",
   },
   {
     id: "domna_1",
@@ -1164,9 +1164,9 @@ const DEFAULT_POLITICAL_CLIMATE_OPTIONS = [
     gemName: "Contracts",
     optionNumber: 2,
     timing: "endgame",
-    title: "Guild Ledger",
-    shortText: "+10d per completed Mission; -10d per failed Mission",
-    description: "End of game: Gain 10d per completed Mission; lose 10d per failed or unfinished Mission.",
+    title: "Loyalty Rewards",
+    shortText: "10 × A × B (A = faction gems, B = faction missions)",
+    description: "End of game: Each player receives 10 × A × B denarii. A = gems of any one faction, B = missions completed for that faction.",
   },
   {
     id: "missions_3",
@@ -1873,7 +1873,7 @@ function ensureCardsCatalogLoaded() {
   }
   appState.cardsCatalogLoading = true;
   appState.cardsCatalogError = null;
-  const p = fetch("./data/cards_catalog.json?v=56")
+  const p = fetch("./data/cards_catalog.json?v=58")
     .then((resp) => {
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status} loading card catalog`);
@@ -2677,69 +2677,30 @@ function buildEncounterFigureNodes(encStr, iconClass) {
   return figs;
 }
 
-function getDividedTiberExtraToll(coord, dir, edgeVal) {
-  if (!coord || !dir || !["N", "S", "E", "W"].includes(dir)) return 0;
-  if (!edgeVal || edgeVal === "red" || edgeVal === "none" || edgeVal === "None") return 0;
-  const targetCoord = getNeighborCoordInDir(coord, dir);
-  if (!targetCoord || !isOrthogonalTiberCrossing(coord, targetCoord)) return 0;
-  const gs = typeof appState !== "undefined" ? appState.gameState : null;
-  if (!gs || !hasActiveClimateOption(gs, "geta_3")) return 0;
-  const viewer = getViewerPlayer(gs);
-  if (!viewer) return 0;
-  const emeraldFavor = Number(viewer.favor && viewer.favor.Geta) || 0;
-  return emeraldFavor < 1 ? 4 : 0;
-}
-
-function renderDynamicEdgeSlotNode(dir, edgeVal, coord = null) {
+function renderDynamicEdgeSlotNode(dir, edgeVal, _coord = null) {
   if (!edgeVal) return null;
   let inner = null;
-  const extraTiberToll = coord ? getDividedTiberExtraToll(coord, dir, edgeVal) : 0;
   const tollAmt = parseTollAmount(edgeVal);
   if (edgeVal === "green") {
-    if (extraTiberToll > 0) {
-      inner = el("span", {
-        className: "dyn-edge-toll is-tiber-toll",
-        title: `Divided Tiber Toll: ${extraTiberToll}(d) (waived with ≥ +1 Emerald)`,
-        text: `${extraTiberToll}(d)`,
-      });
-    } else {
-      inner = el("span", { className: "dyn-edge-bar edge-green" });
-    }
+    inner = el("span", { className: "dyn-edge-bar edge-green" });
   } else if (edgeVal === "red") {
     inner = el("span", { className: "dyn-edge-bar edge-red" });
   } else if (tollAmt > 0) {
-    const totalToll = tollAmt + extraTiberToll;
     inner = el("span", {
-      className: `dyn-edge-toll${extraTiberToll > 0 ? " is-tiber-toll" : ""}`,
-      title:
-        extraTiberToll > 0
-          ? `${tollAmt}(d) Road Toll + ${extraTiberToll}(d) Divided Tiber Toll (waived with ≥ +1 Emerald)`
-          : `${tollAmt}(d) Road Toll`,
-      text: `${totalToll}(d)`,
+      className: "dyn-edge-toll",
+      title: `${tollAmt}(d) Road Toll`,
+      text: `${tollAmt}(d)`,
     });
   } else {
     const figs = buildEncounterFigureNodes(edgeVal, "dyn-edge-enc-icon");
     if (figs.length > 0) {
-      const encChildren =
-        extraTiberToll > 0
-          ? [
-              ...figs,
-              el("span", {
-                className: "dyn-edge-toll is-tiber-toll",
-                text: `${extraTiberToll}(d)`,
-              }),
-            ]
-          : figs;
       inner = el(
         "span",
         {
-          className: `dyn-edge-enc-group${extraTiberToll > 0 ? " has-tiber-toll" : ""}`,
-          title:
-            extraTiberToll > 0
-              ? `${formatEdgeLabel(edgeVal)} + ${extraTiberToll}(d) Divided Tiber Toll (waived with ≥ +1 Emerald)`
-              : formatEdgeLabel(edgeVal),
+          className: "dyn-edge-enc-group",
+          title: formatEdgeLabel(edgeVal),
         },
-        ...encChildren
+        ...figs
       );
     }
   }
@@ -3598,11 +3559,40 @@ const FACTION_FAVOR_INFLUENCE_SPECS = {
   },
 };
 
+const PATRON_INFLUENCE_SPECS = {
+  patron_caracalla_domna: {
+    effectText: "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
+    gems: ["-Caracalla", "-Domna"],
+  },
+  patron_geta_aurelius: {
+    effectText: "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
+    gems: ["-Geta", "-Aurelius"],
+  },
+};
+
+function getPatronInfluenceSpec(c) {
+  if (!c) return null;
+  const efc = String(c.effectCode || "").trim();
+  if (PATRON_INFLUENCE_SPECS[efc]) {
+    return PATRON_INFLUENCE_SPECS[efc];
+  }
+  const cname = String(c.name || "").trim();
+  if (!cname.includes("Patron")) return null;
+  const baseId = String(c.id || "").replace(/([0-9]+)[a-z]+$/i, "$1");
+  if (baseId === "inf_2") return PATRON_INFLUENCE_SPECS.patron_caracalla_domna;
+  if (baseId === "inf_39") return PATRON_INFLUENCE_SPECS.patron_geta_aurelius;
+  return null;
+}
+
 function getInfluenceCardEffectText(c) {
   if (!c) return "";
   const cname = String(c.name || "").trim();
   if (FACTION_FAVOR_INFLUENCE_SPECS[cname]) {
     return FACTION_FAVOR_INFLUENCE_SPECS[cname].effectText;
+  }
+  const patronSpec = getPatronInfluenceSpec(c);
+  if (patronSpec) {
+    return patronSpec.effectText;
   }
   return String(c.effectText || "");
 }
@@ -3618,6 +3608,10 @@ function getInfluenceCardFavorList(c) {
   }
   if (FACTION_FAVOR_INFLUENCE_SPECS[cname]) {
     return FACTION_FAVOR_INFLUENCE_SPECS[cname].gems;
+  }
+  const patronSpec = getPatronInfluenceSpec(c);
+  if (patronSpec) {
+    return patronSpec.gems;
   }
   if (cname.includes("Favor")) {
     const fKey = cname.replace("Favor", "").replace("Aurelian", "Aurelius").trim();
@@ -3638,7 +3632,7 @@ function renderPhysicalInfluenceCardNode(c, opts = {}) {
 
   const footerItems = [];
   const cname = String(c.name || "");
-  if (cname.includes("Favor")) {
+  if (cname.includes("Favor") || cname.includes("Patron")) {
     footerItems.push(...renderFactionGemNodes(getInfluenceCardFavorList(c)));
   } else if (cname === "Cartwright") {
     footerItems.push(el("span", { text: "+ ■ ■" }));
@@ -8073,7 +8067,7 @@ function renderTabletopView() {
       effectiveView =
         gs.phase === "setup_climate"
           ? "climate"
-          : gs.phase === "market"
+          : gs.phase === "market" || gs.phase === "setup_discard"
           ? "market"
           : "rome";
     }
@@ -8852,7 +8846,12 @@ function getEligibleRerollTargets(pend) {
   if (!pend) return [];
   const stage = pend.stage || "pre_decision";
   const targets = [];
-  if (stage === "combat_post_roll") {
+  if (stage === "combat_pre_strike_post_roll") {
+    const pDice = Array.isArray(pend.playerDiceObjs) ? pend.playerDiceObjs : [];
+    pDice.forEach((_, idx) => {
+      targets.push({ targetSide: "player", dieIndex: idx, targetIndex: idx });
+    });
+  } else if (stage === "combat_post_roll") {
     const pDice = Array.isArray(pend.playerDiceObjs) ? pend.playerDiceObjs : [];
     pDice.forEach((_, idx) => {
       targets.push({ targetSide: "player", dieIndex: idx, targetIndex: idx });
@@ -9013,7 +9012,36 @@ function renderInlineClickableDiceRow(pend, viewer, merchantLabel = "Your") {
   }
 
   const dieButtons = [];
-  if (stage === "combat_post_roll") {
+  if (stage === "combat_pre_strike_post_roll") {
+    const pDice = Array.isArray(pend.playerDiceObjs) ? pend.playerDiceObjs : [];
+    pDice.forEach((d, idx) => {
+      const rom = d.roman !== undefined ? String(d.roman) : toRomanDieSymbol(Number(d.value) || 0);
+      const isBlock = d.sign === 0;
+      const signNote = isBlock ? `🛡️ Block (${rom} Wnd)` : `${rom} Strike Wnd`;
+      dieButtons.push(
+        el(
+          "button",
+          {
+            type: "button",
+            className: `inline-roman-die-btn ${hasTwist ? "clickable-die" : ""} ${hasTwist && isArmed ? "armed-die" : ""}`,
+            disabled: !hasTwist,
+            title: hasTwist ? `Click this die to re-roll with 'Twist Of Fate'` : d.label || "Pre-Strike Die",
+            onClick: hasTwist ? () => handleDieSelectionClick(pend, viewer, "player", idx) : null,
+          },
+          el("span", { className: "inline-roman-die-face", text: rom }),
+          el(
+            "span",
+            { className: "inline-roman-die-meta" },
+            el("span", { className: "inline-roman-die-owner", text: d.label || `Pre-Strike Die #${idx + 1}` }),
+            el("span", {
+              className: "inline-roman-die-action",
+              text: hasTwist ? `${signNote} • ${actionHint}` : signNote,
+            })
+          )
+        )
+      );
+    });
+  } else if (stage === "combat_post_roll") {
     const pDice = Array.isArray(pend.playerDiceObjs) ? pend.playerDiceObjs : [];
     pDice.forEach((d, idx) => {
       const rom = d.roman !== undefined ? String(d.roman) : toRomanDieSymbol(Number(d.value) || 0);
@@ -9164,8 +9192,12 @@ function buildConsumableWeaponPickerNodes(consumables, selectedSet, onChange) {
   return consumables.map((it) => {
     const c = it.combat || {};
     const effParts = [];
-    if (c.dice) effParts.push(`+${c.dice}(R)`);
-    if (c.flat) effParts.push(`${formatSignedFlat(c.flat)} CP`);
+    if (c.preRollStrike) {
+      effParts.push(`Pre-Roll Strike ${c.dice || 1}(R)`);
+    } else {
+      if (c.dice) effParts.push(`+${c.dice}(R)`);
+      if (c.flat) effParts.push(`${formatSignedFlat(c.flat)} CP`);
+    }
     const effLabel = effParts.join(" ") || "+1 CP";
     const isChecked = selectedSet.has(it.id);
 
@@ -9177,12 +9209,16 @@ function buildConsumableWeaponPickerNodes(consumables, selectedSet, onChange) {
         { style: { flex: "1", minWidth: "200px" } },
         el("div", {
           style: { fontWeight: "800", fontSize: "0.9rem", color: isChecked ? "#991b1b" : "var(--text-main)" },
-          text: `🗡️ ${it.name || it.item || "Weapon"} (${effLabel} — Destroyed if Used)`,
+          text: `${c.preRollStrike ? "🏹" : "🗡️"} ${it.name || it.item || "Weapon"} (${effLabel} — Destroyed if Used)`,
         }),
         el("div", {
           style: { fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.18rem" },
           text: isChecked
-            ? `Selected for this combat: Grants ${effLabel}, then is destroyed and removed from your Cart.`
+            ? c.preRollStrike
+              ? `Selected for pre-roll strike: Fires ${c.dice || 1}(R) Wounds BEFORE main combat dice roll, then is destroyed and removed from your Cart.`
+              : `Selected for this combat: Grants ${effLabel}, then is destroyed and removed from your Cart.`
+            : c.preRollStrike
+            ? "Kept safe on your Cart: Fires 0 pre-roll Wounds and is NOT destroyed."
             : "Kept safe on your Cart: Contributes 0 CP in this combat and is NOT destroyed.",
         }),
         it.isMissionCargo
@@ -10019,6 +10055,185 @@ function renderPendingEncounterPanelCore(gs, viewer) {
     );
   }
 
+  // Stage 1B: Pre-Roll Strike Post-Roll Window (Sagittae 1(R) — Twist Of Fate only)
+  if (stage === "combat_pre_strike_post_roll") {
+    const isPvp = Boolean(pend.isPvp);
+    const strikerName = pend.pvpStrikerName || encPlayer.name;
+    const targetName = pend.pvpTargetName || card.name || "Opponent";
+    const strikeList = Array.isArray(pend.strikeNames) && pend.strikeNames.length > 0 ? pend.strikeNames : ["Sagittae"];
+    const strikeLabel = strikeList.join(", ");
+    const rawW = Number(pend.strikeWounds) || 0;
+    const ignW = Number(pend.ignoreWounds) || 0;
+    const netW = Number(pend.netWoundsAfterArmor) || 0;
+    const armorSources = Array.isArray(pend.armorSources) ? pend.armorSources : [];
+    const armorLabelStr =
+      armorSources.length > 0
+        ? armorSources.join(", ")
+        : ignW > 0
+        ? `Armor (Ignore ${ignW} Wound${ignW === 1 ? "" : "s"})`
+        : "None";
+
+    const singleReroll = getEligibleRerollTargets(pend).length === 1;
+    const postCards = ((viewer && viewer.influence) || []).filter((c) => String(c.name || "") === "Twist Of Fate");
+    const diceSummary = (pend.playerDiceObjs || [])
+      .map((d) =>
+        d.sign === 0 ? `${d.label}: 🛡️[${d.roman}]` : `${d.label}: [${d.roman}] Wnd`
+      )
+      .join(", ");
+
+    let targetGuardCount = 0;
+    if (isPvp && pend.pvpTargetIndex != null) {
+      const targetPl =
+        (gs.players || []).find((p) => p.index === pend.pvpTargetIndex) || (gs.players || [])[pend.pvpTargetIndex];
+      targetGuardCount = targetPl && Array.isArray(targetPl.guards) ? targetPl.guards.length : 0;
+    }
+
+    let statusBorderColor = "#ea580c";
+    let statusBg = "#fff7ed";
+    let statusFg = "#7c2d12";
+    let outcomeText = "";
+    let confirmBtnText = "⚔️ Confirm Pre-Roll Strike & Roll Main Combat";
+
+    if (isPvp) {
+      const killsDriver = netW > targetGuardCount;
+      if (netW <= 0) {
+        statusBorderColor = "#ca8a04";
+        statusBg = "#fefce8";
+        statusFg = "#713f12";
+        outcomeText = `🛡️ ${strikeLabel} Pre-Roll Strike (${strikerName} → ${targetName}): ${rawW} Raw Wound(s), ${ignW} Blocked by ${armorLabelStr} → 0 Unblocked Wounds. Main PvP combat rolls next.`;
+        confirmBtnText = "🛡️ Confirm Strike Blocked & Continue";
+      } else if (killsDriver) {
+        statusBorderColor = "#dc2626";
+        statusBg = "#fef2f2";
+        statusFg = "#7f1d1d";
+        outcomeText = `💀 ${strikeLabel} Pre-Roll Strike (${strikerName} → ${targetName}): ${rawW} Raw Wound(s), ${ignW} Blocked by ${armorLabelStr} → ${netW} Unblocked Wound(s) (exceeds ${targetGuardCount} Guard(s))! ${targetName}'s Driver must roll on the Driver Fate Chart!`;
+        confirmBtnText = `💀 Confirm ${netW} Pre-Roll Wnd(s) & ${targetName}'s Fate Roll`;
+      } else {
+        statusBorderColor = "#ea580c";
+        statusBg = "#fff7ed";
+        statusFg = "#7c2d12";
+        outcomeText = `🛡️ ${strikeLabel} Pre-Roll Strike (${strikerName} → ${targetName}): ${rawW} Raw Wound(s), ${ignW} Blocked by ${armorLabelStr} → ${netW} Absorbed by ${targetName}'s Hired Guard(s). Main PvP combat rolls next.`;
+        confirmBtnText = `🛡️ Confirm ${netW} Guard Casualty & Continue`;
+      }
+      if (
+        isOtherPlayerEncounter &&
+        (!viewer || (viewer.index !== pend.pvpTargetIndex && viewer.index !== pend.pvpStrikerIndex))
+      ) {
+        confirmBtnText = "✅ Pass Intervention / Confirm Pre-Roll Strike";
+      }
+    } else {
+      const defeatsNpc = Boolean(pend.preStrikeDefeatsNpc);
+      const capVal = Number(pend.preStrikeCapacity) || 0;
+      const capMode = pend.preStrikeCapacityMode === "x" ? "X" : "(R)";
+      if (defeatsNpc) {
+        statusBorderColor = "#16a34a";
+        statusBg = "#f0fdf4";
+        statusFg = "#14532d";
+        outcomeText = `🏆 ${strikeLabel} Pre-Roll Strike Defeats ${targetName}! Rolled ${rawW} Wound(s) (${ignW} Blocked) = ${netW} Unblocked Wound(s), exceeding ${targetName}'s capacity (${capVal} ${capMode}) — instant Victory without rolling main combat!`;
+        confirmBtnText = `🏆 Confirm Pre-Roll Victory vs. ${targetName}!`;
+      } else if (netW > 0) {
+        const reducedBy = Math.min(capVal, netW);
+        outcomeText = `🏹 ${strikeLabel} Pre-Roll Strike (${netW} Unblocked Wound(s)): ${targetName} suffers -${reducedBy} ${capMode} (${capVal} → ${Math.max(0, capVal - reducedBy)} ${capMode}) before the main combat dice roll!`;
+        confirmBtnText = `⚔️ Confirm -${reducedBy} Enemy ${capMode} & Roll Main Combat`;
+      } else {
+        statusBorderColor = "#ca8a04";
+        statusBg = "#fefce8";
+        statusFg = "#713f12";
+        outcomeText = `🏹 ${strikeLabel} Pre-Roll Strike inflicted 0 Wounds on ${targetName}. Main combat rolls at full strength next.`;
+        confirmBtnText = "⚔️ Confirm 0 Wounds & Roll Main Combat";
+      }
+      if (isOtherPlayerEncounter) {
+        confirmBtnText = "✅ Pass Intervention / Confirm Pre-Roll Strike";
+      }
+    }
+
+    const strikerDiceLabel = isPvp ? `${strikerName}'s` : merchantLabel;
+    return el(
+      "div",
+      { id: "pending-encounter-panel", className: "panel", style: { borderColor: statusBorderColor } },
+      el(
+        "h3",
+        { className: "panel-title" },
+        el("span", {
+          text: `🏹 Pre-Roll Strike (${strikeLabel}): ${strikerName} → ${targetName} (${netW} Unblocked Wnd${
+            netW === 1 ? "" : "s"
+          })${isOtherPlayerEncounter ? " [Intervention / Pre-Strike Window]" : ""}`,
+        })
+      ),
+      el(
+        "div",
+        {
+          style: {
+            padding: "0.65rem 0.85rem",
+            background: statusBg,
+            border: `1.5px solid ${statusBorderColor}`,
+            borderRadius: "4px",
+            fontSize: "0.85rem",
+            color: statusFg,
+            marginBottom: "0.85rem",
+            boxShadow: "var(--bevel-sunken)",
+          },
+        },
+        el("div", { style: { fontWeight: "700", marginBottom: "0.25rem" }, text: outcomeText }),
+        pend.encounterSource
+          ? el("div", {
+              style: { fontSize: "0.78rem", color: "#92400e", marginBottom: "0.25rem", fontWeight: "700" },
+              text: `📍 Triggered By: ${pend.encounterSource}`,
+            })
+          : null,
+        el("div", {
+          style: { fontSize: "0.78rem", color: "var(--text-main)" },
+          text: `Pre-Strike Rolls: ${diceSummary || "None"}  |  Target Armor: ${armorLabelStr}`,
+        })
+      ),
+      renderInlineClickableDiceRow(pend, viewer, strikerDiceLabel),
+      buildArmedDieBannerNode() ? el("div", { style: { marginBottom: "0.7rem" } }, buildArmedDieBannerNode()) : null,
+      postCards.length > 0
+        ? el(
+            "div",
+            { style: { marginBottom: "0.9rem" } },
+            el("div", {
+              style: { fontSize: "0.84rem", fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.45rem" },
+              text: "🃏 Only 'Twist Of Fate' May Be Played During Pre-Roll Strikes:",
+            }),
+            el(
+              "div",
+              { className: "phys-cards-grid compact-sidebar-grid" },
+              ...postCards.map((rc) => {
+                const isArmed = Boolean(appState.armedDieAction && appState.armedDieAction.cardId === rc.id);
+                return renderPhysicalInfluenceCardNode(rc, {
+                  actionButton: el("button", {
+                    className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
+                    style: { width: "100%" },
+                    text: singleReroll
+                      ? "🎲 Twist Of Fate — Re-Roll Die"
+                      : isArmed
+                      ? "👆 Click Any Die Above!"
+                      : "🎲 Click a Die Above to Re-Roll",
+                    onClick: () => triggerTwistOfFateOrArm(gs, rc),
+                  }),
+                });
+              })
+            )
+          )
+        : null,
+      el(
+        "div",
+        { style: { display: "flex", gap: "0.65rem", alignItems: "center" } },
+        viewer
+          ? el("button", {
+              className: pend.preStrikeDefeatsNpc ? "btn btn-primary" : "btn btn-crimson",
+              text: confirmBtnText,
+              onClick: () => sendGameAction({ type: "resolve_encounter", decision: "finalize_pre_strike" }),
+            })
+          : el("span", {
+              style: { fontSize: "0.82rem", color: "var(--text-muted)", fontStyle: "italic" },
+              text: "👁️ Spectating pre-roll strike resolution",
+            })
+      )
+    );
+  }
+
   // Stage 2: Combat Post-Roll Influence Opportunity (Gladiator's Intervention, Mercenary Ambush, Flying Chamber Pot, Twist Of Fate)
   if (stage === "combat_post_roll") {
     const isPvp = Boolean(pend.isPvp);
@@ -10709,7 +10924,11 @@ function renderPendingEncounterPanelCore(gs, viewer) {
     const c = it.combat;
     if (!c) return;
     const parts = [];
-    if (c.dice) parts.push(`+${c.dice}(R)`);
+    if (c.preRollStrike && c.dice) {
+      parts.push(`Pre-Roll Strike ${c.dice}(R)`);
+    } else if (c.dice) {
+      parts.push(`+${c.dice}(R)`);
+    }
     if (c.negDice) parts.push(`-${c.negDice}(R)`);
     if (c.flat) parts.push(formatSignedFlat(c.flat) + " CP");
     if (c.ignoreWoundsFlat) parts.push(`Ignore ${c.ignoreWoundsFlat} Wound${c.ignoreWoundsFlat === 1 ? "" : "s"}`);
@@ -13899,19 +14118,10 @@ function renderCartNavigationWidget(gs, viewer) {
     const passable = !riverBlocked && (info.passable || shortcutActive);
     const canClickMove = Boolean(viewer && isMyDeliveryTurn && viewer.movesRemaining > 0 && passable);
     const destLabel = info.isExit ? "🚪 EXIT ROME" : `→ ${info.targetCell}`;
-    const dividedTiberActive = Boolean(bridgeName && (Number(info.bridgeTollCost) > 0 || hasActiveClimateOption(gs, "geta_3")));
-    const bridgeTollWaived = Boolean(
-      dividedTiberActive && (shortcutActive || (viewer && (Number(viewer.favor && viewer.favor.Geta) || 0) >= 1))
-    );
-    const bridgeTollNote = dividedTiberActive
-      ? bridgeTollWaived
-        ? " • 0d Bridge"
-        : " • 4d Toll"
-      : "";
     const subLabel = riverBlocked
       ? "🌊 Tiber River"
       : bridgeName
-      ? `🌉 ${bridgeName} • ${formatEdgeLabel(info.edge)}${bridgeTollNote}`
+      ? `🌉 ${bridgeName} • ${formatEdgeLabel(info.edge)}`
       : formatEdgeLabel(info.edge);
     return el(
       "button",
@@ -13920,7 +14130,7 @@ function renderCartNavigationWidget(gs, viewer) {
         className: `compass-btn ${passable ? "passable" : "blocked"}`,
         "data-compass-dir": dir,
         disabled: !canClickMove,
-        title: `Move ${dir} (${destLabel})${bridgeTollNote}`,
+        title: `Move ${dir} (${destLabel})`,
         onClick: () => sendGameAction({ type: "delivery_move", direction: dir }),
       },
       el("strong", { text: `${dir} (${destLabel})` }),
@@ -14688,6 +14898,7 @@ function renderPlayerSidebar(gs, viewer) {
                 (pend.playerIndex === viewer.index || pend.interveningPlayerIndex === viewer.index) &&
                 (cName === "Twist Of Fate"
                   ? [
+                      "combat_pre_strike_post_roll",
                       "combat_post_roll",
                       "driver_fate_post_roll",
                       "chart_post_roll",
@@ -14995,17 +15206,6 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
       !shortcutActive &&
       tollAmt <= 0 &&
       Boolean(adjInfo.edge && !["green", "red", "None"].includes(String(adjInfo.edge)));
-    const dividedTiberActive = Boolean(
-      bridgeName && (Number(adjInfo.bridgeTollCost) > 0 || hasActiveClimateOption(gs, "geta_3"))
-    );
-    const bridgeTollWaived = Boolean(
-      dividedTiberActive && (shortcutActive || (Number(viewer.favor && viewer.favor.Geta) || 0) >= 1)
-    );
-    const bridgeTollSuffix = dividedTiberActive
-      ? bridgeTollWaived
-        ? " • Divided Tiber Waived (+1 Emerald)"
-        : " + 4(d) Divided Tiber Toll"
-      : "";
     if (riverBlocked) {
       crossingNote = `🌊 Blocked by Tiber River (${viewer.position} → ${coord})`;
     } else if (!isPassable) {
@@ -15013,15 +15213,12 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
     } else if (shortcutActive && !adjInfo.passable) {
       crossingNote = `✨ Shortcut Bypasses Barricade (${dir})`;
     } else if (tollAmt > 0) {
-      const roadTollLabel = bridgeTollSuffix
-        ? `${tollAmt}(d) Road Toll${bridgeTollSuffix}`
-        : `Road Toll: ${tollAmt}(d)`;
-      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}${roadTollLabel} (${dir})`;
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Road Toll: ${tollAmt}(d) (${dir})`;
     } else if (isHazard) {
-      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${formatEdgeLabel(adjInfo.edge)}${bridgeTollSuffix} (${dir})`;
+      crossingNote = `${bridgeName ? `🌉 ${bridgeName} • ` : ""}Edge Hazard: ${formatEdgeLabel(adjInfo.edge)} (${dir})`;
     } else {
       crossingNote = bridgeName
-        ? `🌉 Cross ${bridgeName} — Open Street${bridgeTollSuffix} (${dir})`
+        ? `🌉 Cross ${bridgeName} — Open Street (${dir})`
         : `✓ Open Street (${viewer.position} → ${coord})`;
     }
   }
@@ -18478,7 +18675,7 @@ const RULEBOOK_SECTIONS = [
       {
         img: "./assets/icons/emerald.png",
         title: "Emerald — Geta",
-        desc: "Co-Emperor Publius Septimius Geta. +1 Emerald waives the 4(d) Bridge Toll when Divided Tiber is active.",
+        desc: "Co-Emperor Publius Septimius Geta. Entitled and miserly, yet popular across Rome—until Caracalla's December purge.",
       },
       {
         img: "./assets/icons/diamond.png",
@@ -18589,7 +18786,7 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Buy a Good or Hire a Guard: Pay the card's italic Red (BUY_SYM) Buy/Hire price for its current column (<<, <, =, >, >>). Goods occupy ■ blocks on your Cart Mat (max 6■); Guards occupy ▲ slots (max 2▲). A replacement card is drawn onto the leftmost column of its category.",
       "Source a Good (Discard 1 Influence): Discard 1 Influence card to select a Good from the deck onto the leftmost column of its track (sliding existing cards right).",
-      "Pass: Step out of the Market Round. Once a full round passes with no Market purchases, pass the First Player Token clockwise and enter Rome at dusk.",
+      "Pass: Step out of the Market Round. Once a full round passes with no Market purchases, enter Rome at dusk.",
     ],
     table: {
       headers: ["Cards Remaining on Track", "Scarcity Symbol", "Market Supply State", "Base Rome Selling Column ((SELL_SYM))"],
@@ -18644,7 +18841,7 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Step 1 (or Anytime During Your Turn) — Optional Trash: Once per Delivery turn (before or after Moving, even while on an occupied cell), discard 1 Influence card to bury the top card of ANY of the 6 decks (Patricii, Legiones, Nefarii, Goods & Guards, Missiones, or Influence—if targeting Influence, its existing top card cycles BEFORE your discarded card goes underneath), bury the top unrevealed stack tile of any neighborhood, OR trash an exposed face-up tile. Trashing an exposed tile on an occupied cell pushes it to the bottom and immediately flips the top unrevealed stack tile face-up; on an unoccupied cell, it leaves the space unrevealed until entered.",
       "Step 2 — Movement (1 Step (M)): Move along a passable outgoing edge to an adjacent neighborhood (revealing its top tile if face-down) or out an exterior perimeter edge to Exit Rome.",
-      "Step 3 — Edge Cost / Hazard: Pay any 2(d) road toll (plus +4(d) Bridge Toll if Divided Tiber is active and you hold < +1 Emerald) or resolve any Edge Encounter crossed.",
+      "Step 3 — Edge Cost / Hazard: Pay any 2(d) road toll or resolve any Edge Encounter crossed.",
       "Step 4 — Mission Cargo Pickup & Delivery: Upon arriving in a neighborhood—BEFORE any Center Tile Encounter triggers—you may load or deliver matching Mission Cargo!",
       "Step 5 — Center Tile Encounter: Resolve any Center Encounter on the tile (Patricii, Legiones, Nefarii, Angry Mob, Theater Troupe, or Soothsayer).",
       "Step 6 — One Transaction (1 Good/Hr (T), or Bulk Grain!): Sell AT MOST 1 Good card matching a buyer ('Buys:') on your current tile (or an active Sell Mission here) at its bold Green (SELL_SYM) price—EXCEPT for non-fenced GRAIN, where 1 hourly Transaction may sell ANY NUMBER (or all!) of your Grain cards together at the current Grain scarcity modifier! Alternatively, Purchase 1 Good at a Forum ('Sells:' at C3, D3, or D4) at its italic Red (BUY_SYM) price, OR Gamble once at a Stadium tile (up to 20(d) wager).",
@@ -18724,9 +18921,10 @@ const RULEBOOK_SECTIONS = [
     bullets: [
       "Friendly vs. Hostile Encounters: Determined by your uncapped net Favor with the NPC's Faction. Drawing on any 1×, 2×, or 3× Patricii, Legiones, or Nefarii icon ALWAYS draws 1 Encounter card; the icon count (1–3) sets X in X(R)+X Combat. If you refuse a Demand to Fight and lose Combat, the NPC enforces their original Demand AND your turn ends immediately!",
       "Combat Power (CP) & Cargo Gear: Both sides roll Rome Dice (R) plus Guards, Weapons, mandatory Exotic Animals (including Ostrich or negative-die beasts!), and Influence modifiers (plus +1 CP per positive Ruby & +2 CP to Legiones if Army Pay Hike is active). Note that crated Loricae body armor carries 0 CP in street ambushes (too slow to don mid-attack, compensated by lucrative trade margins). If Player CP ≥ Opponent CP against an NPC, you win!",
+      "Sagittae Pre-Roll 1(R) Strike (Destroyed if Used): Before committing to the main combat dice roll, any merchant carrying Sagittae may choose to fire it in a dedicated pre-roll strike phase (destroying the card). Each Sagittae fired rolls 1(R) Wounds directly at the target BEFORE main combat dice are rolled: Armor (Manicae, Galeae, Scuta, Decimus) blocks Wounds first. Against an NPC, each unblocked Wound permanently deducts 1 from the NPC's X count (for X-based formulas like X(R)+X) or 1(R) from printed (R) formulas, and if unblocked Wounds EXCEED that capacity, the NPC is defeated immediately without rolling main combat! Against a rival merchant (Casus Belli or Tie-Breaker Round 1), unblocked Wounds kill Guards first and trigger the target's Driver Fate Chart roll immediately if any Wound reaches their Driver. Only 'Twist Of Fate' may be played to re-roll dice during a Sagittae pre-strike window.",
       "Armor, Guards, & Driver Fate (Damage Deficit Note): If Opponent CP > Player CP, suffer Raw Wounds = (Opponent CP − Player CP). Note that wounds from combat are always determined by the signed damage deficit between the two sides—even when one or both CP totals are negative (for example, if your overall CP is -2 and your opponent's CP is -1, you suffer 1 Wound). Shields/Helmets reduce Wounds first; each remaining Wound kills 1 Guard. If an unblocked Wound reaches your Driver, roll 1(R) on the Driver Fate Chart: 0 = Dead (lose all Goods & your night ends); I = Left for dead (lose all Goods); II = Beaten & mugged (lose all Denarii); III = Begged for mercy (lose all Influence cards).",
       "1(R) Street Charts: Angry Mob (0: lose all Wine; I: lose all Grain; II: lose most expensive Good; III: safe), Theater Troupe (0: lose all positive Friendly Favor; I: lose all negative Hostile Favor; II: lose rest of turn & next turn; III: draw 1(R) Influence), Soothsayer (take mandatory Mission + seal 1(R) Influence cards).",
-      "Casus Belli — Encounter vs. Proactive PvP Combat: Inside your initial NPC Encounter pre-decision window, Casus Belli unlocks Combat against a non-threatening NPC (usable even on Turn 1 without consuming a Transaction). Outside encounters on Turn 2+ of your Night Delivery turn (strictly prohibited on Turn 1), you may play Casus Belli against an active rival merchant on your same neighborhood cell (A1–F6): this immediately exhausts your hourly Transaction (T) for the turn (blocked if you already transacted, gambled, or ended your turn). Both combatants choose consumable Weapons before rolling simultaneous Combat Dice (R) + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (+1 CP per positive Ruby) + pre/post-roll Influence cards (Gladiator's Intervention +1(R) CP, Flying Chamber Pot +1 CP). Ties inflict no Wounds or Spoils; if the Attacker loses by CP, their turn ends immediately. Any unblocked Wounds reaching the loser's Driver trigger a 1(R) Driver Fate Chart roll where the Winner claims Spoils (0/I: all Goods, discarding Mission Cargo; II: all Denarii; III: all Influence cards), and only a Roll of 0 ends the loser's night for the Season.",
+      "Casus Belli — Encounter vs. Proactive PvP Combat: Inside your initial NPC Encounter pre-decision window, Casus Belli unlocks Combat against a non-threatening NPC (usable even on Turn 1 without consuming a Transaction). Outside encounters on Turn 2+ of your Night Delivery turn (strictly prohibited on Turn 1), you may play Casus Belli against an active rival merchant on your same neighborhood cell (A1–F6): this immediately exhausts your hourly Transaction (T) for the turn (blocked if you already transacted, gambled, or ended your turn). Both combatants choose consumable Weapons before rolling (any chosen Sagittae fire first as pre-roll 1(R) strikes; other consumables such as Pila add to main combat), followed by simultaneous Combat Dice (R) + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (+1 CP per positive Ruby) + pre/post-roll Influence cards (Gladiator's Intervention +1(R) CP, Flying Chamber Pot +1 CP). Ties inflict no Wounds or Spoils; if the Attacker loses by CP, their turn ends immediately. Any unblocked Wounds reaching the loser's Driver trigger a 1(R) Driver Fate Chart roll where the Winner claims Spoils (0/I: all Goods, discarding Mission Cargo; II: all Denarii; III: all Influence cards), and only a Roll of 0 ends the loser's night for the Season.",
       "Stadium Gambling: On a tile with the Dice icon, wager 1(d) to 20(d) (capped at 20(d) per gamble action) and roll 1(R) to win Wager × Roll!",
     ],
   },
@@ -18739,6 +18937,7 @@ const RULEBOOK_SECTIONS = [
       "Buy Influence Cards: Cost scales by your current Influence hand size (including face-down Soothsayer cards): 0–1 cards = 2(d), 2–3 cards = 4(d), 4 cards = 6(d), 5+ cards = 8(d).",
       "Collegium Loans: Spring Loan grants +20(d) (repay 30(d) at end of Summer, or 45(d) at end of Fall / Winter Reckoning). Summer Loan grants +40(d) (repay 60(d) at end of Fall / Winter Reckoning).",
       "Guard Upkeep & Winter Tie-Breaker Policy: Pay each retained Guard's current Market hiring cost (or release them to the bottom of the Market deck). During Fall Clean-Up, you may also toggle whether your Driver is authorized to expend Combat Influence cards during Winter Reckoning PvP tie-breakers.",
+      "Next Season & First Player Token: When Clean-Up concludes, pass the First Player Token clockwise (once per season) and advance to Summer or Fall (or proceed to Winter Reckoning after Fall).",
     ],
   },
   {
@@ -18751,14 +18950,14 @@ const RULEBOOK_SECTIONS = [
       "Step 1 — Unfinished Missions Fail: Incomplete Missions fail first (applying Encounter Hostile Favor and -10(d) each if Bonded Couriers is active); remaining mission cargo is discarded.",
       "Step 2 — Cart Liquidation & Loans: Remaining non-mission Goods liquidate at Abundant (>>) (SELL_SYM) Sell Price, then unpaid Spring (-45(d)) and Summer (-60(d)) Loans are deducted.",
       "Step 3 — Imperial Proscription FIRST, Then Political Climate Settlement: If Imperial Proscription (Caracalla Option 1) is enacted, it resolves FIRST—eliminating the merchant with Least Caracalla Favor BEFORE any other Most/Least awards, penalties, steals, or percentages! Eliminated merchants cannot win or suffer subsequent Most/Least awards and rank below all survivors. Then resolve Flat Gem/Mission Modifiers & Least Penalties → Exile's Informants Steal → Domna +20% Wealth.",
-      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: pre-roll cards (Mercenary Ambush +2(R), Distraction -1(R) removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot +1 CP, Gladiator's Intervention +1(R) CP) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
+      "Step 4 — PvP Combat Tie-Breakers (Strictly One Winner/Loser!): Every 'Most' and 'Least' modifier—as well as Final Score ties—awards its bonus or penalty to STRICTLY ONE merchant, even if tied at 0! Tied merchants fight PvP Combat: any single-use Sagittae pre-roll strikes resolve simultaneously in Round 1 (before main dice; only Twist Of Fate may re-roll pre-strike dice), pre-roll cards (Mercenary Ambush +2(R), Distraction -1(R) removing 1 positive die) apply before rolling, all dice roll simultaneously, and reactive post-roll cards (Twist Of Fate, Flying Chamber Pot +1 CP, Gladiator's Intervention +1(R) CP) trigger when they can overturn a deficit. For 'Most' awards, the combat winner claims the prize; for 'Least' penalties/elimination, the combat winner escapes and the combat LOSER suffers the penalty!",
     ],
     table: {
       headers: ["Caracalla", "Geta", "Julia Domna", "Plautilla", "Aurelians", "Missions"],
       rows: [
         [
           "Imperial Proscription: End of game (FIRST): Least Caracalla favor is eliminated.",
-          "Brother's Grudge: End of game: Least Geta favor loses 25(d).",
+          "Brother's Grudge: End of game: Most Geta favor loses 25(d).",
           "Imperial Patronage: End of game: Most Domna favor gains +20% wealth.",
           "Exile's Informants: End of game: Most Plautilla favor steals 15(d) from the wealthiest rival.",
           "Old Senate Purse: End of game: Most Aurelian favor gains 25(d).",
@@ -18770,11 +18969,11 @@ const RULEBOOK_SECTIONS = [
           "Court Neutrality: End of game: Lose 15(d) per +Diamond and 15(d) per -Diamond.",
           "Smuggled Dowry: End of game: Gain 10(d) per completed Mission with +Sapphire or a Plautilla patron.",
           "Choose a Side: End of game: Gain 10(d) per +Amethyst and 10(d) per -Amethyst.",
-          "Guild Ledger: End of game: Gain 10(d) per completed Mission; lose 10(d) per failed or unfinished Mission.",
+          "Loyalty Rewards: End of game: Receive 10 × A × B denarii (A = gems of any one faction, B = missions completed for that faction).",
         ],
         [
           "Army Pay Hike: Legiones gain +2 CP. Each +Ruby gives your Cart +1 CP.",
-          "Divided Tiber: Crossing the Tiber orthogonally costs a 4(d) toll, waived with +1 Emerald or Shortcut.",
+          "Opulence: All players start with +1 Emerald.",
           "Empress Mediator: Exchange +Diamonds 1-for-1 into +Rubies or +Emeralds anytime.",
           "Smuggler's Fence: Fenced cargo sells +1 Scarcity step higher and does not fail the Mission.",
           "Senatorial Privilege: Spend +Amethysts when selling Goods (including Bulk Grain) for +1 Scarcity step per gem.",
@@ -20069,6 +20268,18 @@ function getDieClickMetaForOverlay(ev, _grp, gIdx, dIdx) {
 
   const stage = pend.stage || "pre_decision";
   const evKind = String((ev && ev.kind) || "");
+  if (stage === "combat_pre_strike_post_roll" && evKind === "combat_pre_strike" && gIdx === 0) {
+    const twistCard = (viewer.influence || []).find((c) => String(c.name || "") === "Twist Of Fate");
+    if (!twistCard) return null;
+    const isArmed = Boolean(appState.armedDieAction && appState.armedDieAction.cardId === twistCard.id);
+    return {
+      clickable: true,
+      isArmed,
+      pillLabel: isArmed ? "👆 Click to Re-Roll!" : "🔄 Click to Re-Roll",
+      title: "Click this pre-strike die to play 'Twist Of Fate' and re-roll it!",
+      onClick: () => handleDieSelectionClick(pend, viewer, "player", dIdx),
+    };
+  }
   if (stage === "combat_post_roll" && evKind === "combat") {
     const twistCard = (viewer.influence || []).find((c) => String(c.name || "") === "Twist Of Fate");
     if (!twistCard) return null;
@@ -20188,6 +20399,98 @@ function buildDiceOverlayInteractiveControls() {
   const singleReroll = getEligibleRerollTargets(pend).length === 1;
 
   const stage = pend.stage || "pre_decision";
+  if (stage === "combat_pre_strike_post_roll") {
+    const isPvp = Boolean(pend.isPvp);
+    const strikerName = pend.pvpStrikerName || encPlayer.name;
+    const targetName = pend.pvpTargetName || oppName;
+    const rawW = Number(pend.strikeWounds) || 0;
+    const ignW = Number(pend.ignoreWounds) || 0;
+    const netW = Number(pend.netWoundsAfterArmor) || 0;
+    const twistCards = (viewer.influence || []).filter((c) => String(c.name || "") === "Twist Of Fate");
+    const firstTwist = twistCards[0] || null;
+    const isArmed = Boolean(firstTwist && appState.armedDieAction && appState.armedDieAction.cardId === firstTwist.id);
+
+    let targetGuardCount = 0;
+    if (isPvp && pend.pvpTargetIndex != null) {
+      const targetPl =
+        (gs.players || []).find((p) => p.index === pend.pvpTargetIndex) || (gs.players || [])[pend.pvpTargetIndex];
+      targetGuardCount = targetPl && Array.isArray(targetPl.guards) ? targetPl.guards.length : 0;
+    }
+
+    let summaryBanner = "";
+    let confirmBtnText = "⚔️ Confirm Pre-Roll Strike & Roll Main Combat";
+    if (isPvp) {
+      const killsDriver = netW > targetGuardCount;
+      summaryBanner = `${strikerName} Pre-Roll Strike vs. ${targetName}: ${rawW} Wnd (${ignW} blocked) -> ${netW} Unblocked`;
+      if (isOtherPlayerEncounter && viewer.index !== pend.pvpTargetIndex && viewer.index !== pend.pvpStrikerIndex) {
+        confirmBtnText = "✅ Pass Intervention / Confirm Pre-Roll Strike";
+      } else if (netW <= 0) {
+        confirmBtnText = "🛡️ Confirm Strike Blocked & Roll Main Combat";
+      } else if (killsDriver) {
+        confirmBtnText = `💀 Confirm ${netW} Pre-Roll Wnd(s) -> ${targetName}'s Driver Fate!`;
+      } else {
+        confirmBtnText = `🛡️ Confirm ${netW} Guard Casualty & Roll Main Combat`;
+      }
+    } else {
+      const defeatsNpc = Boolean(pend.preStrikeDefeatsNpc);
+      const capMode = pend.preStrikeCapacityMode === "x" ? "X" : "(R)";
+      const capVal = Number(pend.preStrikeCapacity) || 0;
+      summaryBanner = `${strikerName} Pre-Roll Strike vs. ${targetName}: ${netW} Wnd vs. ${capVal} ${capMode}`;
+      if (isOtherPlayerEncounter) {
+        confirmBtnText = "✅ Pass Intervention / Confirm Pre-Roll Strike";
+      } else if (defeatsNpc) {
+        confirmBtnText = `🏆 Confirm Pre-Roll Strike Defeats ${targetName}!`;
+      } else {
+        confirmBtnText =
+          netW > 0
+            ? `⚔️ Confirm -${Math.min(capVal, netW)} Enemy ${capMode} & Roll Main Combat`
+            : "⚔️ Confirm Miss & Roll Main Combat";
+      }
+    }
+
+    const headerPrompt =
+      twistCards.length > 0
+        ? isOtherPlayerEncounter
+          ? `⚡ Pre-Roll Intervention Window (${summaryBanner}): Only 'Twist Of Fate' may re-roll pre-strike dice, or pass!`
+          : `🏹 Pre-Roll Strike Window (${summaryBanner}): Only 'Twist Of Fate' may re-roll these dice before combat continues!`
+        : `${summaryBanner} — Click below to continue.`;
+
+    return el(
+      "div",
+      { className: "dice-post-roll-box" },
+      isOtherPlayerEncounter && !isPvp ? renderOpponentPublicCartSummaryNode(gs, encPlayer, viewer, "dark") : null,
+      el("div", {
+        style: { fontSize: "0.8rem", fontWeight: "700", color: "#fde68a" },
+        text: headerPrompt,
+      }),
+      buildArmedDieBannerNode(),
+      firstTwist
+        ? el(
+            "div",
+            { style: { display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" } },
+            el("button", {
+              className: `btn btn-sm ${isArmed ? "btn-crimson" : "btn-primary"}`,
+              text: singleReroll
+                ? "🎲 Twist Of Fate — Re-Roll Die"
+                : isArmed
+                ? "👆 Click Any Die Above to Re-Roll (Twist Of Fate Armed)"
+                : "🎲 Twist Of Fate — Click a Die Above to Re-Roll",
+              onClick: () => triggerTwistOfFateOrArm(gs, firstTwist),
+            })
+          )
+        : null,
+      el("button", {
+        className: `btn btn-sm ${pend.preStrikeDefeatsNpc ? "btn-primary" : "btn-crimson"}`,
+        text: confirmBtnText,
+        onClick: async () => {
+          if (appState.diceRollQueue.length === 0) {
+            dismissDiceOverlay();
+          }
+          await sendGameAction({ type: "resolve_encounter", decision: "finalize_pre_strike" });
+        },
+      })
+    );
+  }
   if (stage === "combat_post_roll") {
     const pCP = Number(pend.playerCP) || 0;
     const oCP = Number(pend.oppCP) || 0;
@@ -20499,13 +20802,12 @@ function buildDiceOutcomeCard(ev, isRolling) {
             onClick: async () => {
               const pend = appState.gameState?.pendingEncounter;
               dismissDiceOverlay();
-              if (
-                queueRemaining === 0 &&
-                pend &&
-                pend.stage === "combat_post_roll" &&
-                pend.interveningPlayerIndex == null
-              ) {
-                await sendGameAction({ type: "resolve_encounter", decision: "finalize_combat" });
+              if (queueRemaining === 0 && pend && pend.interveningPlayerIndex == null) {
+                if (pend.stage === "combat_post_roll") {
+                  await sendGameAction({ type: "resolve_encounter", decision: "finalize_combat" });
+                } else if (pend.stage === "combat_pre_strike_post_roll") {
+                  await sendGameAction({ type: "resolve_encounter", decision: "finalize_pre_strike" });
+                }
               }
             },
           })

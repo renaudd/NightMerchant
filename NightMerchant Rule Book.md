@@ -112,7 +112,6 @@ Starting with the player with the First Player Token, and in this specific order
 4) **Pass**. When a Player has completed their turn, play passes to the next Player in clockwise order.
 
 5) **End Market Phase**. When a round passes with all players neglecting to buy a good from the Market, the Market Phase is over, and play proceeds to the Delivery Phase.  
-**When the Market Phase ends, pass the First Player Token clockwise.**  
 (If you are familiar with poker, this is the same; play proceeds once there has been a full round of play without buys.)  
 (Discarding an Influence Card to source a Good onto the Market does not count as a Buy.)  
  
@@ -142,7 +141,7 @@ Patricii Icon: passable, but triggers Patricii Deck Encounter.
 2(d): Must pay **2 denarii** (or listed amount) in order to pass through this edge.  
 *Complete Edge Encounters before moving to or revealing the next tile.*
 
-**Crossing the Tiber River**: Heavy freight carts cannot ford the Tiber River diagonally between the West Bank (`A1`, `A4`, `B4`, `A5`) and the East Bank — all **diagonal crossings** (`NW`, `NE`, `SE`, `SW`) across the Tiber are completely blocked (even with *Shortcut*). Carts may cross between the West Bank and East Bank **orthogonally** (`N`, `S`, `E`, or `W`) along any passable tile edge (using the face-up tile's edge indicator as the source of truth), including across Rome’s five intra-urban Stone Bridges and adjacent Tiber crossings (paying the **+4(d) *Divided Tiber*** toll when enacted unless holding `≥ +1` Emerald or using *Shortcut*):
+**Crossing the Tiber River**: Heavy freight carts cannot ford the Tiber River diagonally between the West Bank (`A1`, `A4`, `B4`, `A5`) and the East Bank — all **diagonal crossings** (`NW`, `NE`, `SE`, `SW`) across the Tiber are completely blocked (even with *Shortcut*). Carts may cross between the West Bank and East Bank **orthogonally** (`N`, `S`, `E`, or `W`) along any passable tile edge (using the face-up tile's edge indicator as the source of truth), including across Rome’s five intra-urban Stone Bridges and adjacent Tiber crossings:
 - **Pons Aelius**: **A1 ↔ B1** (*Mausoleum Hadriani* ↔ *Via Flaminia*)
 - **Pons Neronianus**: **A1 ↔ A2** (*Mausoleum Hadriani* ↔ *Circus Agonalis*)
 - **Pons Agrippae**: **A3 ↔ A4** (*Theatrum Pompeii* ↔ *Via Aurelia*)
@@ -167,7 +166,7 @@ For Sell Missions: Player may complete the mission during Step 7 (Transact) by s
 
 8) **Free Scout** – Once per Delivery turn—at any time **before or after Moving** and **before or after Transacting**—the Player may peek at the top unrevealed Tile of any cell stack or the top Card of any of the six Decks (**Patricii**, **Nefarii**, **Legiones**, **Goods**, **Missiones**, or **Influence**) and put the tile or card back on top. Scouting NEVER forces your turn to end; continue acting afterward or end your turn from the Scout preview.
 
-9) **Advance Turn** – Once all Players have acted, advance the Clock one hour and pass the First Player Token clockwise. Repeat until Sunrise (the end of Turn 10) or until all Carts have left Rome.  
+9) **Advance Turn** – Once all Players have acted, advance the Clock one hour. Repeat until Sunrise (the end of Turn 10) or until all Carts have left Rome.  
  
 
 CLEAN-UP PHASE  
@@ -194,7 +193,7 @@ Clean-Up Phase is used to prepare for the following season.
    
 5) **Pay Your Guards.** Players must pay any guards they wish to keep an amount equal to what their hiring cost would be if they were placed in the first exposed slot on the right of the market board (i.e. if there are three guards on the market, the Pay price is the Uncommon/`=` Hire price of the guard; if there are four guards on the market, the Pay price is the Common/`>` Hire price of the guard).
 
-6) **Next Season**. Pass the First Player Token clockwise and advance to the next season (or proceed to Winter Reckoning after Fall). *(In the digital edition, during Fall Clean-Up Players may also toggle whether their Driver is authorized to expend Combat Influence cards during Winter Reckoning PvP tie-breakers.)*  
+6) **Next Season**. Pass the First Player Token clockwise (once per season) and advance to the next season (or proceed to Winter Reckoning after Fall). *(In the digital edition, during Fall Clean-Up Players may also toggle whether their Driver is authorized to expend Combat Influence cards during Winter Reckoning PvP tie-breakers.)*  
  
 
 **ENCOUNTERS**  
@@ -273,15 +272,16 @@ A Player can have a **Maximum of five (5) active missions**. Whenever a Player t
 DEMANDS & COMBAT  
 COMBAT  
 1) Player takes (Hostile) Favor Consequences from the Encounter Card.  
-2) Generate Player’s CP:  
+2) **Pre-Roll Strikes (*Sagittae*, optional, destroyed if used)**: Before main combat dice roll, a Player carrying *Sagittae* may choose to commit it (destroying the card). Each *Sagittae* committed rolls `1®` Wounds directly at the opponent: Armor (*Manicae*, *Galeae*, *Scuta*, *Decimus*) blocks Wounds first. Against an NPC, each unblocked Wound permanently deducts `1` from the NPC’s `X` count (for `X`-based formulas like `X®+X`) or `1®` from printed `®` formulas, and if unblocked Wounds **exceed** that capacity, the NPC is **defeated immediately** without rolling main combat! Only *Twist Of Fate* may be played to re-roll dice during a pre-roll strike window.  
+3) Generate Player’s CP:  
 - Player’s Driver has `1®` CP  
 - `+` CP from Guards  
-- `+` CP from Weapons *(Note: crated **Loricae** body armor carries **0 CP** in sudden street ambushes—too slow to strap on mid-attack, offset by its lucrative sell-to-buy margin!)*  
+- `+` CP from Weapons *(Note: crated **Loricae** body armor carries **0 CP** in sudden street ambushes—too slow to strap on mid-attack, offset by its lucrative sell-to-buy margin! Non-pre-strike consumables such as **Pila** are committed before main combat and destroyed if used.)*  
 - `+` Mandatory Exotic Animals in Cart (must roll all Exotic Animals in combat, including *Ostrich* or any negative-die beasts!)  
 - `+` `+1 CP` per positive Caracalla Ruby if **Army Pay Hike** is active  
-3) Opponent rolls `(#)®` CP (unless card formula states otherwise; `+2 CP` to all `Legiones` NPCs if **Army Pay Hike** is active; *Distraction* deducts `1®` positive die from the target’s pool prior to rolling).  
-4) All ® on both sides are rolled simultaneously so post-roll Influence cards (*Twist Of Fate*, *Flying Chamber Pot*, *Gladiator’s Intervention*) may modify the dice.  
-5) If **Player’s CP ≥ Opponent’s CP**: **Player wins**, collects Combat Rewards (if any), and Player’s turn proceeds.  
+4) Opponent rolls `(#)®` CP (unless card formula states otherwise; `+2 CP` to all `Legiones` NPCs if **Army Pay Hike** is active; *Distraction* deducts `1®` positive die from the target’s pool prior to rolling).  
+5) All ® on both sides are rolled simultaneously so post-roll Influence cards (*Twist Of Fate*, *Flying Chamber Pot*, *Gladiator’s Intervention*) may modify the dice.  
+6) If **Player’s CP ≥ Opponent’s CP**: **Player wins**, collects Combat Rewards (if any), and Player’s turn proceeds.  
 Otherwise, **Opponent wins**:  
 a) Player suffers `1` Wound (W) for each point of CP difference (after shield/helmet wound-ignore rolls). Guards absorb wounds first (Player chooses which Guard dies if holding multiple; dead Guards return to the bottom of the Market deck), and the Driver must survive if possible.  
 b) Player’s turn ends.  
@@ -308,11 +308,11 @@ During Setup, Players draft active modifiers from the **6×3 Political Climate B
 | Factor | Option 1 *(End-Game)* | Option 2 *(End-Game)* | Option 3 *(Mid-Game Decree)* |
 | :--- | :--- | :--- | :--- |
 | **Caracalla (Ruby)** | **Imperial Proscription**: *(Resolves FIRST)* **Least** Caracalla favor is **ELIMINATED**! | **Praetorian Backlash**: **-10(d)** per positive Ruby; **+5(d)** per negative Ruby. | **Army Pay Hike**: All `Legiones` NPCs gain **+2 CP**; each positive Ruby grants your Cart **+1 CP** in ALL combat. |
-| **Geta (Emerald)** | **Brother’s Grudge**: **Least** Geta favor loses **-25(d)**. | **Jealous Brothers**: **+15(d)** per positive Emerald if `≤ 0` Rubies, OR **-10(d)** per positive Emerald if `≥ +1` Rubies; **-5(d)** per negative Emerald. | **Divided Tiber**: Crossing the Tiber orthogonally costs **+4(d)** toll, waived if you hold `≥ +1` Emerald (or play *Shortcut*). |
+| **Geta (Emerald)** | **Brother’s Grudge**: **Most** Geta favor loses **-25(d)**. | **Jealous Brothers**: **+15(d)** per positive Emerald if `≤ 0` Rubies, OR **-10(d)** per positive Emerald if `≥ +1` Rubies; **-5(d)** per negative Emerald. | **Opulence**: All Players start with **+1 Emerald** (`+1 Geta Favor`). |
 | **Domna (Diamond)** | **Imperial Patronage**: **Most** Domna favor gains **+20%** of final wealth. | **Court Neutrality**: **-15(d)** per positive Diamond AND **-15(d)** per negative Diamond. | **Empress Mediator**: Positive Diamonds may be exchanged **1-for-1** into Rubies (`+1 Caracalla`) or Emeralds (`+1 Geta`) at any time. |
 | **Plautilla (Sapphire)** | **Exile’s Informants**: **Most** Plautilla favor steals **15(d)** from the wealthiest rival. | **Smuggled Dowry**: **+10(d)** per completed mission showing a `+Sapphire` reward OR issued by a Plautilla-aligned NPC. | **Smuggler’s Fence**: Fencing Encounter Mission cargo sells **1 Scarcity step higher** and does **NOT** count as a Failed Mission (Hostile Favor still applies). |
 | **Aurelians (Amethyst)** | **Old Senate Purse**: **Most** Aurelian favor gains **+25(d)**. | **Choose a Side**: **+10(d)** per positive Amethyst AND **+10(d)** per negative Amethyst. | **Senatorial Privilege**: When selling a Good (or Bulk Grain), spend positive Amethysts (**1 gem = +1 Scarcity step** toward `<<`). |
-| **Missions** | **Master Purveyor**: **Most** completed missions gains **+30(d)**. | **Guild Ledger**: **+10(d)** per completed mission and **-10(d)** per failed/unfinished mission *(net negative allowed)*. | **Bonded Couriers**: Completed Missions pay **2× Denarii**, AND every failed or unfinished mission immediately fines **-10(d)**. |
+| **Missions** | **Master Purveyor**: **Most** completed missions gains **+30(d)**. | **Loyalty Rewards**: Receive **10 × A × B denarii** *(A = gems held of any one faction; B = missions completed for that faction)*. | **Bonded Couriers**: Completed Missions pay **2× Denarii**, AND every failed or unfinished mission immediately fines **-10(d)**. |
 
 After Fall Clean-Up concludes, December 211 arrives and each Player’s final score in **Denarii (d)** is settled in strict order:
 1) **Unfinished Missions**: Any incomplete Missions fail automatically (counting as Failed Missions, fining **-10(d)** each if *Bonded Couriers* is active, and applying **Hostile Favor Consequences** for incomplete Deck Encounter Missions).
@@ -320,7 +320,7 @@ After Fall Clean-Up concludes, December 211 arrives and each Player’s final sc
 3) **Unpaid Loans**: Deduct **45(d)** for an unpaid Spring Loan and **60(d)** for an unpaid Summer Loan.
 4) ** Political Climate Settlement**:
    - **Step 4a — Elimination FIRST** (*Imperial Proscription*, if active): The Player with **Least** Caracalla Favor is **eliminated immediately** before any other Political Climate awards or penalties resolve. Eliminated Players rank below all survivors, cannot win the game, and are **excluded from all subsequent Most/Least awards, penalties, steals, and percentage bonuses**!
-   - **Step 4b — Flat Gem/Mission Reckoning & Penalties**: Among surviving Players, resolve enacted flat per-gem/per-mission modifiers and Least penalties (*Praetorian Backlash*, *Brother’s Grudge*, *Jealous Brothers*, *Court Neutrality*, *Smuggled Dowry*, *Old Senate Purse*, *Choose a Side*, *Master Purveyor*, *Guild Ledger*).
+   - **Step 4b — Flat Gem/Mission Reckoning & Penalties**: Among surviving Players, resolve enacted flat per-gem/per-mission modifiers and Most/Least penalties (*Praetorian Backlash*, *Brother’s Grudge*, *Jealous Brothers*, *Court Neutrality*, *Smuggled Dowry*, *Old Senate Purse*, *Choose a Side*, *Master Purveyor*, *Loyalty Rewards*).
    - **Step 4c — Wealth Steal & Percentage Patronage**: Among surviving Players, resolve *Exile’s Informants* (`15(d)` stolen from the wealthiest surviving rival), followed by *Imperial Patronage* (`+20%` of positive wealth, rounded to nearest Denarius).
 
 The surviving Merchant with the highest final Denarii total wins!
@@ -338,7 +338,7 @@ COMBAT BETWEEN PLAYERS
 *"Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter."*  
 - **Two Uses:** During an active **NPC Encounter** decision window (`pre_decision`), *Casus Belli* lets you initiate Combat against a friendly/unthreatening NPC (this encounter use is allowed on Turn 1 and does **not** spend your turn Transaction). Outside encounters, during the **Night Delivery Phase** (`Turn 2+` only—prohibited on **Turn 1**), you may play *Casus Belli* on your turn while sharing a neighborhood tile (`A1`–`F6`) with at least one rival merchant who has not yet Exited Rome, suffered Night Over, or been eliminated.  
 - **Turn Cost & Timing:** Challenging a present rival **immediately exhausts your hourly Transaction `(T)`** for the turn (so you cannot challenge if you have already transacted, gambled, or ended your turn). If the Attacker loses combat (`Defender CP > Attacker CP`), the Attacker's current turn ends immediately; if the Attacker wins or ties, they may continue using any remaining Movement `(M)`.  
-- **Simultaneous Combat & Consumables:** Both the Attacker and Defender decide whether to commit `"destroyed if used"` consumable Weapons before rolling. Both sides roll `1®` for their Driver + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (`+1 CP` per positive Ruby) + Pre-Roll Influence (*Mercenary Ambush* `+2®`, *Distraction* `-1®`), followed by simultaneous Post-Roll Influence (*Twist Of Fate*, *Gladiator’s Intervention* `+1®` CP, *Flying Chamber Pot* `+1 CP`). Unlike NPC combat (where ties favor the player), a **PvP Tie results in no Wounds and no Spoils**.  
+- **Simultaneous Combat, Pre-Roll Strikes & Consumables:** Both the Attacker and Defender decide whether to commit `"destroyed if used"` consumable Weapons before rolling. Any committed **Sagittae** (`1®` Pre-Roll Strike) fire first (Striker's side before Defender's) prior to the main dice roll: Armor (`ignoreWounds`) blocks Wounds first, then remaining Wounds kill Guards first and trigger the target's Driver Fate Chart roll immediately if any Wound reaches their Driver; only *Twist Of Fate* may be played to re-roll pre-strike dice. All non-pre-strike consumables (such as *Pila* `+2®`) remain with main combat: both sides roll `1®` for their Driver + Guards + Weapons + mandatory Exotic Animals + Army Pay Hike (`+1 CP` per positive Ruby) + Pre-Roll Influence (*Mercenary Ambush* `+2®`, *Distraction* `-1®`), followed by simultaneous Post-Roll Influence (*Twist Of Fate*, *Gladiator’s Intervention* `+1®` CP, *Flying Chamber Pot* `+1 CP`). Unlike NPC combat (where ties favor the player), a **PvP Tie results in no Wounds and no Spoils**.  
 - **Armor, Guards & Driver Fate Spoils:** If one merchant wins by `Winner CP > Loser CP`, the Loser suffers `Raw Wounds = Winner CP − Loser CP`. Armor (`ignoreWounds`) blocks Wounds first, then each remaining Wound kills `1` Guard (`▲`, hired Guards return to the bottom of the Market deck). If at least `1` unblocked Wound reaches the Loser's Driver, the Loser rolls `1®` on the **Driver Fate Chart** (and the Combat Winner claims all lost Spoils):  
   - **`0` — Dead:** **Combat Winner claims all Goods** on the Loser's Cart (Mission Cargo is discarded; non-mission Goods that exceed Winner Cart capacity go through overflow/swap and any excess returns to the bottom of the Market deck). The **Loser's night ends (`nightEnded`)** for the rest of the Season (no Dawn curfew fine is charged to that Cart).  
   - **`I` — Left for dead:** **Combat Winner claims all Goods** (with the same transfer/Mission Cargo discard rules), while the **Loser remains active** in Rome for future turns in the Season.  
@@ -347,7 +347,7 @@ COMBAT BETWEEN PLAYERS
 
 **2) Winter Reckoning & Most/Least Tie-Breaker Combat:**  
 **All ties in the game**—including every **Most** or **Least** Political Climate award (even when Players are tied at `0`!), tied wealthiest rivals, and Final Score ties at Winter Reckoning—are broken by **Combat between the tied Players**, using Drivers (`1®`), Guards, Weapons, mandatory Exotic Animals, combat Influence cards, and `+1 CP` per positive Ruby if *Army Pay Hike* is active.  
-- **Pre-Roll vs. Post-Roll Combat Influence**: Pre-roll cards (*Mercenary Ambush* `+2®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* granting `+1 CP` after dice are rolled; *Gladiator’s Intervention* rolling `+1®` bonus CP after combat dice are rolled) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
+- **Pre-Roll vs. Post-Roll Combat Influence**: Any single-use *Sagittae* pre-roll strikes resolve simultaneously in **Round 1** before main dice (with *Twist Of Fate* only for pre-strike re-rolls); pre-roll cards (*Mercenary Ambush* `+2®`, *Distraction* deducting `1®` positive die from the opponent’s pool prior to rolling) apply before main dice are cast; all ® on both sides roll simultaneously; and reactive post-roll cards (*Twist Of Fate* rerolling a low positive die, a high enemy die, or a negative Exotic Animal die; *Flying Chamber Pot* granting `+1 CP` after dice are rolled; *Gladiator’s Intervention* rolling `+1®` bonus CP after combat dice are rolled) may be played when they can overturn a deficit or tie. *(In the digital edition, Players may opt out of auto-spending Combat Influence cards during Winter Reckoning tie-breakers during Fall Clean-Up.)*  
 - **Strictly One Recipient**: Every Most/Least bonus or penalty is awarded to **strictly one Player**. For **Most** awards, the Combat **winner** claims the bonus; for **Least** penalties or elimination, the Combat winner escapes and the Combat **loser** suffers the penalty!  
 - **No Draws**: If a Combat between Players ends in a draw, repeat Combat (any one-shot Influence cards or consumable Weapons used in a previous round remain exhausted) until one side wins by at least **1 CP**!
 

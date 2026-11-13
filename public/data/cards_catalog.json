@@ -1180,8 +1180,14 @@
         6,
         5
       ],
-      "combatText": "No combat bonus",
-      "combat": null
+      "combatText": "Pre-roll 1(R) CP strike (destroyed if used)",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0,
+        "consumable": true,
+        "preRollStrike": true
+      }
     },
     {
       "id": "wpn_2",
@@ -2086,9 +2092,15 @@
     {
       "id": "inf_2",
       "name": "Patron",
-      "effectText": "Receive 8(d)",
-      "effectCode": "gain_40d",
-      "favorGain": null,
+      "effectText": "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
+      "effectCode": "patron_caracalla_domna",
+      "favorGain": {
+        "cash": 8,
+        "extraFavor": [
+          "-Caracalla",
+          "-Domna"
+        ]
+      },
       "sellTable": null
     },
     {
@@ -2291,9 +2303,15 @@
     {
       "id": "inf_39",
       "name": "Patron",
-      "effectText": "Receive 8(d)",
-      "effectCode": "gain_40d",
-      "favorGain": null,
+      "effectText": "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
+      "effectCode": "patron_geta_aurelius",
+      "favorGain": {
+        "cash": 8,
+        "extraFavor": [
+          "-Geta",
+          "-Aurelius"
+        ]
+      },
       "sellTable": null
     },
     {

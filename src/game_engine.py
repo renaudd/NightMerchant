@@ -343,8 +343,8 @@ POLITICAL_CLIMATE_OPTIONS: List[Dict[str, Any]] = [
         "optionNumber": 1,
         "timing": "endgame",
         "title": "Brother's Grudge",
-        "shortText": "Least Geta favor loses 25d",
-        "description": "End of game: Least Geta favor loses 25d.",
+        "shortText": "Most Geta favor loses 25d",
+        "description": "End of game: Most Geta favor loses 25d.",
     },
     {
         "id": "geta_2",
@@ -364,9 +364,9 @@ POLITICAL_CLIMATE_OPTIONS: List[Dict[str, Any]] = [
         "gemName": "Emerald",
         "optionNumber": 3,
         "timing": "midgame",
-        "title": "Divided Tiber",
-        "shortText": "Orthogonal Tiber crossings cost 4d toll (0d with +1 Emerald)",
-        "description": "Crossing the Tiber orthogonally costs a 4d toll, waived with +1 Emerald or Shortcut.",
+        "title": "Opulence",
+        "shortText": "All players start with +1 Emerald",
+        "description": "All players start with +1 Emerald.",
     },
     # Domna (Diamond)
     {
@@ -489,9 +489,9 @@ POLITICAL_CLIMATE_OPTIONS: List[Dict[str, Any]] = [
         "gemName": "Contracts",
         "optionNumber": 2,
         "timing": "endgame",
-        "title": "Guild Ledger",
-        "shortText": "+10d per completed Mission; -10d per failed Mission",
-        "description": "End of game: Gain 10d per completed Mission; lose 10d per failed or unfinished Mission.",
+        "title": "Loyalty Rewards",
+        "shortText": "10 × A × B (A = faction gems, B = faction missions)",
+        "description": "End of game: Each player receives 10 × A × B denarii. A = gems of any one faction, B = missions completed for that faction.",
     },
     {
         "id": "missions_3",
@@ -782,6 +782,7 @@ def _default_player_stats() -> Dict[str, Any]:
         "missionsCompleted": 0,
         "missionsFailed": 0,
         "plautillaMissionsCompleted": 0,
+        "factionMissionsCompleted": {f: 0 for f in FACTIONS},
         "influencePlayed": 0,
         "encounters": {
             "patricii": 0,
@@ -809,6 +810,13 @@ def _ensure_player_stats(player: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 for ek, ev in v.items():
                     enc.setdefault(ek, ev)
+        elif k == "factionMissionsCompleted":
+            fmc = stats.get("factionMissionsCompleted")
+            if not isinstance(fmc, dict):
+                stats["factionMissionsCompleted"] = {f: 0 for f in FACTIONS}
+            else:
+                for fac in FACTIONS:
+                    fmc.setdefault(fac, 0)
         elif k == "visitedNeighborhoods":
             if not isinstance(stats.get(k), list):
                 stats[k] = []
@@ -862,6 +870,7 @@ def _format_player_stats_summary(player: Dict[str, Any]) -> Dict[str, Any]:
     visited_unique = list(dict.fromkeys(str(c) for c in stats.get("visitedNeighborhoods", []) if c))
     enc = stats.get("encounters") or {}
     favor_snap = {f: int((player.get("favor") or {}).get(f, 0)) for f in FACTIONS}
+    fmc = stats.get("factionMissionsCompleted") or {}
     return {
         "combats": int(stats.get("combats", 0) or 0),
         "itemsPurchased": int(stats.get("itemsPurchased", 0) or 0),
@@ -874,6 +883,7 @@ def _format_player_stats_summary(player: Dict[str, Any]) -> Dict[str, Any]:
         "missionsFailed": int(stats.get("missionsFailed", 0) or 0),
         "netMissions": int(stats.get("missionsCompleted", 0) or 0) - int(stats.get("missionsFailed", 0) or 0),
         "plautillaMissionsCompleted": int(stats.get("plautillaMissionsCompleted", 0) or 0),
+        "factionMissionsCompleted": {f: int(fmc.get(f, 0) or 0) for f in FACTIONS},
         "influencePlayed": int(stats.get("influencePlayed", 0) or 0),
         "endingFactionStandings": favor_snap,
         "encounters": {
@@ -949,8 +959,29 @@ def _record_mission_completion_event(
     context_detail: str = "",
 ) -> None:
     _inc_player_stat(player, "missionsCompleted", 1)
-    m_fav = mission.get("favor") or []
-    if "Plautilla" in m_fav or mission.get("patronFaction") == "Plautilla":
+    credited_factions = set()
+    neg_factions = set()
+    for raw_f in mission.get("favor") or []:
+        s = str(raw_f or "").strip()
+        if not s:
+            continue
+        if s.startswith("-"):
+            nf = s[1:]
+            if nf in FACTIONS:
+                neg_factions.add(nf)
+        else:
+            pf = s[1:] if s.startswith("+") else s
+            if pf in FACTIONS:
+                credited_factions.add(pf)
+    patron_fac = mission.get("patronFaction")
+    if patron_fac in FACTIONS and patron_fac not in neg_factions:
+        credited_factions.add(patron_fac)
+    if credited_factions:
+        stats = _ensure_player_stats(player)
+        fmc = stats["factionMissionsCompleted"]
+        for fac in credited_factions:
+            fmc[fac] = int(fmc.get(fac, 0) or 0) + 1
+    if "Plautilla" in credited_factions:
         _inc_player_stat(player, "plautillaMissionsCompleted", 1)
     if state.get("phase") == "finished":
         state["finalStandings"] = _build_final_standings(state)
@@ -1564,8 +1595,7 @@ def _resolve_bot_intervenor_step(state: Dict[str, Any]) -> bool:
             progressed = True
             continue
         if stage == "combat_consumable_pre_roll":
-            cands = pend.get("consumableItems") or []
-            chosen_ids = [str(it["id"]) for it in cands if not it.get("isMissionCargo")]
+            chosen_ids = _select_bot_combat_consumables(state, int_p, pend)
             resolve_pending_encounter_choice(
                 state,
                 enc_p,
@@ -1578,6 +1608,7 @@ def _resolve_bot_intervenor_step(state: Dict[str, Any]) -> bool:
             progressed = True
             continue
         stage_fin_map = {
+            "combat_pre_strike_post_roll": "finalize_pre_strike",
             "combat_post_roll": "finalize_combat",
             "driver_fate_post_roll": "finalize_driver_fate",
             "chart_post_roll": "finalize_chart_roll",
@@ -1954,7 +1985,7 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
         nm = str(c.get("name", ""))
         sc = 10
         if "Patron" in nm:
-            sc += 25
+            sc += 6
         if strat == "aggressive" and any(k in nm for k in ("Mercenary", "Gladiator", "Casus Belli", "Hired Thug", "Flying Chamber Pot")):
             sc += 20
         elif strat == "luxury" and any(k in nm for k in ("Puffery", "Wine Forger", "Shortcut", "Make Haste")):
@@ -2059,6 +2090,10 @@ def _apply_climate_option_pick(state: Dict[str, Any], player: Dict[str, Any], op
         f"🏛️ {player['name']} enacted {opt['factorLabel']} Option {opt['optionNumber']}: {opt['title']} ({timing_lbl} — {opt['shortText']}).",
         "phase",
     )
+    if option_id == "geta_3":
+        for p_all in state.get("players", []):
+            apply_favor_list(p_all, ["Geta"], reason="Opulence decree enacted (+1 Emerald)")
+        add_log(state, "🏛️ Opulence: All merchants immediately gain +1 Geta Favor (Emerald)!", "phase")
     if player.get("isBot"):
         add_npc_event(state, player, "climate", f"Enacted {opt['factorLabel']}: {opt['title']}")
 
@@ -3777,19 +3812,67 @@ def _normalize_encounter_card_data(card: Optional[Dict[str, Any]]) -> None:
             m_sub["modifier"] = normalize_scarcity_modifier(str(m_sub["modifier"]))
 
 
+def _normalize_market_or_influence_card(card: Optional[Dict[str, Any]]) -> None:
+    """Backfills updated Patron penalties and Sagittae preRollStrike metadata across live and saved games."""
+    if not isinstance(card, dict):
+        return
+    cid = str(card.get("id") or "")
+    efc = str(card.get("effectCode") or "")
+    if cid == "inf_2" or efc == "patron_caracalla_domna":
+        card["name"] = "Patron"
+        card["effectCode"] = "patron_caracalla_domna"
+        card["effectText"] = "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)"
+        card["favorGain"] = {"cash": 8, "extraFavor": ["-Caracalla", "-Domna"]}
+    elif cid == "inf_39" or efc == "patron_geta_aurelius":
+        card["name"] = "Patron"
+        card["effectCode"] = "patron_geta_aurelius"
+        card["effectText"] = "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)"
+        card["favorGain"] = {"cash": 8, "extraFavor": ["-Geta", "-Aurelius"]}
+    elif cid == "wpn_1" or (
+        (card.get("name") == "Sagittae" or card.get("item") == "Sagittae")
+        and (card.get("track") == "Weapons" or card.get("category") == "Weapons")
+    ):
+        card["combatText"] = "Pre-roll 1(R) CP strike (destroyed if used)"
+        card["combat"] = {
+            "dice": 1,
+            "negDice": 0,
+            "flat": 0,
+            "consumable": True,
+            "preRollStrike": True,
+        }
+
+
 def _normalize_state_encounter_cards(state: Dict[str, Any]) -> None:
     for dk_name in ("patricii", "legiones", "nefarii"):
         for c in state.get("decks", {}).get(dk_name, []):
             _normalize_encounter_card_data(c)
+    for dk_name in ("influence", "market"):
+        for c in state.get("decks", {}).get(dk_name, []):
+            _normalize_market_or_influence_card(c)
+    for tr_cards in (state.get("marketBoard") or {}).values():
+        if isinstance(tr_cards, list):
+            for c in tr_cards:
+                _normalize_market_or_influence_card(c)
+    _normalize_market_or_influence_card((state.get("hourEffects") or {}).get("lastInfluencePlayed"))
     pend = state.get("pendingEncounter")
-    if isinstance(pend, dict) and isinstance(pend.get("card"), dict):
-        _normalize_encounter_card_data(pend["card"])
+    if isinstance(pend, dict):
+        if isinstance(pend.get("card"), dict):
+            _normalize_encounter_card_data(pend["card"])
+        for c_itm in pend.get("consumableItems") or []:
+            _normalize_market_or_influence_card(c_itm)
     for p in state.get("players", []):
+        for key_list in ("influence", "cart", "guards", "pendingCartOverflow"):
+            for c in p.get(key_list) or []:
+                _normalize_market_or_influence_card(c)
         for m_obj in p.get("missions", []):
             _backfill_encounter_mission_metadata(m_obj)
+            for uc in m_obj.get("underInfluence") or []:
+                _normalize_market_or_influence_card(uc)
         for si in p.get("scoutedInfo", []):
             if isinstance(si, dict) and si.get("targetType") == "deck":
-                _normalize_encounter_card_data(si.get("revealedData"))
+                rev_d = si.get("revealedData")
+                _normalize_encounter_card_data(rev_d)
+                _normalize_market_or_influence_card(rev_d)
 
 
 def resolve_table_encounter(
@@ -4057,6 +4140,270 @@ def _format_combat_total_label(cp: int, dice_objs: List[Dict[str, Any]], flat_va
     if flat_val < 0:
         return f"{cp} CP (Dice {dice_sum} − {abs(flat_val)} Flat)"
     return f"{cp} CP"
+
+
+def _clear_one_combat_turn_effects(player: Dict[str, Any]) -> None:
+    """Resets single-combat temporary turn modifiers and encounter tempFavor."""
+    te = player.setdefault("turnEffects", {})
+    te["combatFlatBonus"] = 0
+    te["oppFlatBonus"] = 0
+    te["combatDiceBonus"] = 0
+    te["oppDiceMod"] = 0
+    te["casusBelli"] = False
+    player["tempFavor"] = 0
+
+
+def _find_human_intervenor_for_pre_strike(
+    state: Dict[str, Any],
+    enc_player: Dict[str, Any],
+    passed_indices: Optional[List[int]] = None,
+) -> Optional[Dict[str, Any]]:
+    return _find_human_intervenor_for_twist_of_fate(state, enc_player, passed_indices)
+
+
+def _compute_pre_strike_target_defenses(target: Dict[str, Any]) -> Dict[str, Any]:
+    """Rolls any block dice (Scuta) and collects flat wound-ignore defenses on a pre-strike target."""
+    flat_ign = 0
+    flat_sources: List[str] = []
+    flat_mods: List[Dict[str, Any]] = []
+    armor_dice: List[Dict[str, Any]] = []
+
+    for g in target.get("guards", []) or []:
+        g_ign = int((g.get("combat") or {}).get("ignoreWoundsFlat", 0))
+        if g_ign > 0:
+            flat_ign += g_ign
+            g_lbl = f"Guard: {g.get('name', 'Guard')}"
+            txt = f"Ignore {g_ign} Wound{'s' if g_ign != 1 else ''}"
+            flat_sources.append(f"{g_lbl} ({txt})")
+            flat_mods.append({"kind": "armor", "label": g_lbl, "value": g_ign, "text": txt})
+
+    for item in target.get("cart", []) or []:
+        cinfo = item.get("combat") or {}
+        item_name = str(item.get("item") or item.get("name", "Armor"))
+        i_ign_flat = int(cinfo.get("ignoreWoundsFlat", 0))
+        if i_ign_flat > 0:
+            flat_ign += i_ign_flat
+            txt = f"Ignore {i_ign_flat} Wound{'s' if i_ign_flat != 1 else ''}"
+            flat_sources.append(f"{item_name} ({txt})")
+            flat_mods.append({"kind": "armor", "label": item_name, "value": i_ign_flat, "text": txt})
+        for _ in range(int(cinfo.get("ignoreWoundsDice", 0))):
+            r_arm = roll_rome_die()
+            r_rom = roman_die_str(r_arm)
+            armor_dice.append({
+                "value": r_arm,
+                "roman": r_rom,
+                "sign": 0,
+                "itemName": item_name,
+                "label": f"{item_name} (Block ®)",
+                "color": target.get("color", "Red"),
+            })
+
+    return {
+        "flatIgnore": flat_ign,
+        "flatArmorSources": flat_sources,
+        "flatArmorMods": flat_mods,
+        "armorDiceObjs": armor_dice,
+    }
+
+
+def _compute_npc_pre_strike_capacity(formula: str, x_count: int) -> Tuple[int, str]:
+    """Returns (capacity, 'x' | 'dice') determining when an NPC is defeated immediately by pre-roll wounds."""
+    f = (formula or "X(R)").upper().replace(" ", "").replace("®", "(R)").replace("*", "")
+    if f.endswith("CP"):
+        f = f[:-2]
+    if "X" in f:
+        return max(1, int(x_count or 1)), "x"
+    dice_cnt = 0
+    for term in re.findall(r"[+-]?[^+-]+", f):
+        sign = -1 if term.startswith("-") else 1
+        body = term.lstrip("+-")
+        if "(R)" in body:
+            prefix = body.replace("(R)", "")
+            r_occ = max(1, body.count("(R)"))
+            d_val = r_occ if prefix == "" else (int(prefix) * r_occ if prefix.isdigit() else 1)
+            dice_cnt += sign * d_val
+    return max(1, dice_cnt), "dice"
+
+
+def _recompute_pre_strike_totals(c_state: Dict[str, Any]) -> None:
+    strike_wounds = sum(
+        int(d["value"]) for d in c_state.get("playerDiceObjs", []) if int(d.get("sign", 1)) == 1
+    )
+    arm_dice_sum = sum(
+        int(d["value"]) for d in c_state.get("playerDiceObjs", []) if int(d.get("sign", 1)) == 0
+    )
+    ign_w = int(c_state.get("ignoreWoundsFlat", 0)) + arm_dice_sum
+    dyn_sources = list(c_state.get("flatArmorSources", []))
+    for d in c_state.get("playerDiceObjs", []):
+        if int(d.get("sign", 1)) == 0:
+            base_lbl = d.get("itemName") or str(d.get("label", "Armor")).replace(" (Block ®)", "").replace(" (Re-rolled)", "")
+            val_d = int(d.get("value", 0))
+            dyn_sources.append(f"{base_lbl} (Ignore {val_d} Wound{'s' if val_d != 1 else ''}, rolled {d.get('roman', '0')})")
+    net_w = max(0, strike_wounds - ign_w)
+
+    c_state["strikeWounds"] = strike_wounds
+    c_state["ignoreWounds"] = ign_w
+    c_state["armorSources"] = dyn_sources
+    c_state["netWoundsAfterArmor"] = net_w
+
+    if not c_state.get("isPvp"):
+        cap = max(1, int(c_state.get("preStrikeCapacity", 1) or 1))
+        cap_mode = str(c_state.get("preStrikeCapacityMode", "x"))
+        x_count = max(1, int(c_state.get("xCount", 1) or 1))
+        c_state["preStrikeDefeatsNpc"] = net_w > cap
+        if cap_mode == "x":
+            c_state["effXCount"] = max(0, x_count - net_w)
+            c_state["preStrikeOppDiceDelta"] = 0
+        else:
+            c_state["effXCount"] = x_count
+            c_state["preStrikeOppDiceDelta"] = -min(cap, net_w)
+
+
+def _describe_pre_strike_outcome(state: Dict[str, Any], c_state: Dict[str, Any]) -> Tuple[str, str]:
+    _recompute_pre_strike_totals(c_state)
+    strike_w = int(c_state.get("strikeWounds", 0))
+    ign_w = int(c_state.get("ignoreWounds", 0))
+    net_w = int(c_state.get("netWoundsAfterArmor", 0))
+    s_names = ", ".join(c_state.get("strikeNames") or ["Sagittae"])
+
+    if c_state.get("isPvp"):
+        striker_name = str(c_state.get("pvpStrikerName") or "Striker")
+        target_idx = int(c_state.get("pvpTargetIndex", 0))
+        target_p = state["players"][target_idx]
+        t_name = str(c_state.get("pvpTargetName") or target_p["name"])
+        t_guards = target_p.get("guards", [])
+        if net_w <= 0:
+            if strike_w == 0:
+                return (
+                    f"PRE-ROLL STRIKE: 0 WOUNDS ({s_names})",
+                    f"{striker_name}'s {s_names} rolled 0 — {t_name} takes no Wounds; main combat rolls next.",
+                )
+            return (
+                f"PRE-ROLL STRIKE BLOCKED ({ign_w} BLOCKED)",
+                f"{striker_name}'s {s_names} inflicted {strike_w} Wound(s), all blocked by {t_name}'s Armor — main combat rolls next.",
+            )
+        if net_w <= len(t_guards):
+            killed = ", ".join(g.get("name", "Guard") for g in t_guards[:net_w])
+            return (
+                f"PRE-ROLL STRIKE: {net_w} GUARD(S) FELLED!",
+                f"{striker_name}'s {s_names} inflicted {strike_w} Wound(s) ({ign_w} blocked), killing Guard(s): {killed} before main roll!",
+            )
+        killed = ", ".join(g.get("name", "Guard") for g in t_guards)
+        g_part = f" after felling Guard(s): {killed}" if killed else ""
+        return (
+            "DRIVER WOUNDED BEFORE MAIN ROLL!",
+            f"{striker_name}'s {s_names} inflicted {strike_w} Wound(s) ({ign_w} blocked){g_part} — {t_name}'s Driver must roll on the Driver Fate Chart!",
+        )
+
+    card = c_state["card"]
+    cap = max(1, int(c_state.get("preStrikeCapacity", 1) or 1))
+    cap_mode = str(c_state.get("preStrikeCapacityMode", "x"))
+    x_count = max(1, int(c_state.get("xCount", 1) or 1))
+    eff_x = int(c_state.get("effXCount", x_count))
+    opp_delta = int(c_state.get("preStrikeOppDiceDelta", 0))
+    if c_state.get("preStrikeDefeatsNpc"):
+        return (
+            f"OPPONENT DEFEATED BEFORE ROLL! ({strike_w} > CAP {cap})",
+            f"{s_names} inflicted {strike_w} Wound(s), exceeding {card['name']}'s Capacity ({cap}) — defeated before main combat!",
+        )
+    if strike_w <= 0:
+        return (
+            f"PRE-ROLL STRIKE: 0 WOUNDS ({s_names})",
+            f"{s_names} rolled 0 — {card['name']} keeps full strength for the main combat roll.",
+        )
+    red_txt = f"X reduced {x_count} -> {eff_x}" if cap_mode == "x" else f"{card['name']} loses {abs(opp_delta)}(R) before main roll"
+    return (
+        f"PRE-ROLL STRIKE: {strike_w} WOUND(S) ({red_txt.upper()})",
+        f"{s_names} inflicted {strike_w} Wound(s) against {card['name']} (Capacity {cap}): {red_txt}.",
+    )
+
+
+def _build_pre_strike_dice_groups(c_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    _recompute_pre_strike_totals(c_state)
+    strike_w = int(c_state.get("strikeWounds", 0))
+    ign_w = int(c_state.get("ignoreWounds", 0))
+    net_w = int(c_state.get("netWoundsAfterArmor", 0))
+    s_names = ", ".join(c_state.get("strikeNames") or ["Sagittae"])
+
+    if c_state.get("isPvp"):
+        striker_name = str(c_state.get("pvpStrikerName") or "Striker")
+        striker_color = str(c_state.get("pvpStrikerColor") or "Red")
+        target_name = str(c_state.get("pvpTargetName") or "Defender")
+        target_color = str(c_state.get("pvpTargetColor") or "Blue")
+        atk_badge = f"{strike_w} Wound{'s' if strike_w != 1 else ''}"
+        if ign_w > 0:
+            atk_badge = f"{atk_badge} • 🛡️ {ign_w} Blocked"
+        return [
+            {
+                "rollerName": f"{striker_name} ({s_names})",
+                "rollerType": "player",
+                "colorName": striker_color,
+                "flatBonus": 0,
+                "totalLabel": atk_badge,
+                "dice": copy.deepcopy(c_state.get("playerDiceObjs", [])),
+            },
+            {
+                "rollerName": f"{target_name} Defense",
+                "rollerType": "player",
+                "colorName": target_color,
+                "flatBonus": 0,
+                "flatModifiers": copy.deepcopy(c_state.get("flatArmorMods", [])),
+                "totalLabel": f"🛡️ {ign_w} Ignored • {net_w} Net Wound{'s' if net_w != 1 else ''}",
+                "dice": [],
+            },
+        ]
+
+    card = c_state["card"]
+    x_count = max(1, int(c_state.get("xCount", 1) or 1))
+    cap = max(1, int(c_state.get("preStrikeCapacity", 1) or 1))
+    cap_mode = str(c_state.get("preStrikeCapacityMode", "x"))
+    eff_x = int(c_state.get("effXCount", x_count))
+    opp_delta = int(c_state.get("preStrikeOppDiceDelta", 0))
+    cap_txt = f"Capacity {cap} (X={x_count})" if cap_mode == "x" else f"Capacity {cap} ({cap} printed ®)"
+    def_total = (
+        "DEFEATED BEFORE ROLL!"
+        if c_state.get("preStrikeDefeatsNpc")
+        else (f"Effective X={eff_x} (was {x_count})" if cap_mode == "x" else f"{card.get('combatFormula', '')} ({opp_delta}®)")
+    )
+    return [
+        {
+            "rollerName": f"Pre-Strike ({s_names})",
+            "rollerType": "player",
+            "colorName": str(c_state.get("playerDiceObjs", [{}])[0].get("color") or "Red"),
+            "flatBonus": 0,
+            "totalLabel": f"{strike_w} Wound{'s' if strike_w != 1 else ''}",
+            "dice": copy.deepcopy(c_state.get("playerDiceObjs", [])),
+        },
+        {
+            "rollerName": f"{card['name']} (×{x_count} {card.get('deck', 'NPC').capitalize()})",
+            "rollerType": "npc",
+            "colorName": "Black",
+            "flatBonus": 0,
+            "flatModifiers": [{"kind": "capacity", "label": "Pre-Strike Capacity", "value": cap, "text": cap_txt}],
+            "totalLabel": def_total,
+            "dice": [],
+        },
+    ]
+
+
+def _emit_updated_pre_strike_dice_event(state: Dict[str, Any], pend: Dict[str, Any], note: str) -> None:
+    _recompute_pre_strike_totals(pend)
+    out_head, out_msg = _describe_pre_strike_outcome(state, pend)
+    is_pvp = bool(pend.get("isPvp"))
+    if is_pvp:
+        title = f"🏹 PvP PRE-STRIKE UPDATE: {pend.get('pvpStrikerName', 'Striker')} vs. {pend.get('pvpTargetName', 'Target')}"
+    else:
+        enc_p = state["players"][int(pend["playerIndex"])]
+        title = f"🏹 PRE-STRIKE UPDATE: {enc_p['name']} vs. {pend['card']['name']}"
+    add_dice_event(
+        state,
+        kind="combat_pre_strike",
+        title=title,
+        subtitle=note,
+        groups=_build_pre_strike_dice_groups(pend),
+        outcome_title=out_head,
+        outcome_message=f"{note} -> {out_msg}",
+    )
 
 
 def _recompute_combat_totals(c_state: Dict[str, Any]) -> None:
@@ -4627,6 +4974,44 @@ def _finalize_pvp_combat_after_post_roll(state: Dict[str, Any], attacker: Dict[s
         }
 
     # Unblocked wound inflicted on loser_p!
+    return _enter_pvp_driver_fate(
+        state,
+        attacker,
+        def_p,
+        winner_p=winner_p,
+        loser_p=loser_p,
+        card=card,
+        p_cp=p_cp,
+        o_cp=o_cp,
+        raw_wounds=raw_wounds,
+        ignore_wounds=ignore_wounds,
+        armor_sources=armor_sources,
+        equip_notes=equip_notes,
+        casualties=casualties,
+        net_wounds=net_wounds,
+        winner_role=winner_role,
+    )
+
+
+def _enter_pvp_driver_fate(
+    state: Dict[str, Any],
+    attacker: Dict[str, Any],
+    def_p: Dict[str, Any],
+    winner_p: Dict[str, Any],
+    loser_p: Dict[str, Any],
+    card: Dict[str, Any],
+    p_cp: int,
+    o_cp: int,
+    raw_wounds: int,
+    ignore_wounds: int,
+    armor_sources: List[str],
+    equip_notes: List[str],
+    casualties: List[str],
+    net_wounds: int,
+    winner_role: str,
+    summary_label: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Transitions PvP combat after an unblocked wound onto the Driver Fate (Death Chart) roll."""
     pvp_df_ctx: Dict[str, Any] = {
         "stage": "driver_fate_post_roll",
         "playerIndex": loser_p["index"],
@@ -4747,9 +5132,12 @@ def _finalize_pvp_combat_after_post_roll(state: Dict[str, Any], attacker: Dict[s
 
     # Human loser rolls Driver Fate themselves!
     guard_part = f" ({' | '.join(casualties)})" if casualties else ""
-    defeat_msg = (
+    lead_summary = summary_label or (
         f"PvP COMBAT: {winner_p['name']} ({max(p_cp, o_cp)} CP) defeated {loser_p['name']} ({min(p_cp, o_cp)} CP), "
-        f"inflicting {raw_wounds} Wound(s) ({ignore_wounds} blocked){guard_part}. "
+        f"inflicting {raw_wounds} Wound(s)"
+    )
+    defeat_msg = (
+        f"{lead_summary} ({ignore_wounds} blocked){guard_part}. "
         f"{loser_p['name']} must roll on the Driver Fate Chart ({winner_p['name']} claims any Goods/Cash/Influence lost)!"
     )
     add_log(state, defeat_msg, "combat")
@@ -4763,6 +5151,287 @@ def _finalize_pvp_combat_after_post_roll(state: Dict[str, Any], attacker: Dict[s
         "casualties": casualties,
         "driverOutcome": "pending_driver_fate",
     }
+
+
+def _grant_npc_combat_victory_rewards(
+    state: Dict[str, Any],
+    player: Dict[str, Any],
+    card: Dict[str, Any],
+    player_cp: int,
+    opp_cp: int,
+    h_notes: List[str],
+    deck_hint: Optional[str] = None,
+    victory_headline: Optional[str] = None,
+    outcome_badge: Optional[str] = None,
+    outcome_detail: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Grants combat victory rewards, kill missions, and Regime Change / Regicide completion for defeating an NPC."""
+    r_notes = grant_reward(state, player, card.get("combatRewardObj"), card.get("combatReward", ""))
+    cid_str = str(card.get("id") or "")
+    inferred_deck = "patricii" if cid_str.startswith("pat_") else "legiones" if cid_str.startswith("leg_") else "nefarii" if cid_str.startswith("nef_") else ""
+    deck_name = card.get("deck") or deck_hint or inferred_deck
+    cname = card.get("name", "")
+    is_emperor = any(emp in cname for emp in ("Bassianus", "Caracalla", "Geta"))
+    ctx_perf = outcome_detail or f"Defeated {card['name']} ({deck_name.capitalize()}) in Combat ({player_cp} CP vs. {opp_cp} CP)"
+    for m in list(player["missions"]):
+        if m.get("completed"):
+            continue
+        if m.get("kind") == "kill" and m.get("targetDeck", "").lower() == deck_name.lower():
+            m["completed"] = True
+            player["missions"].remove(m)
+            mr = grant_reward(state, player, m.get("reward"), m.get("rewardText", ""), is_mission_reward=True)
+            if m.get("patronRewardText"):
+                mr.extend(grant_reward(state, player, None, m.get("patronRewardText", ""), is_mission_reward=True))
+            if m.get("source") == "soothsayer" and m.get("underInfluence"):
+                under = m.pop("underInfluence", [])
+                player["influence"].extend(under)
+                mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
+            patron_lbl = f" for {m['patronName']}" if m.get("patronName") else ""
+            mf = apply_favor_list(
+                player,
+                m.get("favor", []),
+                reason=f"completing mission '{m['name']}'{patron_lbl} (defeated {card['name']})",
+            )
+            _record_mission_completion_event(state, player, m, mr, mf, context_detail=ctx_perf)
+            _recycle_mission_cards(state, m)
+            r_notes.extend([f"Completed '{m['name']}'!"] + mr + mf)
+    if is_emperor:
+        # Step A: Check ALL players for 'Regime Change' ('kill_emperor_cancel') FIRST so it cancels 'Regicide' regardless of seat order!
+        regime_change_holders: List[Tuple[Dict[str, Any], Dict[str, Any]]] = []
+        for p_chk in state["players"]:
+            for m_chk in list(p_chk["missions"]):
+                if not m_chk.get("completed") and m_chk.get("kind") == "kill_emperor_cancel":
+                    regime_change_holders.append((p_chk, m_chk))
+
+        if regime_change_holders:
+            for p_rc, m_rc in regime_change_holders:
+                m_rc["completed"] = True
+                if m_rc in p_rc["missions"]:
+                    p_rc["missions"].remove(m_rc)
+                mr = grant_reward(state, p_rc, m_rc.get("reward"), m_rc.get("rewardText", ""), is_mission_reward=True)
+                if m_rc.get("patronRewardText"):
+                    mr.extend(grant_reward(state, p_rc, None, m_rc.get("patronRewardText", ""), is_mission_reward=True))
+                if m_rc.get("source") == "soothsayer" and m_rc.get("underInfluence"):
+                    under = m_rc.pop("underInfluence", [])
+                    p_rc["influence"].extend(under)
+                    mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
+                patron_lbl = f" for {m_rc['patronName']}" if m_rc.get("patronName") else ""
+                mf = apply_favor_list(
+                    p_rc,
+                    m_rc.get("favor", []),
+                    reason=f"completing mission '{m_rc['name']}'{patron_lbl} (defeated {card['name']})",
+                )
+                _record_mission_completion_event(
+                    state,
+                    p_rc,
+                    m_rc,
+                    mr,
+                    mf,
+                    context_detail=f"{ctx_perf} — cancelled Regicide!",
+                )
+                _recycle_mission_cards(state, m_rc)
+                r_notes.extend([f"{p_rc['name']} triggered '{m_rc['name']}'!"] + mr + mf)
+
+            # Cancel all active 'Regicide' ('kill_emperor') missions across all players without granting win_game
+            for p_reg in state["players"]:
+                for m_reg in list(p_reg["missions"]):
+                    if m_reg.get("completed"):
+                        continue
+                    if m_reg.get("kind") == "kill_emperor" or (
+                        m_reg.get("kind") != "kill_emperor_cancel" and (m_reg.get("target") or "").lower() == "the emperor"
+                    ):
+                        p_reg["missions"].remove(m_reg)
+                        if m_reg.get("underInfluence"):
+                            under_reg = m_reg.pop("underInfluence", [])
+                            p_reg["influence"].extend(under_reg)
+                        _recycle_mission_cards(state, m_reg)
+                        cancel_note = f"{p_reg['name']}'s '{m_reg['name']}' reward was cancelled by 'Regime Change'!"
+                        add_log(state, cancel_note, "mission")
+                        r_notes.append(cancel_note)
+        else:
+            for p in state["players"]:
+                for m in list(p["missions"]):
+                    if m.get("completed"):
+                        continue
+                    if m.get("kind") == "kill_emperor" or (m.get("target") or "").lower() == "the emperor":
+                        m["completed"] = True
+                        p["missions"].remove(m)
+                        mr = grant_reward(state, p, m.get("reward"), m.get("rewardText", ""), is_mission_reward=True)
+                        if m.get("patronRewardText"):
+                            mr.extend(grant_reward(state, p, None, m.get("patronRewardText", ""), is_mission_reward=True))
+                        if m.get("source") == "soothsayer" and m.get("underInfluence"):
+                            under = m.pop("underInfluence", [])
+                            p["influence"].extend(under)
+                            mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
+                        patron_lbl = f" for {m['patronName']}" if m.get("patronName") else ""
+                        mf = apply_favor_list(
+                            p,
+                            m.get("favor", []),
+                            reason=f"completing mission '{m['name']}'{patron_lbl} (defeated {card['name']})",
+                        )
+                        _record_mission_completion_event(state, p, m, mr, mf, context_detail=ctx_perf)
+                        r_notes.extend([f"{p['name']} triggered '{m['name']}'!"] + mr + mf)
+
+    lead_msg = victory_headline or f"COMBAT VICTORY! {player['name']} ({player_cp} CP) defeated {card['name']} ({opp_cp} CP)!"
+    victory_msg = f"{lead_msg} {' '.join(h_notes + r_notes)}".strip()
+    add_log(state, victory_msg, "combat")
+    _update_or_add_bot_encounter_outcome(
+        state,
+        player,
+        card,
+        deck_name,
+        "victory",
+        outcome_badge or f"⚔️ Victory! ({player_cp} vs {opp_cp} CP)",
+        outcome_detail or f"Defeated {card['name']} ({player_cp} vs {opp_cp} CP)",
+    )
+    state["pendingEncounter"] = None
+    return {"winner": "player", "playerCP": player_cp, "oppCP": opp_cp}
+
+
+def _finalize_pre_strike_after_post_roll(
+    state: Dict[str, Any],
+    enc_player: Dict[str, Any],
+    pre_state: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Finalizes a combat_pre_strike_post_roll (Sagittae) after Twist Of Fate windows finish."""
+    _recompute_pre_strike_totals(pre_state)
+    card = pre_state["card"]
+    strike_w = int(pre_state.get("strikeWounds", 0))
+    ignore_w = int(pre_state.get("ignoreWounds", 0))
+    net_w = int(pre_state.get("netWoundsAfterArmor", 0))
+    strike_desc = ", ".join(pre_state.get("strikeNames") or ["Sagittae"])
+
+    if pre_state.get("isPvp"):
+        attacker = state["players"][int(pre_state["pvpAttackerIndex"])]
+        defender = state["players"][int(pre_state["pvpDefenderIndex"])]
+        striker = state["players"][int(pre_state.get("pvpStrikerIndex", attacker["index"]))]
+        target = state["players"][int(pre_state.get("pvpTargetIndex", defender["index"]))]
+        armor_sources = pre_state.get("armorSources") or []
+
+        casualties: List[str] = []
+        rem = net_w
+        while rem > 0 and target["guards"]:
+            dead_g = target["guards"].pop(0)
+            if not str(dead_g.get("id", "")).startswith("thug_"):
+                state["decks"]["market"].append(dead_g)
+            casualties.append(f"{target['name']}'s Guard {dead_g['name']} fell")
+            rem -= 1
+
+        guard_part = f" ({' | '.join(casualties)})" if casualties else ""
+        note_entry = f"{striker['name']} {strike_desc} ({strike_w} Wnd, {ignore_w} blocked{guard_part})"
+        add_log(
+            state,
+            f"🏹 PvP PRE-ROLL STRIKE: {striker['name']} ({strike_desc}) inflicted {strike_w} Wound(s) on {target['name']} ({ignore_w} blocked){guard_part}.",
+            "combat",
+        )
+
+        if rem > 0:
+            _clear_one_combat_turn_effects(attacker)
+            winner_role = "player" if striker["index"] == attacker["index"] else "opponent"
+            if target["index"] == attacker["index"]:
+                attacker["movesRemaining"] = 0
+                attacker["turnStep"] = "done"
+                state["pendingPostEncounterMove"] = None
+                state["pendingPostEncounterRefresh"] = None
+            return _enter_pvp_driver_fate(
+                state,
+                attacker,
+                defender,
+                winner_p=striker,
+                loser_p=target,
+                card=card,
+                p_cp=strike_w,
+                o_cp=ignore_w,
+                raw_wounds=strike_w,
+                ignore_wounds=ignore_w,
+                armor_sources=armor_sources,
+                equip_notes=[note_entry],
+                casualties=casualties,
+                net_wounds=rem,
+                winner_role=winner_role,
+                summary_label=f"PvP PRE-ROLL STRIKE: {striker['name']} inflicted {strike_w} Wound(s) on {target['name']}",
+            )
+
+        state["pendingEncounter"] = None
+        notes_accum = list(pre_state.get("preStrikeNotes") or []) + [note_entry]
+        atk_carried = list(pre_state.get("atkCarriedConsumableIds") or [])
+        def_carried = list(pre_state.get("defCarriedConsumableIds") or [])
+        if striker["index"] == attacker["index"] and pre_state.get("pvpQueuedDefenderPreStrike"):
+            def_pre_ids = list(pre_state.get("pvpDefPreItemIds") or [])
+            return _start_or_resume_pvp_combat(
+                state,
+                attacker,
+                defender,
+                source_label=pre_state.get("encounterSource"),
+                atk_consumable_ids=atk_carried,
+                def_consumable_ids=def_carried + def_pre_ids,
+                skip_start_side_effects=True,
+                atk_pre_done=True,
+                def_pre_done=False,
+                pre_strike_notes=notes_accum,
+            )
+        return _start_or_resume_pvp_combat(
+            state,
+            attacker,
+            defender,
+            source_label=pre_state.get("encounterSource"),
+            atk_consumable_ids=atk_carried,
+            def_consumable_ids=def_carried,
+            skip_start_side_effects=True,
+            atk_pre_done=True,
+            def_pre_done=True,
+            pre_strike_notes=notes_accum,
+        )
+
+    # NPC Pre-Roll Strike finalization
+    x_count = int(pre_state.get("xCount", 1))
+    cap = int(pre_state.get("preStrikeCapacity", 1) or 1)
+    cap_mode = str(pre_state.get("preStrikeCapacityMode", "x"))
+    eff_x = int(pre_state.get("effXCount", x_count))
+    opp_delta = int(pre_state.get("preStrikeOppDiceDelta", 0))
+    h_notes = list(pre_state.get("hostileNotes") or [])
+
+    if pre_state.get("preStrikeDefeatsNpc"):
+        _clear_one_combat_turn_effects(enc_player)
+        vic_headline = (
+            f"🏹 PRE-ROLL STRIKE VICTORY! {enc_player['name']}'s {strike_desc} inflicted {strike_w} Wound(s) "
+            f"on {card['name']} (Capacity {cap}) — Opponent defeated before main roll!"
+        )
+        return _grant_npc_combat_victory_rewards(
+            state,
+            enc_player,
+            card,
+            strike_w,
+            cap,
+            h_notes,
+            deck_hint=pre_state.get("deck"),
+            victory_headline=vic_headline,
+            outcome_badge=f"🏹 Pre-Strike Victory! ({strike_w} Wnd > Cap {cap})",
+            outcome_detail=f"Defeated {card['name']} with {strike_desc} Pre-Roll Strike ({strike_w} Wnds > {cap} Capacity)",
+        )
+
+    state["pendingEncounter"] = None
+    rom_str = roman_die_str(strike_w) if strike_w in (0, 1, 2, 3) else str(strike_w)
+    if strike_w > 0:
+        red_desc = f"X reduced {x_count} -> {eff_x}" if cap_mode == "x" else f"Opponent {opp_delta}®"
+    else:
+        red_desc = "0 Wounds"
+    note_str = f"{strike_desc} Pre-Strike (rolled {rom_str}: {red_desc})"
+    add_log(state, f"🏹 {enc_player['name']}'s {note_str} vs. {card['name']} — rolling main combat!", "combat")
+    return execute_combat(
+        state,
+        enc_player,
+        card,
+        x_count,
+        source_label=pre_state.get("encounterSource"),
+        use_consumable_ids=list(pre_state.get("carriedConsumableIds") or []),
+        was_refused_demand=bool(pre_state.get("wasRefusedDemand")),
+        skip_start_side_effects=True,
+        eff_x_count=eff_x,
+        pre_strike_opp_dice_delta=opp_delta,
+        hostile_notes=h_notes,
+        pre_strike_notes=[note_str],
+    )
 
 
 def _finalize_combat_after_post_roll(state: Dict[str, Any], player: Dict[str, Any], c_state: Dict[str, Any]) -> Dict[str, Any]:
@@ -4780,139 +5449,15 @@ def _finalize_combat_after_post_roll(state: Dict[str, Any], player: Dict[str, An
     was_refused_demand = bool(c_state.get("wasRefusedDemand"))
 
     if player_cp > opp_cp:
-        # Player wins!
-        r_notes = grant_reward(state, player, card.get("combatRewardObj"), card.get("combatReward", ""))
-        cid_str = str(card.get("id") or "")
-        inferred_deck = "patricii" if cid_str.startswith("pat_") else "legiones" if cid_str.startswith("leg_") else "nefarii" if cid_str.startswith("nef_") else ""
-        deck_name = card.get("deck") or c_state.get("deck") or inferred_deck
-        cname = card.get("name", "")
-        is_emperor = any(emp in cname for emp in ("Bassianus", "Caracalla", "Geta"))
-        for m in list(player["missions"]):
-            if m.get("completed"):
-                continue
-            if m.get("kind") == "kill" and m.get("targetDeck", "").lower() == deck_name.lower():
-                m["completed"] = True
-                player["missions"].remove(m)
-                mr = grant_reward(state, player, m.get("reward"), m.get("rewardText", ""), is_mission_reward=True)
-                if m.get("patronRewardText"):
-                    mr.extend(grant_reward(state, player, None, m.get("patronRewardText", ""), is_mission_reward=True))
-                if m.get("source") == "soothsayer" and m.get("underInfluence"):
-                    under = m.pop("underInfluence", [])
-                    player["influence"].extend(under)
-                    mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
-                patron_lbl = f" for {m['patronName']}" if m.get("patronName") else ""
-                mf = apply_favor_list(
-                    player,
-                    m.get("favor", []),
-                    reason=f"completing mission '{m['name']}'{patron_lbl} (defeated {card['name']})",
-                )
-                _record_mission_completion_event(
-                    state,
-                    player,
-                    m,
-                    mr,
-                    mf,
-                    context_detail=f"Defeated {card['name']} ({deck_name.capitalize()}) in Combat ({player_cp} CP vs. {opp_cp} CP)",
-                )
-                _recycle_mission_cards(state, m)
-                r_notes.extend([f"Completed '{m['name']}'!"] + mr + mf)
-        if is_emperor:
-            # Step A: Check ALL players for 'Regime Change' ('kill_emperor_cancel') FIRST so it cancels 'Regicide' regardless of seat order!
-            regime_change_holders: List[Tuple[Dict[str, Any], Dict[str, Any]]] = []
-            for p_chk in state["players"]:
-                for m_chk in list(p_chk["missions"]):
-                    if not m_chk.get("completed") and m_chk.get("kind") == "kill_emperor_cancel":
-                        regime_change_holders.append((p_chk, m_chk))
-
-            if regime_change_holders:
-                for p_rc, m_rc in regime_change_holders:
-                    m_rc["completed"] = True
-                    if m_rc in p_rc["missions"]:
-                        p_rc["missions"].remove(m_rc)
-                    mr = grant_reward(state, p_rc, m_rc.get("reward"), m_rc.get("rewardText", ""), is_mission_reward=True)
-                    if m_rc.get("patronRewardText"):
-                        mr.extend(grant_reward(state, p_rc, None, m_rc.get("patronRewardText", ""), is_mission_reward=True))
-                    if m_rc.get("source") == "soothsayer" and m_rc.get("underInfluence"):
-                        under = m_rc.pop("underInfluence", [])
-                        p_rc["influence"].extend(under)
-                        mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
-                    patron_lbl = f" for {m_rc['patronName']}" if m_rc.get("patronName") else ""
-                    mf = apply_favor_list(
-                        p_rc,
-                        m_rc.get("favor", []),
-                        reason=f"completing mission '{m_rc['name']}'{patron_lbl} (defeated {card['name']})",
-                    )
-                    _record_mission_completion_event(
-                        state,
-                        p_rc,
-                        m_rc,
-                        mr,
-                        mf,
-                        context_detail=f"Defeated {card['name']} in Combat ({player_cp} CP vs. {opp_cp} CP) — cancelled Regicide!",
-                    )
-                    _recycle_mission_cards(state, m_rc)
-                    r_notes.extend([f"{p_rc['name']} triggered '{m_rc['name']}'!"] + mr + mf)
-
-                # Cancel all active 'Regicide' ('kill_emperor') missions across all players without granting win_game
-                for p_reg in state["players"]:
-                    for m_reg in list(p_reg["missions"]):
-                        if m_reg.get("completed"):
-                            continue
-                        if m_reg.get("kind") == "kill_emperor" or (
-                            m_reg.get("kind") != "kill_emperor_cancel" and (m_reg.get("target") or "").lower() == "the emperor"
-                        ):
-                            p_reg["missions"].remove(m_reg)
-                            if m_reg.get("underInfluence"):
-                                under_reg = m_reg.pop("underInfluence", [])
-                                p_reg["influence"].extend(under_reg)
-                            _recycle_mission_cards(state, m_reg)
-                            cancel_note = f"{p_reg['name']}'s '{m_reg['name']}' reward was cancelled by 'Regime Change'!"
-                            add_log(state, cancel_note, "mission")
-                            r_notes.append(cancel_note)
-            else:
-                for p in state["players"]:
-                    for m in list(p["missions"]):
-                        if m.get("completed"):
-                            continue
-                        if m.get("kind") == "kill_emperor" or (m.get("target") or "").lower() == "the emperor":
-                            m["completed"] = True
-                            p["missions"].remove(m)
-                            mr = grant_reward(state, p, m.get("reward"), m.get("rewardText", ""), is_mission_reward=True)
-                            if m.get("patronRewardText"):
-                                mr.extend(grant_reward(state, p, None, m.get("patronRewardText", ""), is_mission_reward=True))
-                            if m.get("source") == "soothsayer" and m.get("underInfluence"):
-                                under = m.pop("underInfluence", [])
-                                p["influence"].extend(under)
-                                mr.append(f"+{len(under)} Soothsayer Influence Card(s)")
-                            patron_lbl = f" for {m['patronName']}" if m.get("patronName") else ""
-                            mf = apply_favor_list(
-                                p,
-                                m.get("favor", []),
-                                reason=f"completing mission '{m['name']}'{patron_lbl} (defeated {card['name']})",
-                            )
-                            _record_mission_completion_event(
-                                state,
-                                p,
-                                m,
-                                mr,
-                                mf,
-                                context_detail=f"Defeated {card['name']} in Combat ({player_cp} CP vs. {opp_cp} CP)",
-                            )
-                            r_notes.extend([f"{p['name']} triggered '{m['name']}'!"] + mr + mf)
-
-        victory_msg = f"COMBAT VICTORY! {player['name']} ({player_cp} CP) defeated {card['name']} ({opp_cp} CP)! {' '.join(h_notes + r_notes)}"
-        add_log(state, victory_msg, "combat")
-        _update_or_add_bot_encounter_outcome(
+        return _grant_npc_combat_victory_rewards(
             state,
             player,
             card,
-            deck_name,
-            "victory",
-            f"⚔️ Victory! ({player_cp} vs {opp_cp} CP)",
-            f"Defeated {card['name']} ({player_cp} vs {opp_cp} CP)",
+            player_cp,
+            opp_cp,
+            h_notes,
+            deck_hint=c_state.get("deck"),
         )
-        state["pendingEncounter"] = None
-        return {"winner": "player", "playerCP": player_cp, "oppCP": opp_cp}
 
     if player_cp == opp_cp:
         # Combat Tie! Player survives unharmed (no roll on Defeat Chart), but receives no victory bonus.
@@ -5419,6 +5964,240 @@ def _run_bot_post_combat_interventions(
     return False
 
 
+def _select_bot_combat_consumables(
+    state: Dict[str, Any],
+    player: Dict[str, Any],
+    pend: Dict[str, Any],
+) -> List[str]:
+    """Chooses which consumable ('destroyed if used') weapons a bot commits before rolling."""
+    cands = [it for it in (pend.get("consumableItems") or []) if not it.get("isMissionCargo")]
+    if not cands:
+        return []
+    if pend.get("isPvp"):
+        opp_idx = (
+            int(pend["pvpAttackerIndex"])
+            if pend.get("consumableRole") == "defender"
+            else int(pend["pvpDefenderIndex"])
+        )
+        opp_p = state["players"][opp_idx]
+        return _pvp_select_bot_consumables(player, opp_p, cands_override=cands)
+
+    tier = _bot_difficulty_tier(player)
+    x_count = max(1, int(pend.get("xCount", 1) or 1))
+    card = pend.get("card") or {}
+    formula = str(card.get("combatFormula") or "X(R)").upper()
+    has_big_foe = x_count >= 2 or any(tok in formula for tok in ("2(R)", "3(R)", "4(R)", "2X", "+2", "+X"))
+    if tier >= 2:
+        return [str(c["id"]) for c in cands]
+    if tier == 1:
+        if has_big_foe or not player.get("guards") or len(player.get("cart", [])) > len(cands):
+            return [str(c["id"]) for c in cands]
+        return [str(c["id"]) for c in cands if (c.get("combat") or {}).get("preRollStrike")]
+    # Doric bots preserve consumables unless facing >= 2 enemies or strong NPCs unguarded
+    if has_big_foe and not player.get("guards"):
+        return [str(c["id"]) for c in cands if (c.get("combat") or {}).get("preRollStrike")]
+    return []
+
+
+def _run_bot_pre_strike_interventions(
+    state: Dict[str, Any],
+    enc_player: Dict[str, Any],
+    pre_state: Dict[str, Any],
+) -> bool:
+    """Allows bots to play ONLY 'Twist Of Fate' during a combat_pre_strike_post_roll window."""
+    if int(pre_state.get("botInterventions", 0)) >= 2:
+        return False
+    _recompute_pre_strike_totals(pre_state)
+    is_pvp = bool(pre_state.get("isPvp"))
+    players = state.get("players", [])
+    striker = players[int(pre_state["pvpStrikerIndex"])] if is_pvp and pre_state.get("pvpStrikerIndex") is not None else enc_player
+    target_p = players[int(pre_state["pvpTargetIndex"])] if is_pvp and pre_state.get("pvpTargetIndex") is not None else None
+
+    def _apply_bot_tof(bot: Dict[str, Any], tof_card: Dict[str, Any], die_obj: Dict[str, Any], note_tpl: str) -> bool:
+        bot["influence"].remove(tof_card)
+        state["decks"]["influence"].append(tof_card)
+        state["hourEffects"]["lastInfluencePlayed"] = tof_card
+        _inc_player_stat(bot, "influencePlayed", 1)
+        old_rom = die_obj.get("roman", "0")
+        new_r = roll_rome_die()
+        new_rom = roman_die_str(new_r)
+        die_obj["value"] = new_r
+        die_obj["roman"] = new_rom
+        if "(Re-rolled)" not in str(die_obj.get("label", "")):
+            die_obj["label"] = f"{die_obj.get('label', 'Die')} (Re-rolled)"
+        pre_state["botInterventions"] = int(pre_state.get("botInterventions", 0)) + 1
+        pre_state["passedIntervenors"] = []
+        note = note_tpl.format(old_rom=old_rom, new_rom=new_rom, label=die_obj.get("label", "die"))
+        add_log(state, note, "combat")
+        _emit_updated_pre_strike_dice_event(state, pre_state, note)
+        return True
+
+    strike_dice = [d for d in pre_state.get("playerDiceObjs", []) if int(d.get("sign", 1)) == 1]
+    block_dice = [d for d in pre_state.get("playerDiceObjs", []) if int(d.get("sign", 1)) == 0]
+
+    # 1. Striker bot self-help if pre-strike fell short (rolled 0 or target blocked with high Scuta)
+    if striker.get("isBot") and _bot_difficulty_tier(striker) >= 1:
+        tof_self = next((c for c in striker.get("influence", []) if "Twist Of Fate" in str(c.get("name", ""))), None)
+        if tof_self:
+            need_more = (
+                pre_state.get("netWoundsAfterArmor", 0) <= len(target_p.get("guards", []))
+                if is_pvp and target_p is not None
+                else not bool(pre_state.get("preStrikeDefeatsNpc"))
+            )
+            if need_more:
+                zero_s = next((d for d in strike_dice if int(d.get("value", 0)) == 0), None)
+                high_b = next((d for d in block_dice if int(d.get("value", 0)) >= 3), None) if _bot_difficulty_tier(striker) >= 2 else None
+                tgt_d = zero_s if zero_s is not None else high_b
+                if tgt_d is not None:
+                    return _apply_bot_tof(
+                        striker,
+                        tof_self,
+                        tgt_d,
+                        f"{striker['name']} played 'Twist Of Fate' to re-roll {{label}} ({{old_rom}} -> {{new_rom}})!",
+                    )
+
+    # 2. PvP target bot self-defense if suffering unblocked or guard-killing pre-strike wounds
+    if is_pvp and target_p is not None and target_p.get("isBot") and _bot_difficulty_tier(target_p) >= 1:
+        t_tier = _bot_difficulty_tier(target_p)
+        net_w = int(pre_state.get("netWoundsAfterArmor", 0))
+        threatened = net_w > len(target_p.get("guards", [])) or (t_tier >= 2 and net_w > 0)
+        if threatened:
+            tof_tgt = next((c for c in target_p.get("influence", []) if "Twist Of Fate" in str(c.get("name", ""))), None)
+            if tof_tgt:
+                min_s = 2 if t_tier >= 2 else 3
+                high_s = next((d for d in sorted(strike_dice, key=lambda x: int(x.get("value", 0)), reverse=True) if int(d.get("value", 0)) >= min_s), None)
+                zero_b = next((d for d in block_dice if int(d.get("value", 0)) == 0), None)
+                tgt_d = high_s if high_s is not None else zero_b
+                if tgt_d is not None:
+                    return _apply_bot_tof(
+                        target_p,
+                        tof_tgt,
+                        tgt_d,
+                        f"{target_p['name']} played 'Twist Of Fate' in self-defense to re-roll {{label}} ({{old_rom}} -> {{new_rom}})!",
+                    )
+
+    # 3. Adversarial third-party bot disrupting a strong pre-roll strike
+    best_s = max(strike_dice, key=lambda d: int(d.get("value", 0)), default=None)
+    if best_s is None or int(best_s.get("value", 0)) < 2:
+        return False
+    is_extreme = int(best_s.get("value", 0)) >= 3 or bool(pre_state.get("preStrikeDefeatsNpc"))
+    if not is_extreme and (pre_state.get("netWoundsAfterArmor", 0) <= 1):
+        return False
+    for bot in _iter_bots_after_player(state, striker):
+        if is_pvp and target_p is not None and bot["index"] == target_p["index"]:
+            continue
+        if not _should_bot_target_adversarially(state, bot, striker, is_extreme_luck=is_extreme):
+            continue
+        tof_adv = next((c for c in bot.get("influence", []) if "Twist Of Fate" in str(c.get("name", ""))), None)
+        if tof_adv and int(best_s.get("value", 0)) >= (2 if _bot_difficulty_tier(bot) >= 2 else 3):
+            return _apply_bot_tof(
+                bot,
+                tof_adv,
+                best_s,
+                f"{bot['name']} played 'Twist Of Fate' against {striker['name']}'s pre-strike {{label}} ({{old_rom}} -> {{new_rom}})!",
+            )
+    return False
+
+
+def _run_npc_pre_strike(
+    state: Dict[str, Any],
+    player: Dict[str, Any],
+    card: Dict[str, Any],
+    x_count: int,
+    pre_items: List[Dict[str, Any]],
+    carried_ids: List[str],
+    source_label: Optional[str] = None,
+    h_notes: Optional[List[str]] = None,
+    was_refused_demand: bool = False,
+) -> Dict[str, Any]:
+    """Resolves single-use preRollStrike weapons (Sagittae) before main NPC combat dice roll."""
+    strike_dice_objs: List[Dict[str, Any]] = []
+    strike_names: List[str] = []
+    for it in pre_items:
+        _remove_cart_item(state, player, it, reason="consumed in pre-roll strike")
+        it_lbl = str(it.get("item") or it.get("name", "Sagittae"))
+        strike_names.append(it_lbl)
+        d_cnt = max(1, int((it.get("combat") or {}).get("dice", 1)))
+        for idx_d in range(d_cnt):
+            r_s = roll_rome_die()
+            strike_dice_objs.append({
+                "value": r_s,
+                "roman": roman_die_str(r_s),
+                "sign": 1,
+                "label": f"{it_lbl} Pre-Strike ®" if d_cnt == 1 else f"{it_lbl} #{idx_d + 1}",
+                "color": player["color"],
+            })
+
+    formula = str(card.get("combatFormula") or "X(R)")
+    cap, cap_mode = _compute_npc_pre_strike_capacity(formula, x_count)
+    stale_src = state.pop("_lastEncounterSource", None)
+    prev_src = source_label or (state.get("pendingEncounter") or {}).get("encounterSource") or stale_src
+    src_prefix = f"{prev_src} • " if prev_src else ""
+
+    pre_state: Dict[str, Any] = {
+        "stage": "combat_pre_strike_post_roll",
+        "isPvp": False,
+        "playerIndex": player["index"],
+        "card": copy.deepcopy(card),
+        "deck": (card.get("deck") or "nefarii").lower(),
+        "xCount": int(x_count),
+        "encounterSource": prev_src,
+        "strikeNames": strike_names,
+        "playerDiceObjs": strike_dice_objs,
+        "oppDiceObjs": [],
+        "ignoreWoundsFlat": 0,
+        "flatArmorSources": [],
+        "flatArmorMods": [],
+        "preStrikeCapacity": cap,
+        "preStrikeCapacityMode": cap_mode,
+        "hostileNotes": list(h_notes or []),
+        "passedIntervenors": [],
+        "botInterventions": 0,
+        "wasRefusedDemand": bool(was_refused_demand),
+        "carriedConsumableIds": list(carried_ids),
+    }
+    _recompute_pre_strike_totals(pre_state)
+    out_head, out_msg = _describe_pre_strike_outcome(state, pre_state)
+
+    add_dice_event(
+        state,
+        kind="combat_pre_strike",
+        title=f"🏹 PRE-ROLL STRIKE: {player['name']} vs. {card['name']}",
+        subtitle=f"{src_prefix}Single-Use Pre-Roll Strike before Main Combat Roll",
+        groups=_build_pre_strike_dice_groups(pre_state),
+        outcome_title=out_head,
+        outcome_message=out_msg,
+    )
+
+    _run_bot_pre_strike_interventions(state, player, pre_state)
+    _recompute_pre_strike_totals(pre_state)
+
+    intervenor = _find_human_intervenor_for_pre_strike(state, player, pre_state["passedIntervenors"])
+    if intervenor is not None:
+        tof_cards = _get_player_twist_of_fate_cards(intervenor)
+        card_names = ", ".join(c["name"] for c in tof_cards)
+        pre_state["interveningPlayerIndex"] = intervenor["index"]
+        cur_head, cur_msg = _describe_pre_strike_outcome(state, pre_state)
+        if state.get("diceEvents"):
+            last_ev = state["diceEvents"][-1]
+            last_ev["subtitle"] = f"{src_prefix}Pre-Roll Strike — Twist Of Fate Available!"
+            last_ev["outcomeTitle"] = f"{cur_head} (TWIST OF FATE AVAILABLE)"
+            last_ev["outcomeMessage"] = cur_msg
+            last_ev["outcomeDetail"] = cur_msg
+            last_ev["secretIntervenorIndex"] = intervenor["index"]
+            last_ev["secretCardNames"] = card_names
+            last_ev["secretIntervenorName"] = intervenor["name"]
+        state["pendingEncounter"] = pre_state
+        return {"winner": "pending", "playerCP": pre_state["strikeWounds"], "oppCP": cap}
+
+    has_deferred_board_change = bool(state.get("pendingPostEncounterMove") or state.get("pendingPostEncounterRefresh"))
+    if not player.get("isBot") and has_deferred_board_change and pre_state.get("preStrikeDefeatsNpc"):
+        state["pendingEncounter"] = pre_state
+        return {"winner": "pending", "playerCP": pre_state["strikeWounds"], "oppCP": cap}
+
+    return _finalize_pre_strike_after_post_roll(state, player, pre_state)
+
+
 def execute_combat(
     state: Dict[str, Any],
     player: Dict[str, Any],
@@ -5427,6 +6206,11 @@ def execute_combat(
     source_label: Optional[str] = None,
     use_consumable_ids: Optional[List[str]] = None,
     was_refused_demand: bool = False,
+    skip_start_side_effects: bool = False,
+    eff_x_count: Optional[int] = None,
+    pre_strike_opp_dice_delta: int = 0,
+    hostile_notes: Optional[List[str]] = None,
+    pre_strike_notes: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     _normalize_encounter_card_data(card)
     consumable_candidates = [
@@ -5447,13 +6231,44 @@ def execute_combat(
         }
         return {"winner": "pending_consumable_choice", "playerCP": 0, "oppCP": 0}
 
-    _inc_player_stat(player, "combats", 1)
+    if player.get("isBot") and use_consumable_ids is None and consumable_candidates:
+        use_consumable_ids = _select_bot_combat_consumables(
+            state,
+            player,
+            {"card": card, "xCount": x_count, "consumableItems": consumable_candidates, "isPvp": False},
+        )
 
-    # 1. Player takes Hostile Favor Consequences
-    h_notes = apply_favor_list(player, card.get("hostileFavor", []), reason=f"combat with {card['name']}")
+    if not skip_start_side_effects:
+        _inc_player_stat(player, "combats", 1)
+        # 1. Player takes Hostile Favor Consequences
+        h_notes = apply_favor_list(player, card.get("hostileFavor", []), reason=f"combat with {card['name']}")
+    else:
+        h_notes = list(hostile_notes or [])
+
+    selected_consumable_ids = {str(cid) for cid in (use_consumable_ids or [])}
+    pre_items = [
+        it for it in consumable_candidates
+        if str(it.get("id")) in selected_consumable_ids and (it.get("combat") or {}).get("preRollStrike")
+    ]
+    if pre_items:
+        pre_id_set = {str(it.get("id")) for it in pre_items}
+        carried_ids = [str(cid) for cid in (use_consumable_ids or []) if str(cid) not in pre_id_set]
+        return _run_npc_pre_strike(
+            state,
+            player,
+            card,
+            x_count,
+            pre_items,
+            carried_ids,
+            source_label=source_label,
+            h_notes=h_notes,
+            was_refused_demand=was_refused_demand,
+        )
+
+    eff_x = int(x_count) if eff_x_count is None else max(0, int(eff_x_count))
 
     # 1b. Allow NPC bots to play pre-combat Influence (e.g. Distraction / Mercenary Ambush)
-    _run_bot_pre_combat_interventions(state, player, card, x_count)
+    _run_bot_pre_combat_interventions(state, player, card, eff_x)
 
     # 2. Generate Player CP: Driver (1®) + Guards + Weapons + Mandatory Exotic Animals + Influence modifiers
     driver_roll = roll_rome_die()
@@ -5464,7 +6279,7 @@ def execute_combat(
     init_flat_inf = int(player.get("turnEffects", {}).get("combatFlatBonus", 0))
     player_flat = init_flat_inf
     player_flat_mods: List[Dict[str, Any]] = []
-    equipment_notes: List[str] = []
+    equipment_notes: List[str] = list(pre_strike_notes or [])
     if init_flat_inf != 0:
         player_flat_mods.append({"label": "Influence Bonus", "value": init_flat_inf})
 
@@ -5476,7 +6291,7 @@ def execute_combat(
             equipment_notes.append(f"Army Pay Hike (+{pos_rubies} CP from Rubies)")
 
     extra_player_dice = int(player.get("turnEffects", {}).get("combatDiceBonus", 0))
-    opp_dice_mod = int(player.get("turnEffects", {}).get("oppDiceMod", 0))
+    opp_dice_mod = int(player.get("turnEffects", {}).get("oppDiceMod", 0)) + int(pre_strike_opp_dice_delta)
 
     if extra_player_dice > 0:
         for idx_inf in range(extra_player_dice):
@@ -5522,19 +6337,20 @@ def execute_combat(
 
     # Weapons & Mandatory Exotic Animals on Cart (including picked-up mission cargo cards in cart)
     consumables_used = []
-    selected_consumable_ids = set(str(cid) for cid in (use_consumable_ids or []))
     all_items = list(player["cart"])
     for item in all_items:
         cinfo = item.get("combat")
-        if not cinfo:
+        if not cinfo or cinfo.get("preRollStrike"):
             continue
         if cinfo.get("consumable"):
-            if player.get("isBot"):
+            if use_consumable_ids is not None:
+                if str(item.get("id")) not in selected_consumable_ids:
+                    continue
+            elif player.get("isBot"):
                 if item.get("isMissionCargo"):
                     continue
             else:
-                if str(item.get("id")) not in selected_consumable_ids:
-                    continue
+                continue
         item_label = item.get("item") or item.get("name", "Cargo")
         is_animal = item.get("subcategory") == "Exotic Animals" or item.get("category") == "Exotic Animals"
         i_flat = int(cinfo.get("flat", 0))
@@ -5643,7 +6459,7 @@ def execute_combat(
         _remove_cart_item(state, player, c_item, reason="consumed in combat")
 
     player_cp = sum(player_rolls) + player_flat
-    opp_cp, opp_rolls, opp_flat = parse_opponent_combat(card.get("combatFormula", "X(R)"), x_count, opp_dice_mod)
+    opp_cp, opp_rolls, opp_flat = parse_opponent_combat(card.get("combatFormula", "X(R)"), eff_x, opp_dice_mod)
     opp_flat_mods: List[Dict[str, Any]] = []
     if opp_flat != 0:
         opp_flat_mods.append({"label": f"{card.get('name', 'Opponent')} ({card.get('combatFormula', '')})", "value": opp_flat})
@@ -5673,12 +6489,7 @@ def execute_combat(
     ]
 
     # Clear one-combat pre-roll effects
-    player["turnEffects"]["combatFlatBonus"] = 0
-    player["turnEffects"]["oppFlatBonus"] = 0
-    player["turnEffects"]["combatDiceBonus"] = 0
-    player["turnEffects"]["oppDiceMod"] = 0
-    player["turnEffects"]["casusBelli"] = False
-    player["tempFavor"] = 0
+    _clear_one_combat_turn_effects(player)
 
     stale_src = state.pop("_lastEncounterSource", None)
     prev_src = source_label or (state.get("pendingEncounter") or {}).get("encounterSource") or stale_src
@@ -5688,6 +6499,8 @@ def execute_combat(
         "card": card,
         "deck": (card.get("deck") or "nefarii").lower(),
         "xCount": x_count,
+        "effXCount": eff_x,
+        "preStrikeOppDiceDelta": int(pre_strike_opp_dice_delta),
         "encounterSource": prev_src,
         "playerDiceObjs": player_dice_objs,
         "oppDiceObjs": opp_dice_objs,
@@ -5734,7 +6547,7 @@ def execute_combat(
                 "dice": copy.deepcopy(player_dice_objs),
             },
             {
-                "rollerName": f"{card['name']} (×{x_count} {card.get('deck', 'NPC').capitalize()})",
+                "rollerName": f"{card['name']} (×{eff_x} {card.get('deck', 'NPC').capitalize()})",
                 "rollerType": "npc",
                 "colorName": "Black",
                 "flatBonus": opp_flat,
@@ -6837,12 +7650,14 @@ def _get_casus_belli_pvp_targets(state: Dict[str, Any], player: Dict[str, Any]) 
     return targets
 
 
-def _pvp_select_bot_consumables(side_player: Dict[str, Any], opp_player: Dict[str, Any]) -> List[str]:
+def _pvp_select_bot_consumables(
+    side_player: Dict[str, Any],
+    opp_player: Dict[str, Any],
+    cands_override: Optional[List[Dict[str, Any]]] = None,
+) -> List[str]:
     tier = _bot_difficulty_tier(side_player)
-    if tier < 2:
-        return []
     cands = [
-        it for it in side_player.get("cart", [])
+        it for it in (cands_override if cands_override is not None else side_player.get("cart", []))
         if (it.get("combat") or {}).get("consumable") and not it.get("isMissionCargo")
     ]
     if not cands:
@@ -6850,8 +7665,13 @@ def _pvp_select_bot_consumables(side_player: Dict[str, Any], opp_player: Dict[st
     opp_strength = len(opp_player.get("guards", [])) + sum(
         1 for it in opp_player.get("cart", []) if (it.get("combat") or {}).get("dice", 0) > 0 or (it.get("combat") or {}).get("flat", 0) > 0
     )
-    if tier == 3 or opp_strength >= 1:
+    if tier >= 2 or opp_strength >= 1:
         return [str(c["id"]) for c in cands]
+    if tier == 1:
+        return [
+            str(c["id"]) for c in cands
+            if (c.get("combat") or {}).get("preRollStrike") or not opp_player.get("guards")
+        ]
     return []
 
 
@@ -6970,7 +7790,7 @@ def _pvp_assemble_and_roll_side(
     all_items = list(side_player.get("cart", []))
     for item in all_items:
         cinfo = item.get("combat")
-        if not cinfo:
+        if not cinfo or cinfo.get("preRollStrike"):
             continue
         if cinfo.get("consumable"):
             if use_consumable_ids is not None:
@@ -7090,6 +7910,120 @@ def _pvp_assemble_and_roll_side(
     }
 
 
+def _run_pvp_pre_strike(
+    state: Dict[str, Any],
+    attacker: Dict[str, Any],
+    defender: Dict[str, Any],
+    striker: Dict[str, Any],
+    target: Dict[str, Any],
+    pre_items: List[Dict[str, Any]],
+    atk_carried_ids: List[str],
+    def_carried_ids: List[str],
+    source_label: Optional[str] = None,
+    pvp_queued_def_pre_strike: bool = False,
+    def_pre_item_ids: Optional[List[str]] = None,
+    pre_strike_notes: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Resolves a player's single-use preRollStrike (Sagittae) before main PvP combat dice roll."""
+    cell_id = normalize_cell_id(attacker.get("position")) or ""
+    eff_src = source_label or f"Casus Belli PvP in {cell_id}"
+    pvp_card = {
+        "id": f"pvp_{defender['index']}",
+        "name": defender["name"],
+        "deck": "pvp",
+        "color": defender["color"],
+        "combatFormula": "PvP Merchant Party",
+    }
+
+    strike_dice_objs: List[Dict[str, Any]] = []
+    strike_names: List[str] = []
+    for it in pre_items:
+        _remove_cart_item(state, striker, it, reason="consumed in PvP pre-roll strike")
+        it_lbl = str(it.get("item") or it.get("name", "Sagittae"))
+        strike_names.append(it_lbl)
+        d_cnt = max(1, int((it.get("combat") or {}).get("dice", 1)))
+        for idx_d in range(d_cnt):
+            r_s = roll_rome_die()
+            strike_dice_objs.append({
+                "value": r_s,
+                "roman": roman_die_str(r_s),
+                "sign": 1,
+                "label": f"{it_lbl} Pre-Strike ®" if d_cnt == 1 else f"{it_lbl} #{idx_d + 1}",
+                "color": striker["color"],
+            })
+
+    t_def = _compute_pre_strike_target_defenses(target)
+    all_dice = strike_dice_objs + list(t_def["armorDiceObjs"])
+
+    pre_state: Dict[str, Any] = {
+        "stage": "combat_pre_strike_post_roll",
+        "isPvp": True,
+        "playerIndex": attacker["index"],
+        "pvpAttackerIndex": attacker["index"],
+        "pvpDefenderIndex": defender["index"],
+        "pvpStrikerIndex": striker["index"],
+        "pvpTargetIndex": target["index"],
+        "pvpStrikerName": striker["name"],
+        "pvpTargetName": target["name"],
+        "pvpStrikerColor": striker["color"],
+        "pvpTargetColor": target["color"],
+        "pvpQueuedDefenderPreStrike": bool(pvp_queued_def_pre_strike),
+        "pvpDefPreItemIds": list(def_pre_item_ids or []),
+        "card": copy.deepcopy(pvp_card),
+        "deck": "pvp",
+        "xCount": 1,
+        "encounterSource": eff_src,
+        "strikeNames": strike_names,
+        "playerDiceObjs": all_dice,
+        "oppDiceObjs": [],
+        "ignoreWoundsFlat": t_def["flatIgnore"],
+        "flatArmorSources": list(t_def["flatArmorSources"]),
+        "flatArmorMods": list(t_def["flatArmorMods"]),
+        "hostileNotes": [],
+        "preStrikeNotes": list(pre_strike_notes or []),
+        "passedIntervenors": [],
+        "botInterventions": 0,
+        "wasRefusedDemand": False,
+        "atkCarriedConsumableIds": list(atk_carried_ids),
+        "defCarriedConsumableIds": list(def_carried_ids),
+    }
+    _recompute_pre_strike_totals(pre_state)
+    out_head, out_msg = _describe_pre_strike_outcome(state, pre_state)
+
+    add_dice_event(
+        state,
+        kind="combat_pre_strike",
+        title=f"🏹 PvP PRE-ROLL STRIKE: {striker['name']} vs. {target['name']}",
+        subtitle=f"{eff_src} • Single-Use Pre-Roll Strike before Main Combat Roll",
+        groups=_build_pre_strike_dice_groups(pre_state),
+        outcome_title=out_head,
+        outcome_message=out_msg,
+    )
+
+    _run_bot_pre_strike_interventions(state, attacker, pre_state)
+    _recompute_pre_strike_totals(pre_state)
+
+    intervenor = _find_human_intervenor_for_pre_strike(state, attacker, pre_state["passedIntervenors"])
+    if intervenor is not None:
+        tof_cards = _get_player_twist_of_fate_cards(intervenor)
+        card_names = ", ".join(c["name"] for c in tof_cards)
+        pre_state["interveningPlayerIndex"] = intervenor["index"]
+        cur_head, cur_msg = _describe_pre_strike_outcome(state, pre_state)
+        if state.get("diceEvents"):
+            last_ev = state["diceEvents"][-1]
+            last_ev["subtitle"] = f"{eff_src} • Pre-Roll Strike — Twist Of Fate Available!"
+            last_ev["outcomeTitle"] = f"{cur_head} (TWIST OF FATE AVAILABLE)"
+            last_ev["outcomeMessage"] = cur_msg
+            last_ev["outcomeDetail"] = cur_msg
+            last_ev["secretIntervenorIndex"] = intervenor["index"]
+            last_ev["secretCardNames"] = card_names
+            last_ev["secretIntervenorName"] = intervenor["name"]
+        state["pendingEncounter"] = pre_state
+        return {"winner": "pending", "playerCP": pre_state["strikeWounds"], "oppCP": 0}
+
+    return _finalize_pre_strike_after_post_roll(state, attacker, pre_state)
+
+
 def _start_or_resume_pvp_combat(
     state: Dict[str, Any],
     attacker: Dict[str, Any],
@@ -7097,6 +8031,10 @@ def _start_or_resume_pvp_combat(
     source_label: Optional[str] = None,
     atk_consumable_ids: Optional[List[str]] = None,
     def_consumable_ids: Optional[List[str]] = None,
+    skip_start_side_effects: bool = False,
+    atk_pre_done: bool = False,
+    def_pre_done: bool = False,
+    pre_strike_notes: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     cell_id = normalize_cell_id(attacker.get("position")) or ""
     eff_src = source_label or f"Casus Belli PvP in {cell_id}"
@@ -7154,8 +8092,57 @@ def _start_or_resume_pvp_combat(
             return {"winner": "pending_consumable_choice", "playerCP": 0, "oppCP": 0}
         def_consumable_ids = _pvp_select_bot_consumables(defender, attacker) if defender.get("isBot") else []
 
-    _inc_player_stat(attacker, "combats", 1)
-    _inc_player_stat(defender, "combats", 1)
+    if not skip_start_side_effects:
+        _inc_player_stat(attacker, "combats", 1)
+        _inc_player_stat(defender, "combats", 1)
+
+    atk_sel_set = {str(cid) for cid in (atk_consumable_ids or [])}
+    atk_pre_items = [
+        it for it in atk_cands
+        if str(it.get("id")) in atk_sel_set and (it.get("combat") or {}).get("preRollStrike")
+    ]
+    atk_pre_id_set = {str(it.get("id")) for it in atk_pre_items}
+    atk_carried_ids = [str(cid) for cid in (atk_consumable_ids or []) if str(cid) not in atk_pre_id_set]
+
+    def_sel_set = {str(cid) for cid in (def_consumable_ids or [])}
+    def_pre_items = [
+        it for it in def_cands
+        if str(it.get("id")) in def_sel_set and (it.get("combat") or {}).get("preRollStrike")
+    ]
+    def_pre_id_set = {str(it.get("id")) for it in def_pre_items}
+    def_carried_ids = [str(cid) for cid in (def_consumable_ids or []) if str(cid) not in def_pre_id_set]
+
+    if not atk_pre_done and atk_pre_items:
+        return _run_pvp_pre_strike(
+            state,
+            attacker,
+            defender,
+            striker=attacker,
+            target=defender,
+            pre_items=atk_pre_items,
+            atk_carried_ids=atk_carried_ids,
+            def_carried_ids=def_carried_ids,
+            source_label=eff_src,
+            pvp_queued_def_pre_strike=bool((not def_pre_done) and def_pre_items),
+            def_pre_item_ids=list(def_pre_id_set),
+            pre_strike_notes=pre_strike_notes,
+        )
+
+    if not def_pre_done and def_pre_items:
+        return _run_pvp_pre_strike(
+            state,
+            attacker,
+            defender,
+            striker=defender,
+            target=attacker,
+            pre_items=def_pre_items,
+            atk_carried_ids=atk_carried_ids,
+            def_carried_ids=def_carried_ids,
+            source_label=eff_src,
+            pvp_queued_def_pre_strike=False,
+            def_pre_item_ids=[],
+            pre_strike_notes=pre_strike_notes,
+        )
 
     def_bot_dice_mod = _run_bot_pvp_pre_combat_interventions(state, attacker, defender)
 
@@ -7165,26 +8152,23 @@ def _start_or_resume_pvp_combat(
     def_dice_inf = int(attacker.get("turnEffects", {}).get("oppDiceMod", 0)) + def_bot_dice_mod
 
     # Clear one-combat pre-roll turnEffects
-    attacker["turnEffects"]["combatFlatBonus"] = 0
-    attacker["turnEffects"]["oppFlatBonus"] = 0
-    attacker["turnEffects"]["combatDiceBonus"] = 0
-    attacker["turnEffects"]["oppDiceMod"] = 0
-    attacker["turnEffects"]["casusBelli"] = False
+    _clear_one_combat_turn_effects(attacker)
 
     atk_res = _pvp_assemble_and_roll_side(
         state,
         attacker,
-        use_consumable_ids=atk_consumable_ids,
+        use_consumable_ids=atk_carried_ids,
         dice_bonus=atk_dice_inf,
         flat_bonus=atk_flat_inf,
     )
     def_res = _pvp_assemble_and_roll_side(
         state,
         defender,
-        use_consumable_ids=def_consumable_ids,
+        use_consumable_ids=def_carried_ids,
         dice_bonus=def_dice_inf,
         flat_bonus=def_flat_inf,
     )
+    atk_equip_notes = list(pre_strike_notes or []) + list(atk_res["equipmentNotes"])
 
     combat_state: Dict[str, Any] = {
         "stage": "combat_post_roll",
@@ -7208,7 +8192,7 @@ def _start_or_resume_pvp_combat(
         "flatArmorSources": atk_res["flatArmorSources"],
         "ignoreWounds": atk_res["ignoreWoundsFlat"],
         "armorSources": list(atk_res["flatArmorSources"]),
-        "equipmentNotes": atk_res["equipmentNotes"],
+        "equipmentNotes": atk_equip_notes,
         "oppIgnoreWoundsFlat": def_res["ignoreWoundsFlat"],
         "oppFlatArmorSources": def_res["flatArmorSources"],
         "oppIgnoreWounds": def_res["ignoreWoundsFlat"],
@@ -7315,7 +8299,7 @@ def resolve_pending_encounter_choice(
     """
     decision: 'fulfill' | 'refuse' | 'fight' | 'use_dog' | 'use_plea' | 'use_casus_belli'
               | 'resolve_event' | 'roll_chart_encounter' | 'confirm_consumables_and_roll'
-              | 'finalize_combat' | 'roll_driver_fate' | 'finalize_driver_fate'
+              | 'finalize_pre_strike' | 'finalize_combat' | 'roll_driver_fate' | 'finalize_driver_fate'
               | 'finalize_chart_roll' | 'finalize_demand_roll' | 'finalize_gamble_roll'
     """
     stage = pending.get("stage", "pre_decision")
@@ -7427,6 +8411,25 @@ def resolve_pending_encounter_choice(
             was_refused_demand=was_ref,
         )
         return True, "Combat dice rolled!"
+
+    # Stage 1B: Finalizing Pre-Roll Strike (Sagittae) after Twist Of Fate opportunity
+    if stage == "combat_pre_strike_post_roll" or decision == "finalize_pre_strike":
+        passed = pending.setdefault("passedIntervenors", [])
+        if cur_actor_idx not in passed:
+            passed.append(cur_actor_idx)
+        if pending.pop("humanModifiedSinceBotCheck", False):
+            _run_bot_pre_strike_interventions(state, player, pending)
+        next_int = _find_human_intervenor_for_pre_strike(state, player, pending.get("passedIntervenors"))
+        if next_int is not None:
+            pending["interveningPlayerIndex"] = next_int["index"]
+            state["pendingEncounter"] = pending
+            return True, f"Waiting for {next_int['name']} to respond to the Pre-Roll Strike."
+        res = _finalize_pre_strike_after_post_roll(state, player, pending)
+        if state.get("pendingEncounter") and state["pendingEncounter"].get("stage") in ("driver_fate_pre_roll", "driver_fate_post_roll"):
+            return True, "Pre-Roll Strike wounded Driver! Resolving Driver Fate (Death) Chart."
+        if state.get("pendingEncounter"):
+            return True, "Pre-Roll Strike resolved — proceeding with combat."
+        return True, f"Pre-Roll Strike resolved ({res.get('strikeWounds', 0)} Wound(s))."
 
     # Stage 2: Finalizing Combat after post-roll Influence opportunity
     if stage == "combat_post_roll" or decision == "finalize_combat":
@@ -8330,8 +9333,7 @@ def advance_market_turn(state: Dict[str, Any]) -> None:
     n = len(state["players"])
     state["turnSeq"] = int(state.get("turnSeq", 1)) + 1
     if state["marketConsecutivePasses"] >= n:
-        # End Market Phase! Pass First Player Token clockwise
-        state["firstPlayerIndex"] = (state["firstPlayerIndex"] + 1) % n
+        # End Market Phase! First Player Token remains with the current holder for this season.
         state["activePlayerIndex"] = state["firstPlayerIndex"]
         state["phase"] = "delivery_entry"
         state["turn"] = 1
@@ -8350,7 +9352,7 @@ def advance_market_turn(state: Dict[str, Any]) -> None:
             p["turnStep"] = "entry"
         add_log(
             state,
-            f"All merchants passed in Ostia. Phase II: Night Delivery in Rome begins! First Player Token passes to {state['players'][state['firstPlayerIndex']]['name']}. Select an entry Gate ('Via') to enter Rome.",
+            f"All merchants passed in Ostia. Phase II: Night Delivery in Rome begins! {state['players'][state['firstPlayerIndex']]['name']} holds the First Player Token and selects an entry Gate ('Via') first.",
             "phase",
         )
         return
@@ -8401,7 +9403,6 @@ def advance_delivery_turn(state: Dict[str, Any]) -> None:
             return
 
         state["turn"] += 1
-        state["firstPlayerIndex"] = (state["firstPlayerIndex"] + 1) % n
         state["hourEffects"] = {"priceEdict": False, "lastInfluencePlayed": None}
         for p in state["players"]:
             if p["exitedRome"] or p["nightEnded"]:
@@ -8418,7 +9419,7 @@ def advance_delivery_turn(state: Dict[str, Any]) -> None:
                 p["scoutedThisTurn"] = False
                 p["trashedThisTurn"] = False
 
-        add_log(state, f"Clock advances to {TURN_HOURS[state['turn'] - 1]}. First Player Token passes to {state['players'][state['firstPlayerIndex']]['name']}.", "phase")
+        add_log(state, f"Clock advances to {TURN_HOURS[state['turn'] - 1]}. {state['players'][state['firstPlayerIndex']]['name']} holds the First Player Token.", "phase")
 
         # Find first active player for the new hour
         for offset in range(n):
@@ -8636,20 +9637,133 @@ def _resolve_pvp_combat_tiebreaker(
     Repeats Combat on a draw (keeping Round-1 Influence & consumable Weapons exhausted) until one wins by ≥ 1 CP.
     """
     gear_map = gear_map if gear_map is not None else {}
-    p1_gear = list(gear_map.get(p1["index"], p1.get("cart", [])))
-    p2_gear = list(gear_map.get(p2["index"], p2.get("cart", [])))
+    p1_gear = copy.deepcopy(list(gear_map.get(p1["index"], p1.get("cart", []))))
+    p2_gear = copy.deepcopy(list(gear_map.get(p2["index"], p2.get("cart", []))))
+    for g_it in p1_gear + p2_gear:
+        _normalize_market_or_influence_card(g_it)
+    p1_guards = copy.deepcopy(list(p1.get("guards", [])))
+    p2_guards = copy.deepcopy(list(p2.get("guards", [])))
     consumed_gear_ids: set = set()
     army_hike = has_climate_modifier(state, "caracalla_3")
     is_final_tiebreak = "Final Wealth" in context_label
 
+    def _finish_tiebreaker_bout(winner_p: Dict[str, Any]) -> Dict[str, Any]:
+        if consumed_gear_ids:
+            if p1["index"] in gear_map:
+                gear_map[p1["index"]] = [g for g in p1_gear if str(g.get("id", "")) not in consumed_gear_ids]
+            if p2["index"] in gear_map:
+                gear_map[p2["index"]] = [g for g in p2_gear if str(g.get("id", "")) not in consumed_gear_ids]
+        return winner_p
+
+    # Round-1 Pre-Roll Strikes (Sagittae) resolved simultaneously before main tie-breaker rolls
+    pre_entries: List[Tuple[Dict[str, Any], Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]] = [
+        (p1, p2, p1_gear, p2_guards, p2_gear),
+        (p2, p1, p2_gear, p1_guards, p1_gear),
+    ]
+    pre_results: List[Tuple[Dict[str, Any], Dict[str, Any], List[Dict[str, Any]], int, int, int, List[str], List[Dict[str, Any]], List[str]]] = []
+    for striker, target, s_gear, t_guards, t_gear in pre_entries:
+        pre_items = [
+            it for it in s_gear
+            if (it.get("combat") or {}).get("preRollStrike") and str(it.get("id", "")) not in consumed_gear_ids
+        ]
+        if not pre_items:
+            continue
+        strike_dice_objs: List[Dict[str, Any]] = []
+        strike_wounds = 0
+        for it in pre_items:
+            consumed_gear_ids.add(str(it.get("id", "")))
+            it_lbl = it.get("item") or it.get("name", "Sagittae")
+            d_cnt = max(1, int((it.get("combat") or {}).get("dice", 1)))
+            for d_i in range(d_cnt):
+                rv = roll_rome_die()
+                strike_wounds += rv
+                strike_dice_objs.append({
+                    "value": rv,
+                    "roman": roman_die_str(rv),
+                    "sign": 1,
+                    "label": f"{it_lbl} Pre-Strike ®" if d_cnt == 1 else f"{it_lbl} #{d_i + 1}",
+                    "color": striker["color"],
+                })
+        t_def = _compute_pre_strike_target_defenses({"name": target["name"], "color": target["color"], "guards": t_guards, "cart": t_gear})
+        tot_ign = int(t_def["flatIgnore"]) + sum(int(d.get("value", 0)) for d in t_def["armorDiceObjs"])
+        net_w = max(0, strike_wounds - tot_ign)
+        all_dice = strike_dice_objs + list(t_def["armorDiceObjs"])
+        pre_results.append((
+            striker,
+            target,
+            t_guards,
+            strike_wounds,
+            tot_ign,
+            net_w,
+            list(t_def["flatArmorSources"]),
+            list(t_def["flatArmorMods"]),
+            [str(it.get("item") or it.get("name", "Sagittae")) for it in pre_items],
+        ))
+        # Emit dice event snapshot inside loop after mutating copy below; store all_dice via closure or append
+        pre_results[-1] = pre_results[-1] + (all_dice,)  # type: ignore[assignment]
+
+    driver_hits: List[Dict[str, Any]] = []
+    if pre_results:
+        _inc_player_stat(p1, "combats", 1)
+        _inc_player_stat(p2, "combats", 1)
+        for rec in pre_results:
+            striker, target, t_guards, strike_w, tot_ign, net_w, arm_srcs, arm_mods, s_names, all_dice = rec  # type: ignore[misc]
+            casualties: List[str] = []
+            rem = net_w
+            while rem > 0 and t_guards:
+                dead_g = t_guards.pop(0)
+                casualties.append(dead_g.get("name", "Guard"))
+                rem -= 1
+            reached_driver = rem > 0
+            if reached_driver:
+                driver_hits.append(striker)
+            cas_part = f" (Killed Guard(s): {', '.join(casualties)})" if casualties else ""
+            drv_part = f" -> {target['name']}'s Driver wounded before roll!" if reached_driver else ""
+            pre_msg = (
+                f"{context_label} Pre-Roll Strike: {striker['name']} ({', '.join(s_names)}) inflicted "
+                f"{strike_w} Wound(s) on {target['name']} ({tot_ign} blocked){cas_part}{drv_part}"
+            )
+            add_log(state, pre_msg, "combat")
+            add_dice_event(
+                state,
+                kind="combat_pre_strike",
+                title=f"🏹 {context_label.upper()} PRE-ROLL STRIKE: {striker['name']} vs. {target['name']}",
+                subtitle="Single-Use Pre-Roll Strike before PvP Tie-Breaker Roll",
+                groups=[
+                    {
+                        "rollerName": f"{striker['name']} ({', '.join(s_names)})",
+                        "rollerType": "player",
+                        "colorName": striker["color"],
+                        "flatBonus": 0,
+                        "totalLabel": f"{strike_w} Wound(s)",
+                        "dice": copy.deepcopy(all_dice),
+                    },
+                    {
+                        "rollerName": f"{target['name']} Defense",
+                        "rollerType": "player",
+                        "colorName": target["color"],
+                        "flatBonus": 0,
+                        "flatModifiers": copy.deepcopy(arm_mods),
+                        "totalLabel": f"🛡️ {tot_ign} Ignored • {len(casualties)} Guard(s) Fell",
+                        "dice": [],
+                    },
+                ],
+                outcome_title="DRIVER WOUNDED BY PRE-STRIKE!" if reached_driver else f"PRE-STRIKE: {strike_w} WOUND(S)",
+                outcome_message=pre_msg,
+            )
+        if len(driver_hits) == 1:
+            return _finish_tiebreaker_bout(driver_hits[0])
+
     round_num = 0
     while True:
         round_num += 1
-        _inc_player_stat(p1, "combats", 1)
-        _inc_player_stat(p2, "combats", 1)
+        if round_num > 1 or not pre_results:
+            _inc_player_stat(p1, "combats", 1)
+            _inc_player_stat(p2, "combats", 1)
 
         def _assemble_side_pool(
             fighter: Dict[str, Any],
+            fighter_guards: List[Dict[str, Any]],
             gear_list: List[Dict[str, Any]],
         ) -> Tuple[List[str], List[str], int, List[Dict[str, Any]]]:
             pos_specs: List[str] = ["Driver ®"]
@@ -8663,7 +9777,7 @@ def _resolve_pvp_combat_tiebreaker(
                     flat_total += pos_rubies
                     flat_mods.append({"label": f"Army Pay Hike (+{pos_rubies} Ruby)", "value": pos_rubies})
 
-            for g in fighter.get("guards", []):
+            for g in fighter_guards:
                 cinfo = g.get("combat") or {}
                 g_name = g.get("name", "Guard")
                 for _ in range(int(cinfo.get("dice", 0))):
@@ -8675,7 +9789,7 @@ def _resolve_pvp_combat_tiebreaker(
 
             for item in gear_list:
                 cinfo = item.get("combat")
-                if not cinfo:
+                if not cinfo or cinfo.get("preRollStrike"):
                     continue
                 iid = str(item.get("id", ""))
                 if cinfo.get("consumable"):
@@ -8696,8 +9810,8 @@ def _resolve_pvp_combat_tiebreaker(
 
             return pos_specs, neg_specs, flat_total, flat_mods
 
-        pos1, neg1, flat1, fmods1 = _assemble_side_pool(p1, p1_gear)
-        pos2, neg2, flat2, fmods2 = _assemble_side_pool(p2, p2_gear)
+        pos1, neg1, flat1, fmods1 = _assemble_side_pool(p1, p1_guards, p1_gear)
+        pos2, neg2, flat2, fmods2 = _assemble_side_pool(p2, p2_guards, p2_gear)
         inf_notes: List[str] = []
 
         # Step 1 (Round 1 only): Pre-Roll Combat Influence (Mercenary Ambush +2® & Distraction -1® deducted before roll)
@@ -8932,12 +10046,7 @@ def _resolve_pvp_combat_tiebreaker(
         )
         add_log(state, out_msg, "combat")
         if round_winner is not None:
-            if consumed_gear_ids:
-                if p1["index"] in gear_map:
-                    gear_map[p1["index"]] = [g for g in p1_gear if str(g.get("id", "")) not in consumed_gear_ids]
-                if p2["index"] in gear_map:
-                    gear_map[p2["index"]] = [g for g in p2_gear if str(g.get("id", "")) not in consumed_gear_ids]
-            return round_winner
+            return _finish_tiebreaker_bout(round_winner)
 
 
 def _ordered_tied_players(state: Dict[str, Any], tied: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -8986,17 +10095,28 @@ def _bot_optimize_domna_diamonds_for_winter(state: Dict[str, Any]) -> None:
             cur_car = int(bot["favor"].get("Caracalla", 0))
             cur_get = int(bot["favor"].get("Geta", 0))
             min_car = min((int((p.get("favor") or {}).get("Caracalla", 0)) for p in players), default=0)
-            min_get = min((int((p.get("favor") or {}).get("Geta", 0)) for p in players), default=0)
+            max_get = max((int((p.get("favor") or {}).get("Geta", 0)) for p in players), default=0)
 
             target_fac: Optional[str] = None
             if has_climate_modifier(state, "caracalla_1") and cur_car <= min_car:
                 target_fac = "Caracalla"
-            elif has_climate_modifier(state, "geta_1") and cur_get <= min_get:
-                target_fac = "Geta"
-            elif has_climate_modifier(state, "geta_2") and cur_car <= 0:
+            elif (
+                has_climate_modifier(state, "geta_2")
+                and cur_car <= 0
+                and (not has_climate_modifier(state, "geta_1") or cur_get + 1 < max_get)
+            ):
                 target_fac = "Geta"
             elif has_climate_modifier(state, "caracalla_3"):
                 target_fac = "Caracalla"
+            elif has_climate_modifier(state, "missions_2") and not has_climate_modifier(state, "domna_1"):
+                fmc = _ensure_player_stats(bot).get("factionMissionsCompleted") or {}
+                dom_m = int(fmc.get("Domna", 0) or 0)
+                car_m = int(fmc.get("Caracalla", 0) or 0)
+                get_m = int(fmc.get("Geta", 0) or 0)
+                if car_m > dom_m and car_m >= get_m and not has_climate_modifier(state, "caracalla_2"):
+                    target_fac = "Caracalla"
+                elif get_m > dom_m and (not has_climate_modifier(state, "geta_1") or cur_get + 1 < max_get):
+                    target_fac = "Geta"
 
             if not target_fac:
                 break
@@ -9176,23 +10296,23 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
                 det = f"Caracalla {car_v:+d} ({'-10d/+' if car_v > 0 else '+5d/-'} Ruby)" if car_v != 0 else "Caracalla 0 (0d)"
                 _record_climate_delta(p, "caracalla_2", "Caracalla", "Praetorian Backlash", delta, det)
 
-        # 6b. Geta Option 1: Least Geta favor loses -25(d) (ties resolved by PvP Combat; loser pays -25d)
+        # 6b. Geta Option 1 (Brother's Grudge): Most Geta favor loses -25(d) (ties resolved by PvP Combat; loser pays -25d)
         if has_climate_modifier(state, "geta_1") and eligible_players:
-            min_get = min(int((p.get("favor") or {}).get("Geta", 0)) for p in eligible_players)
-            tied_least_get = [p for p in eligible_players if int((p.get("favor") or {}).get("Geta", 0)) == min_get]
-            if len(tied_least_get) > 1:
+            max_get = max(int((p.get("favor") or {}).get("Geta", 0)) for p in eligible_players)
+            tied_most_get = [p for p in eligible_players if int((p.get("favor") or {}).get("Geta", 0)) == max_get]
+            if len(tied_most_get) > 1:
                 add_log(
                     state,
-                    f"⚔️ Tie for Least Geta Favor ({min_get:+d}) between {', '.join(x['name'] for x in tied_least_get)} — PvP Combat decides who suffers -25(d)!",
+                    f"⚔️ Tie for Most Geta Favor ({max_get:+d}) between {', '.join(x['name'] for x in tied_most_get)} — PvP Combat decides who suffers -25(d)!",
                     "combat",
                 )
                 loser_get = _resolve_multiway_pvp_loser(
-                    state, tied_least_get, pvp_gear_snapshot, f"Least Geta Favor ({min_get:+d}) Penalty"
+                    state, tied_most_get, pvp_gear_snapshot, f"Most Geta Favor ({max_get:+d}) Penalty"
                 )
-                det_g1 = f"Lost PvP Tie-Break for Least Geta Favor ({min_get:+d})"
+                det_g1 = f"Lost PvP Tie-Break for Most Geta Favor ({max_get:+d})"
             else:
-                loser_get = tied_least_get[0]
-                det_g1 = f"Sole Least Geta Favor ({min_get:+d})"
+                loser_get = tied_most_get[0]
+                det_g1 = f"Sole Most Geta Favor ({max_get:+d})"
             _record_climate_delta(loser_get, "geta_1", "Geta", "Brother's Grudge", -25, det_g1)
             add_log(state, f"Brother's Grudge: {loser_get['name']} suffers -25(d) ({det_g1}).", "penalty")
 
@@ -9279,16 +10399,33 @@ def _check_all_cleanups_done(state: Dict[str, Any]) -> None:
             _record_climate_delta(win_m1, "missions_1", "Missions", "Master Purveyor", 30, det_m1)
             add_log(state, f"Master Purveyor: {win_m1['name']} claims +30(d) ({det_m1})!", "phase")
 
-        # 6i. Missions Option 2 (Guild Ledger): +10d per completed mission and -10d per failed/unfulfilled mission (net negative allowed)
+        # 6i. Missions Option 2 (Loyalty Rewards): 10 × A × B denarii (A = gems of any one faction, B = missions completed for that faction)
         if has_climate_modifier(state, "missions_2"):
             for p in eligible_players:
                 st_p = _ensure_player_stats(p)
-                comp_c = int(st_p.get("missionsCompleted", 0) or 0)
-                fail_c = int(st_p.get("missionsFailed", 0) or 0)
-                net_c = comp_c - fail_c
-                delta = 10 * net_c
-                det = f"{comp_c} Completed (+{comp_c * 10}d), {fail_c} Failed (-{fail_c * 10}d)"
-                _record_climate_delta(p, "missions_2", "Missions", "Guild Ledger", delta, det)
+                fmc = st_p.get("factionMissionsCompleted") or {}
+                fav_map = p.get("favor") or {}
+                best_delta = 0
+                best_fac = None
+                best_a = 0
+                best_b = 0
+                for fac_nm in FACTIONS:
+                    a_gems = max(0, int(fav_map.get(fac_nm, 0) or 0))
+                    b_miss = max(0, int(fmc.get(fac_nm, 0) or 0))
+                    cand_val = 10 * a_gems * b_miss
+                    if cand_val > best_delta or (cand_val == best_delta and best_delta == 0 and b_miss > best_b):
+                        best_delta = cand_val
+                        best_fac = fac_nm
+                        best_a = a_gems
+                        best_b = b_miss
+                if best_delta > 0 and best_fac:
+                    det = (
+                        f"Best Faction {best_fac}: 10 × {best_a} Gem{'s' if best_a != 1 else ''}"
+                        f" × {best_b} Mission{'s' if best_b != 1 else ''} = +{best_delta}d"
+                    )
+                else:
+                    det = "0d (no faction with both ≥ +1 Gem and ≥ 1 completed Mission)"
+                _record_climate_delta(p, "missions_2", "Missions", "Loyalty Rewards", best_delta, det)
 
         # Step 7: Plautilla Option 1 (Exile's Informants) — Most Plautilla favor steals 15(d) from the wealthiest surviving rival
         if has_climate_modifier(state, "plautilla_1") and len(eligible_players) >= 2:
@@ -10089,6 +11226,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             "resolve_event",
             "roll_chart_encounter",
             "confirm_consumables_and_roll",
+            "finalize_pre_strike",
             "finalize_combat",
             "roll_driver_fate",
             "finalize_driver_fate",
@@ -10661,26 +11799,12 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             shortcut_active = player.get("turnEffects", {}).get("shortcut", False)
             guard_friend_active = bool(player.get("friendInGuard") or player.get("turnEffects", {}).get("friendInGuard"))
             bridge_lbl = get_tiber_bridge_name(curr_cell, target_cell)
-            div_tiber_active = has_climate_modifier(state, "geta_3")
-            has_emerald = int((player.get("favor") or {}).get("Geta", 0)) >= 1
-            needed_shortcut = bool(
-                shortcut_active
-                and (
-                    edge_val != "green"
-                    or (div_tiber_active and bool(bridge_lbl) and not has_emerald)
-                )
-            )
+            needed_shortcut = bool(shortcut_active and edge_val != "green")
             if not needed_shortcut:
                 if edge_val in ("red", None, "none"):
                     return False, f"Direction {direction} is impassable ({edge_val})."
                 edge_toll_due = int(toll_amt) if (toll_amt is not None and not guard_friend_active) else 0
-                bridge_toll_due = 4 if (div_tiber_active and bridge_lbl and not has_emerald) else 0
-                total_toll_due = edge_toll_due + bridge_toll_due
-                if player["cash"] < total_toll_due:
-                    if edge_toll_due > 0 and bridge_toll_due > 0:
-                        return False, f"Insufficient Denarii for the {edge_toll_due}(d) edge toll + 4(d) Divided Tiber bridge toll ({total_toll_due}d total)."
-                    if bridge_toll_due > 0:
-                        return False, f"Insufficient Denarii for the 4(d) Divided Tiber toll across {bridge_lbl} (waived with ≥ +1 Emerald)."
+                if player["cash"] < edge_toll_due:
                     return False, f"Insufficient Denarii for the {edge_toll_due}(d) edge toll."
                 if toll_amt is not None:
                     if guard_friend_active:
@@ -10688,12 +11812,6 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                     else:
                         player["cash"] -= edge_toll_due
                         add_log(state, f"{player['name']} paid {edge_toll_due}(d) toll to cross the {direction} edge of {curr_cell}.", "action")
-                if div_tiber_active and bridge_lbl:
-                    if has_emerald:
-                        add_log(state, f"{player['name']} crossed {bridge_lbl} with the 4(d) Divided Tiber toll waived (+Emerald Favor)!", "action")
-                    else:
-                        player["cash"] -= 4
-                        add_log(state, f"{player['name']} paid 4(d) Divided Tiber toll to cross {bridge_lbl}.", "action")
             else:
                 player["turnEffects"]["shortcut"] = False
                 sc_card = player["turnEffects"].pop("shortcutCard", None)
@@ -11273,6 +12391,11 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
     enc_player = state["players"][pend["playerIndex"]] if pend else player
 
     # Pre-validate reactive & conditional cards before consuming the card from hand
+    if pend and pend_stage == "combat_pre_strike_post_roll" and "Twist Of Fate" not in cname:
+        return (
+            False,
+            "Only 'Twist Of Fate' can be played during a Pre-Roll Strike die roll window.",
+        )
     if "Trained Dog" in cname:
         d_kind, _ = _check_active_demand_kind(state, player)
         if d_kind != "cash":
@@ -11289,6 +12412,7 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
             )
     if "Twist Of Fate" in cname:
         if not pend or pend_stage not in (
+            "combat_pre_strike_post_roll",
             "combat_post_roll",
             "driver_fate_post_roll",
             "chart_post_roll",
@@ -11299,7 +12423,10 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 False,
                 "Twist Of Fate is a reactive card — play it during a die roll window to force any one ® die to be re-rolled.",
             )
-        if pend_stage == "combat_post_roll":
+        if pend_stage == "combat_pre_strike_post_roll":
+            if not (pend.get("playerDiceObjs") or []):
+                return False, "No pre-strike dice to re-roll."
+        elif pend_stage == "combat_post_roll":
             t_side = action.get("targetSide", "player")
             d_list = pend["oppDiceObjs"] if t_side == "opponent" else pend["playerDiceObjs"]
             if not d_list:
@@ -11507,6 +12634,29 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
         add_log(state, f"{player['name']} played 'Plea' to satisfy {c_enc['name']}'s demand for Goods! {' '.join(f_notes)}", "encounter")
         _finish_pending_encounter_continuations(state, player)
         return True, f"Played 'Plea' to satisfy {c_enc['name']}'s demand!"
+
+    # Handle Pre-Strike Post-Roll Twist Of Fate Re-Roll
+    if pend and pend_stage == "combat_pre_strike_post_roll" and "Twist Of Fate" in cname:
+        dice_list = pend.get("playerDiceObjs") or []
+        die_idx = max(0, min(len(dice_list) - 1, int(action.get("dieIndex", action.get("targetIndex", 0)))))
+        target_die = dice_list[die_idx]
+        old_rom = target_die.get("roman", "0")
+        new_r = roll_rome_die()
+        new_rom = roman_die_str(new_r)
+        target_die["value"] = new_r
+        target_die["roman"] = new_rom
+        if "(Re-rolled)" not in target_die.get("label", ""):
+            target_die["label"] = f"{target_die.get('label', 'Die')} (Re-rolled)"
+        _recompute_pre_strike_totals(pend)
+        pend["passedIntervenors"] = []
+        pend["humanModifiedSinceBotCheck"] = True
+        note = f"{player['name']} played 'Twist Of Fate' to re-roll {target_die.get('label', 'die')} ({old_rom} -> {new_rom})!"
+        add_log(state, note, "combat")
+        _emit_updated_pre_strike_dice_event(state, pend, note)
+        return True, (
+            f"Played 'Twist Of Fate'! Re-rolled {old_rom} -> {new_rom} "
+            f"({pend.get('strikeWounds', 0)} Wound(s))."
+        )
 
     # Handle Post-Roll Combat, Chart, Demand, & Gambling Influence Cards when in a post-roll stage
     if pend and pend_stage == "combat_post_roll":
@@ -11734,9 +12884,25 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
         return True, f"Played 'Twist Of Fate'! Re-rolled Gambling die {roman_die_str(old_r)} -> {roman_die_str(new_r)} ({mult}x -> {payout}d)."
 
     if "Patron" in cname:
-        player["cash"] += 8
-        add_log(state, f"{player['name']} played Influence '{cname}' and received +8(d)!", "action")
-        return True, "Received +8(d) from Patron."
+        fg = card.get("favorGain") or {}
+        cash_b = int(fg.get("cash", 8))
+        player["cash"] += cash_b
+        extra_fav = list(fg.get("extraFavor") or [])
+        if not extra_fav:
+            cid_p = str(card.get("id") or "")
+            eff_p = str(card.get("effectCode") or "")
+            if cid_p == "inf_39" or eff_p == "patron_geta_aurelius":
+                extra_fav = ["-Geta", "-Aurelius"]
+            elif cid_p == "inf_2" or eff_p == "patron_caracalla_domna":
+                extra_fav = ["-Caracalla", "-Domna"]
+        f_notes = apply_favor_list(
+            player,
+            extra_fav,
+            reason=f"Influence card '{cname}'",
+        )
+        fav_str = f" and suffered {', '.join(f_notes)}" if f_notes else ""
+        add_log(state, f"{player['name']} played Influence '{cname}' and received +{cash_b}(d){fav_str}!", "action")
+        return True, f"Received +{cash_b}(d){' (' + ', '.join(f_notes) + ')' if f_notes else ''} from Patron."
     if "Cartwright" in cname:
         player["bonusBlocks"] = player.get("bonusBlocks", 0) + 2
         add_log(state, f"{player['name']} played '{cname}' (+2■ permanent Cart Goods capacity)!", "action")
@@ -12008,6 +13174,7 @@ def _execute_single_bot_encounter_step(state: Dict[str, Any]) -> bool:
         "event_pre_resolve": "resolve_event",
         "chart_pre_roll": "roll_chart_encounter",
         "driver_fate_pre_roll": "roll_driver_fate",
+        "combat_pre_strike_post_roll": "finalize_pre_strike",
         "combat_post_roll": "finalize_combat",
         "driver_fate_post_roll": "finalize_driver_fate",
         "chart_post_roll": "finalize_chart_roll",
@@ -12022,14 +13189,7 @@ def _execute_single_bot_encounter_step(state: Dict[str, Any]) -> bool:
         return bool(ok)
 
     if stage == "combat_consumable_pre_roll":
-        tier = _bot_difficulty_tier(p_enc)
-        chosen_ids: List[str] = []
-        if tier >= 2:
-            cands = pend.get("consumableItems") or []
-            opp_cp = int((pend.get("card") or {}).get("combat", {}).get("cp", 4) or 4) * int(pend.get("xCount", 1) or 1)
-            party_est = 2 + len(p_enc.get("guards", []))
-            if cands and (tier == 3 or opp_cp >= party_est):
-                chosen_ids = [str(cands[0]["id"])]
+        chosen_ids = _select_bot_combat_consumables(state, p_enc, pend)
         ok, _ = resolve_pending_encounter_choice(
             state, p_enc, pend, "confirm_consumables_and_roll", use_consumable_ids=chosen_ids
         )
@@ -12184,6 +13344,10 @@ def _run_bot_climate_pick(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     strat = str(bot.get("botStrategy", "balanced"))
     tier = _bot_difficulty_tier(bot)
     mission_favors = [f for m in bot.get("missions", []) for f in (m.get("favor") or [])]
+    max_pos_fac_m = max(
+        (sum(1 for f in mission_favors if f == fac_n) for fac_n in FACTIONS),
+        default=0,
+    )
 
     def _score_opt(opt: Dict[str, Any]) -> int:
         oid = opt["id"]
@@ -12207,18 +13371,31 @@ def _run_bot_climate_pick(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
             if oid in ("aurelius_3", "domna_1", "aurelius_1", "geta_2"):
                 sc += 20
         elif strat == "missions":
-            if oid in ("missions_3", "missions_1", "missions_2", "plautilla_2"):
+            if oid in ("missions_3", "missions_1", "plautilla_2"):
                 sc += 22
+            elif oid == "missions_2":
+                sc += 12 + (8 if max_pos_fac_m >= 2 else (4 if max_pos_fac_m == 1 else 0))
         elif strat == "opportunist":
-            if oid in ("plautilla_3", "plautilla_1", "domna_3", "geta_3"):
+            if oid in ("plautilla_3", "plautilla_1", "domna_3"):
                 sc += 20
+            elif oid == "geta_3":
+                sc += 12
         else:
-            if oid in ("missions_1", "missions_2", "domna_1", "aurelius_1", "geta_2", "domna_3"):
+            if oid in ("missions_1", "domna_1", "aurelius_1", "geta_2", "domna_3"):
                 sc += 14
+            elif oid == "missions_2":
+                sc += 8 + (6 * max_pos_fac_m)
 
-        if pos_m > 0 and oid in ("domna_1", "plautilla_1", "plautilla_2", "aurelius_1", "aurelius_2", "aurelius_3", "geta_2", "geta_3", "caracalla_3", "domna_3"):
-            sc += (11 if tier == 3 else 8) * pos_m
-        if neg_m > 0 and oid in ("caracalla_2", "aurelius_2"):
+        if pos_m > 0:
+            if oid in ("domna_1", "plautilla_1", "plautilla_2", "aurelius_1", "aurelius_2", "aurelius_3", "geta_2", "caracalla_3", "domna_3"):
+                sc += (11 if tier == 3 else 8) * pos_m
+            elif oid == "geta_3":
+                sc += 4 * pos_m
+            elif oid == "geta_1":
+                sc -= 8 * pos_m
+        if oid == "missions_2" and max_pos_fac_m >= 1:
+            sc += (10 if tier == 3 else 7) * max_pos_fac_m
+        if neg_m > 0 and oid in ("caracalla_2", "aurelius_2", "geta_1"):
             sc += (12 if tier == 3 else 10) * neg_m
         if tier == 3 and oid in ("missions_3", "domna_3", "aurelius_3", "geta_2"):
             sc += 6
@@ -12277,15 +13454,119 @@ def bot_should_initiate_combat(
     return False
 
 
+def _patron_penalty_factions(card: Dict[str, Any]) -> List[str]:
+    """Returns the list of Faction names penalized (-1 Favor each) by a Patron Influence card."""
+    fg = card.get("favorGain") or {}
+    extra = fg.get("extraFavor") or []
+    pen_facs: List[str] = []
+    for item in extra:
+        s = str(item or "").strip()
+        if s.startswith("-"):
+            fac = s[1:]
+            if fac in FACTIONS and fac not in pen_facs:
+                pen_facs.append(fac)
+    if pen_facs:
+        return pen_facs
+    cid = str(card.get("id") or "")
+    efc = str(card.get("effectCode") or "")
+    if cid == "inf_39" or efc == "patron_geta_aurelius":
+        return ["Geta", "Aurelius"]
+    return ["Caracalla", "Domna"]
+
+
+def _bot_should_play_patron(
+    state: Dict[str, Any],
+    bot: Dict[str, Any],
+    card: Dict[str, Any],
+    in_market: bool = False,
+) -> bool:
+    """Evaluates whether playing Patron (+8d, -1 Favor in two factions) is worthwhile for a bot."""
+    tier = _bot_difficulty_tier(bot)
+    cash = int(bot.get("cash", 0))
+    if tier < 2:
+        return cash <= 2
+
+    pen_facs = _patron_penalty_factions(card)
+    fav = bot.get("favor") or {}
+    players = state.get("players", [])
+
+    # Compute expected winter impact delta of losing 1 Favor in each penalized faction
+    climate_delta = 0
+    fatal_risk = False
+    for fac in pen_facs:
+        cur_v = int(fav.get(fac, 0))
+        if fac == "Caracalla":
+            if has_climate_modifier(state, "caracalla_1") and players:
+                min_car = min(int((p.get("favor") or {}).get("Caracalla", 0)) for p in players)
+                if cur_v - 1 <= min_car:
+                    fatal_risk = True
+            if has_climate_modifier(state, "caracalla_2"):
+                climate_delta += 10 if cur_v > 0 else 5
+            if has_climate_modifier(state, "caracalla_3") and cur_v > 0:
+                climate_delta -= 6
+        elif fac == "Geta":
+            if has_climate_modifier(state, "geta_1") and players:
+                max_get = max(int((p.get("favor") or {}).get("Geta", 0)) for p in players)
+                if cur_v >= max_get:
+                    climate_delta += 15
+            if has_climate_modifier(state, "geta_2"):
+                cur_car = int(fav.get("Caracalla", 0))
+                if cur_v > 0 and cur_car <= 0:
+                    climate_delta -= 15
+                elif cur_v <= 0:
+                    climate_delta -= 5
+        elif fac == "Domna":
+            if has_climate_modifier(state, "domna_1") and cur_v >= 0:
+                climate_delta -= 10
+            if has_climate_modifier(state, "domna_2"):
+                climate_delta += 15 if cur_v > 0 else -15
+        elif fac == "Aurelius":
+            if has_climate_modifier(state, "aurelius_1") and cur_v >= 0:
+                climate_delta -= 8
+            if has_climate_modifier(state, "aurelius_2"):
+                climate_delta += 10 if cur_v <= 0 else -10
+
+    if fatal_risk and cash >= 3:
+        return False
+
+    # Protect Loyalty Rewards (missions_2) when holding +Favor and matching completed/active missions
+    if has_climate_modifier(state, "missions_2"):
+        st_b = _ensure_player_stats(bot)
+        fmc = st_b.get("factionMissionsCompleted") or {}
+        for fac in pen_facs:
+            cur_v = int(fav.get(fac, 0))
+            done_cnt = int(fmc.get(fac, 0) or 0)
+            active_cnt = sum(
+                1 for m in bot.get("missions", [])
+                if not m.get("completed") and fac in (m.get("favor") or [])
+            )
+            if cur_v > 0 and (done_cnt > 0 or active_cnt > 0):
+                climate_delta -= 10 * (done_cnt or 1)
+
+    if in_market:
+        cash_thresh = 8 if tier == 3 else 6
+        return cash <= cash_thresh or climate_delta >= 10
+
+    low_cash_thresh = 6 if tier == 3 else 5
+    if cash <= low_cash_thresh:
+        return True
+    return climate_delta >= 12
+
+
 def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     strategy = bot.get("botStrategy", "balanced")
     tier = _bot_difficulty_tier(bot)
-    # Play cash-generating Influence cards (Patron / Favor) in Ostia if cash is low
+    # Play cash-generating Influence cards (Patron / Favor) in Ostia if needed or beneficial
     cash_Inf_thresh = 8 if tier == 3 else 6
-    if tier >= 2 and bot["cash"] <= cash_Inf_thresh:
+    if tier >= 2:
         for inf_c in list(bot.get("influence", [])):
             nm = str(inf_c.get("name", ""))
-            if "Patron" in nm or ("Favor" in nm and (inf_c.get("favorGain") or {}).get("faction") != "Geta"):
+            if "Patron" in nm:
+                if _bot_should_play_patron(state, bot, inf_c, in_market=True):
+                    _execute_influence_card(state, bot, inf_c, {})
+                    add_npc_event(state, bot, "influence", f"Played '{nm}' in Ostia")
+                    break
+            elif bot["cash"] <= cash_Inf_thresh and "Favor" in nm and (inf_c.get("favorGain") or {}).get("faction") != "Geta":
                 _execute_influence_card(state, bot, inf_c, {})
                 add_npc_event(state, bot, "influence", f"Played '{nm}' in Ostia")
                 break
@@ -12562,8 +13843,9 @@ def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]
     for c in list(bot.get("influence", [])):
         nm = str(c.get("name", ""))
         if "Patron" in nm:
-            _execute_influence_card(state, bot, c, {})
-            add_npc_event(state, bot, "influence", f"Played '{nm}' (+8d)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🃏 +8d"})
+            if _bot_should_play_patron(state, bot, c, in_market=False):
+                _execute_influence_card(state, bot, c, {})
+                add_npc_event(state, bot, "influence", f"Played '{nm}' (+8d)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🃏 +8d"})
         elif "Favor" in nm and (c.get("favorGain") or {}).get("faction") != "Geta":
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", f"Played '{nm}'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": f"🃏 {nm}"})
@@ -12656,8 +13938,6 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         rev_tile = state["romeBoard"][curr_cell].get("revealed") or {}
         edges = get_effective_tile_edges(curr_cell, rev_tile)
         guard_friend_active = bool(bot.get("friendInGuard") or bot.get("turnEffects", {}).get("friendInGuard"))
-        div_tiber_active = has_climate_modifier(state, "geta_3")
-        bot_has_emerald = int((bot.get("favor") or {}).get("Geta", 0)) >= 1
 
         passable: List[Tuple[str, str]] = []
         for d, val in edges.items():
@@ -12668,8 +13948,7 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 continue
             toll_amt = parse_edge_toll(val)
             edge_cost = (toll_amt or 0) if not guard_friend_active else 0
-            bridge_cost = 4 if (div_tiber_active and get_tiber_bridge_name(curr_cell, t_cand) and not bot_has_emerald) else 0
-            if bot["cash"] < edge_cost + bridge_cost:
+            if bot["cash"] < edge_cost:
                 continue
             passable.append((d, val))
 
@@ -12717,8 +13996,6 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                         continue
                     d_gate = min(_bot_grid_distance(tcell, g, state) for g in GATE_CELLS)
                     edge_pen = 0.0 if v == "green" else (0.4 if parse_edge_toll(v) is not None else 0.8)
-                    if div_tiber_active and get_tiber_bridge_name(curr_cell, tcell) and not bot_has_emerald and not used_shortcut:
-                        edge_pen += 0.9
                     sc_val = d_gate + edge_pen
                     if sc_val < best_exit_score:
                         best_exit_score = sc_val
@@ -12749,8 +14026,6 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                     best_g_val -= toll_pen
                 else:
                     best_g_val -= enc_pen
-                if div_tiber_active and get_tiber_bridge_name(curr_cell, tcell) and not bot_has_emerald and not used_shortcut:
-                    best_g_val -= 5.0 if tier == 3 else 4.0
                 if tier == 1:
                     best_g_val += float(secrets.randbelow(7) - 3)
                 if best_g_val > best_move_score:
@@ -12762,14 +14037,6 @@ def _run_bot_delivery_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         if toll_amt is not None and not guard_friend_active:
             bot["cash"] -= toll_amt
             add_log(state, f"{bot['name']} paid {toll_amt}(d) toll to cross the {chosen_dir} edge of {curr_cell}.", "action")
-
-        bridge_nm_pre = get_tiber_bridge_name(curr_cell, target_cell) if not used_shortcut else None
-        if div_tiber_active and bridge_nm_pre:
-            if bot_has_emerald:
-                add_log(state, f"{bot['name']} crossed {bridge_nm_pre} with the 4(d) Divided Tiber toll waived (+Emerald Favor)!", "action")
-            else:
-                bot["cash"] -= 4
-                add_log(state, f"{bot['name']} paid 4(d) Divided Tiber toll to cross {bridge_nm_pre}.", "action")
 
         # Edge encounter
         if not used_shortcut and chosen_val not in ("green", "red", None, "none") and toll_amt is None:
@@ -13161,14 +14428,12 @@ def sanitize_state_for_player(
                 if "modifier" in b_entry:
                     b_entry["modifier"] = normalize_scarcity_modifier(str(b_entry["modifier"]))
             out_dirs = {}
-            div_tiber_active = has_climate_modifier(state, "geta_3")
             for d in DIR_DELTAS:
                 val = eff_edges.get(d)
                 t_cell = get_target_cell(coord, d)
                 tiber_blocked = is_tiber_crossing_blocked(coord, t_cell)
                 bridge_name = get_tiber_bridge_name(coord, t_cell)
                 toll_cost = parse_edge_toll(val)
-                bridge_toll_cost = 4 if (div_tiber_active and bridge_name) else 0
                 if val is not None or tiber_blocked:
                     out_dirs[d] = {
                         "edge": val,
@@ -13177,7 +14442,7 @@ def sanitize_state_for_player(
                         "tiberBlocked": tiber_blocked,
                         "bridgeName": bridge_name,
                         "tollCost": toll_cost,
-                        "bridgeTollCost": bridge_toll_cost,
+                        "bridgeTollCost": 0,
                         "passable": (val not in ("red", None, "none")) and not tiber_blocked,
                     }
             rev["outgoingDirections"] = out_dirs
@@ -13404,6 +14669,8 @@ def sanitize_state_for_player(
         p_copy["missionsFailed"] = int(st_live.get("missionsFailed", 0) or 0)
         p_copy["netMissions"] = p_copy["missionsCompleted"] - p_copy["missionsFailed"]
         p_copy["plautillaMissionsCompleted"] = int(st_live.get("plautillaMissionsCompleted", 0) or 0)
+        fmc_live = st_live.get("factionMissionsCompleted") or {}
+        p_copy["factionMissionsCompleted"] = {f: int(fmc_live.get(f, 0) or 0) for f in FACTIONS}
 
         # Enrich cart items with live sell options + cost basis if player is on a Rome tile
         rev_tile = (rome_view.get(curr_cell or "") or {}).get("revealed") or {}

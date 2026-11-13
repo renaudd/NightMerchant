@@ -1180,8 +1180,14 @@
         6,
         5
       ],
-      "combatText": "No combat bonus",
-      "combat": null
+      "combatText": "Pre-roll 1(R) CP strike (destroyed if used)",
+      "combat": {
+        "dice": 1,
+        "negDice": 0,
+        "flat": 0,
+        "consumable": true,
+        "preRollStrike": true
+      }
     },
     {
       "id": "wpn_2",
