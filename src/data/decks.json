@@ -396,10 +396,10 @@
           "type": "mission_request"
         }
       ],
-      "actionText": "Pick up Buffalo in F5 and Deliver to C2",
+      "actionText": "Pick up Aurochs in F5 and Deliver to C2",
       "mission": {
         "kind": "delivery",
-        "item": "Buffalo",
+        "item": "Aurochs",
         "pickupCell": "F5",
         "deliverCell": "C2",
         "category": "Meat Animal",
@@ -605,7 +605,7 @@
         "Aurelius",
         "-Caracalla"
       ],
-      "friendlyReward": "4(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Aurelius"
       ],
@@ -1340,11 +1340,16 @@
       "combatReward": "4(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": "<=1",
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Weapons or Fine Wine"
+        },
+        {
+          "condition": "=1",
           "type": "demand"
         },
         {
@@ -1408,7 +1413,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Exotic Animals or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -1466,11 +1476,16 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": "<=1",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": "0..1",
           "type": "demand"
         },
         {
@@ -1539,7 +1554,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -1637,7 +1657,7 @@
       "friendlyFavor": [
         "Geta"
       ],
-      "friendlyReward": "4(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta"
       ],
@@ -1778,11 +1798,16 @@
       "combatReward": "10(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": ">=0",
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": ">=1",
           "type": "deck_quest_offer"
         },
         {
@@ -1804,7 +1829,7 @@
       "friendlyFavor": [
         "Caracalla"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Caracalla"
       ],
@@ -1945,7 +1970,7 @@
         "Geta",
         "-Caracalla"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta",
         "-Domna"
@@ -2083,8 +2108,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Weapons"
         },
         {
           "condition": ">=0",
@@ -2129,7 +2159,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Exotic Animals"
+        },
+        {
+          "condition": "=0",
           "type": "demand"
         },
         {
@@ -2175,8 +2210,13 @@
       "combatReward": "10(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Marble"
         },
         {
           "condition": ">=0",
@@ -2357,8 +2397,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Marble"
         },
         {
           "condition": ">=0",
@@ -2462,7 +2507,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Marble or Exotic Animals"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -2589,7 +2639,7 @@
       "friendlyFavor": [
         "Geta"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta",
         "-Domna"
@@ -2668,7 +2718,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -2969,8 +3024,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine"
         },
         {
           "condition": ">=0",
@@ -3096,8 +3156,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Wine"
         },
         {
           "condition": ">=0",
@@ -3138,15 +3203,20 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": ">=0",
-          "type": "deck_quest_offer"
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Exotic Animals"
         },
         {
           "condition": ">=1",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
           "type": "offer"
         }
       ],
@@ -3174,10 +3244,10 @@
     {
       "id": "inf_2",
       "name": "Patron",
-      "effectText": "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
+      "effectText": "Receive 6(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
       "effectCode": "patron_caracalla_domna",
       "favorGain": {
-        "cash": 8,
+        "cash": 6,
         "extraFavor": [
           "-Caracalla",
           "-Domna"
@@ -3236,11 +3306,11 @@
     {
       "id": "inf_16",
       "name": "Plautilla Favor",
-      "effectText": "Receive 6(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_plautilla",
       "favorGain": {
         "faction": "Plautilla",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Caracalla",
           "Plautilla"
@@ -3259,11 +3329,11 @@
     {
       "id": "inf_18",
       "name": "Aurelian Favor",
-      "effectText": "Receive 6(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_aurelius",
       "favorGain": {
         "faction": "Aurelius",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Caracalla",
           "Aurelius"
@@ -3385,10 +3455,10 @@
     {
       "id": "inf_39",
       "name": "Patron",
-      "effectText": "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
+      "effectText": "Receive 6(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
       "effectCode": "patron_geta_aurelius",
       "favorGain": {
-        "cash": 8,
+        "cash": 6,
         "extraFavor": [
           "-Geta",
           "-Aurelius"
@@ -3469,11 +3539,11 @@
     {
       "id": "inf_52",
       "name": "Domna Favor",
-      "effectText": "Receive 6(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_domna",
       "favorGain": {
         "faction": "Domna",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Plautilla",
           "-Aurelius",
@@ -3532,14 +3602,6 @@
     },
     {
       "id": "inf_59",
-      "name": "Casus Belli",
-      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
-      "effectCode": "casus_belli",
-      "favorGain": null,
-      "sellTable": null
-    },
-    {
-      "id": "inf_60",
       "name": "Casus Belli",
       "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
       "effectCode": "casus_belli",

@@ -40,11 +40,11 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         inf_by_id = {c["id"]: c for c in decks["influence"]}
         self.assertEqual(inf_by_id["inf_2"]["effectCode"], "patron_caracalla_domna")
         self.assertEqual(inf_by_id["inf_2"]["favorGain"]["extraFavor"], ["-Caracalla", "-Domna"])
-        self.assertIn("8(d)", inf_by_id["inf_2"]["effectText"])
+        self.assertIn("6(d)", inf_by_id["inf_2"]["effectText"])
 
         self.assertEqual(inf_by_id["inf_39"]["effectCode"], "patron_geta_aurelius")
         self.assertEqual(inf_by_id["inf_39"]["favorGain"]["extraFavor"], ["-Geta", "-Aurelius"])
-        self.assertIn("8(d)", inf_by_id["inf_39"]["effectText"])
+        self.assertIn("6(d)", inf_by_id["inf_39"]["effectText"])
 
         with open(REPO_ROOT / "src/data/market_and_missions.json", "r", encoding="utf-8") as f:
             mm = json.load(f)
@@ -67,12 +67,14 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         index_html = (REPO_ROOT / "public/index.html").read_text(encoding="utf-8")
         styles_css = (REPO_ROOT / "public/styles.css").read_text(encoding="utf-8")
         rulebook_md = (REPO_ROOT / "NightMerchant Rule Book.md").read_text(encoding="utf-8")
-        self.assertIn("cards_catalog.json?v=58", app_js)
-        self.assertIn("app.js?v=58", index_html)
+        version_json = json.loads((REPO_ROOT / "public/version.json").read_text(encoding="utf-8"))
+        self.assertEqual(version_json["version"], "61")
+        self.assertIn("cards_catalog.json?v=61", app_js)
+        self.assertIn("app.js?v=61", index_html)
         self.assertTrue((REPO_ROOT / "public/assets/icons/rome_211_map_bg_v4.jpg").is_file())
         self.assertTrue((REPO_ROOT / "public/assets/icons/ostia_market_board_bg.jpg").is_file())
-        self.assertIn("ostia_market_board_bg.jpg?v=58", styles_css)
-        self.assertEqual(styles_css.count("rome_211_map_bg_v4.jpg?v=58"), 2)
+        self.assertIn("ostia_market_board_bg.jpg?v=61", styles_css)
+        self.assertEqual(styles_css.count("rome_211_map_bg_v4.jpg?v=61"), 2)
         self.assertNotIn("rome_211_map_bg_v3.jpg", styles_css)
         self.assertNotIn("Divided Tiber", app_js)
         self.assertNotIn("Guild Ledger", app_js)
@@ -118,14 +120,14 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         p0["cash"] = 10
         ok, msg = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "inf_2"})
         self.assertTrue(ok, msg)
-        self.assertEqual(p0["cash"], 18)
+        self.assertEqual(p0["cash"], 16)
         self.assertEqual(p0["favor"]["Caracalla"], -1)
         self.assertEqual(p0["favor"]["Domna"], -1)
         self.assertTrue(p0["cart"][0]["combat"]["preRollStrike"])
 
         ok2, msg2 = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "inf_39"})
         self.assertTrue(ok2, msg2)
-        self.assertEqual(p0["cash"], 26)
+        self.assertEqual(p0["cash"], 22)
         self.assertEqual(p0["favor"]["Geta"], -1)
         self.assertEqual(p0["favor"]["Aurelius"], -1)
 
@@ -635,6 +637,330 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         self.assertNotIn("When the Market Phase ends, pass the First Player Token clockwise", rulebook_md)
         self.assertNotIn("advance the Clock one hour and pass the First Player Token clockwise", rulebook_md)
         self.assertIn("Pass the First Player Token clockwise (once per season)", rulebook_md)
+
+    def test_tutorial_preference_rulebook_and_encounter_icons(self):
+        import sys
+        import tempfile
+        src_dir = str(REPO_ROOT / "src")
+        if src_dir not in sys.path:
+            sys.path.insert(0, src_dir)
+        import db as nm_db
+
+        self.assertTrue(nm_db.DEFAULT_USER_SETTINGS.get("tutorialEnabled"))
+        fb_src = (REPO_ROOT / "src/firebase_db.py").read_text(encoding="utf-8")
+        self.assertIn('"tutorialEnabled"', fb_src)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_db = str(Path(tmpdir) / "test_nm.sqlite3")
+            with mock.patch.object(nm_db, "DB_PATH", temp_db):
+                nm_db.init_db()
+                user, err = nm_db.create_user("tuttester", "Tut Tester", "Pass1234!", "Z1", "tut@roma.local")
+                self.assertIsNone(err)
+                self.assertIsNotNone(user)
+                self.assertTrue(user["settings"]["tutorialEnabled"])
+                updated, upd_err = nm_db.update_user_profile(
+                    user["id"],
+                    settings={**user["settings"], "tutorialEnabled": False},
+                )
+                self.assertIsNone(upd_err)
+                self.assertFalse(updated["settings"]["tutorialEnabled"])
+                reloaded = nm_db.get_user_by_id(user["id"])
+                self.assertFalse(reloaded["settings"]["tutorialEnabled"])
+
+        enc_dir = REPO_ROOT / "public/assets/icons/encounters"
+        expected_icons = [
+            "mob_center.png",
+            "mob_edge.png",
+            "mob_corner_edge.png",
+            "mob_top_corner_edge.png",
+            "theater_center.png",
+            "theater_edge.png",
+            "theater_corner_edge.png",
+            "theater_top_corner_edge.png",
+            "soothsayer_center.png",
+            "soothsayer_edge.png",
+            "patricii_center.png",
+            "patricii_edge.png",
+        ]
+        self.assertTrue((REPO_ROOT / "public/assets/icons/dice.png").is_file())
+        for faction in ("nefarii", "legiones"):
+            for count in (1, 2, 3, 4):
+                for loc in ("center", "flat_edge", "corner_edge"):
+                    expected_icons.append(f"{faction}_{count}_{loc}.png")
+
+        for filename in expected_icons:
+            fpath = enc_dir / filename
+            self.assertTrue(fpath.is_file(), f"Missing encounter artwork {fpath}")
+            raw = fpath.read_bytes()
+            self.assertGreater(len(raw), 1000, f"Encounter icon too small: {filename}")
+            self.assertEqual(raw[:8], b"\x89PNG\r\n\x1a\n", f"Not a valid PNG: {filename}")
+
+        rulebook_md = (REPO_ROOT / "NightMerchant Rule Book.md").read_text(encoding="utf-8")
+        self.assertIn("skip the Political Climate track", rulebook_md)
+
+    def test_theater_troupe_friendly_hostile_collections_and_patron(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        state["phase"] = "delivery"
+        state["activePlayerIndex"] = 0
+        p0 = state["players"][0]
+
+        # Build both Friendly and Hostile Favor Collections:
+        # 1) Mission completion adds +2 Geta to Friendly Collection
+        ge.apply_favor_list(p0, ["+Geta", "+Geta"], reason="Completed Mission 'Grain' (Friend: Geta)", collection="friendly")
+        # 2) Combat / refused demand (Hostile consequence) gives +1 Caracalla, -1 Domna into Hostile Collection
+        ge.apply_favor_list(p0, ["+Caracalla", "-Domna"], reason="Defeated Caracalla patrol (Hostile)", collection="hostile")
+        # 3) Play Influence card 'Patron' (-Caracalla, -Domna -> Friendly Favor Collection outcome!)
+        p0["influence"] = [{"id": "inf_2", "name": "Patron", "effectCode": "patron_caracalla_domna", "favorGain": {"cash": 6, "extraFavor": ["-Caracalla", "-Domna"]}}]
+        ok, msg = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "inf_2"})
+        self.assertTrue(ok, msg)
+
+        # Net favor before Theater Troupe:
+        # Geta = +2 (friendly)
+        # Caracalla = +1 (hostile) - 1 (friendly Patron) = 0
+        # Domna = -1 (hostile) - 1 (friendly Patron) = -2
+        self.assertEqual(p0["favor"]["Geta"], 2)
+        self.assertEqual(p0["favor"]["Caracalla"], 0)
+        self.assertEqual(p0["favor"]["Domna"], -2)
+        self.assertEqual(p0["favorCollections"]["friendly"]["Geta"], 2)
+        self.assertEqual(p0["favorCollections"]["friendly"]["Caracalla"], -1)
+        self.assertEqual(p0["favorCollections"]["hostile"]["Caracalla"], 1)
+
+        # Roll 0 on Theater Troupe -> Clears ONLY Friendly Collection!
+        # Negates +2 Geta AND negates Patron's -1 Caracalla / -1 Domna, leaving Hostile +1 Caracalla & -1 Domna intact!
+        ge._apply_table_encounter_outcome(state, p0, "theater", 0, emit_dice_event=True)
+        self.assertEqual(p0["favor"]["Geta"], 0)
+        self.assertEqual(p0["favor"]["Caracalla"], 1)
+        self.assertEqual(p0["favor"]["Domna"], -1)
+        self.assertEqual(p0["favorCollections"]["friendly"]["Geta"], 0)
+        self.assertEqual(p0["favorCollections"]["friendly"]["Caracalla"], 0)
+        self.assertEqual(p0["favorCollections"]["hostile"]["Caracalla"], 1)
+
+        # Roll I on Theater Troupe -> Clears ONLY Hostile Collection!
+        ge._apply_table_encounter_outcome(state, p0, "theater", 1, emit_dice_event=True)
+        self.assertEqual(p0["favor"]["Geta"], 0)
+        self.assertEqual(p0["favor"]["Caracalla"], 0)
+        self.assertEqual(p0["favor"]["Domna"], 0)
+        self.assertEqual(p0["favorCollections"]["hostile"]["Caracalla"], 0)
+        self.assertEqual(p0["favorCollections"]["hostile"]["Domna"], 0)
+
+    def test_match_fixing_restricted_to_gamble_flow(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        state["phase"] = "delivery"
+        state["activePlayerIndex"] = 0
+        p0 = state["players"][0]
+        p0["position"] = "B1"
+        p0["cash"] = 20
+        p0["influence"] = [{"id": "inf_mf", "name": "Match Fixing", "effectCode": "match_fixing"}]
+
+        # Reveal B1 as non-gamble tile -> playing Match Fixing must fail
+        state["romeBoard"]["B1"]["revealed"] = {
+            "id": "tile_plain",
+            "name": "Market Stalls",
+            "gamble": False,
+            "edges": {"N": "green", "S": "green", "E": "green", "W": "green"},
+        }
+        ok, err = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "inf_mf"})
+        self.assertFalse(ok)
+        self.assertIn("Stadium Gambling", err)
+        self.assertEqual(len(p0["influence"]), 1)
+
+        # Even on a Gambling tile, omitting fromGamble must fail (cannot pre-arm outside Gamble UI)
+        state["romeBoard"]["B1"]["revealed"]["gamble"] = True
+        ok2, err2 = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "inf_mf"})
+        self.assertFalse(ok2)
+        self.assertIn("Stadium Gambling", err2)
+        self.assertEqual(len(p0["influence"]), 1)
+
+        # From inside Stadium Gambling modal (fromGamble=True) on a Gamble tile -> succeeds
+        ok3, msg3 = ge.handle_player_action(
+            state, p0["userId"], {"type": "play_influence", "cardId": "inf_mf", "fromGamble": True}
+        )
+        self.assertTrue(ok3, msg3)
+        self.assertTrue(p0["turnEffects"]["matchFixing"])
+        self.assertEqual(len(p0["influence"]), 0)
+
+    def test_if_carrying_contraband_threats_and_no_contraband_passthrough(self):
+        enc_by_id = ge._get_static_card_maps()["enc_by_id"]
+        leg6 = enc_by_id["leg_6"]
+        leg10 = enc_by_id["leg_10"]
+        nef29 = enc_by_id["nef_29"]
+        self.assertEqual(leg6["reactions"][1]["condition"], "-1..0")
+        self.assertEqual(leg6["reactions"][1]["ifCarrying"], "Weapons or Fine Wine")
+        self.assertEqual(leg6["reactions"][1]["type"], "combat")
+        self.assertEqual(leg10["reactions"][1]["ifCarrying"], "Guards or Weapons")
+        self.assertEqual(nef29["reactions"][1]["ifCarrying"], "Exotic Animals")
+
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        state["phase"] = "delivery"
+        state["activePlayerIndex"] = 0
+        p0 = state["players"][0]
+        p0["position"] = "B1"
+
+        # 1) _player_carrying_contraband helper checks non-mission goods & guards accurately
+        p0["cart"] = [{"id": "g1", "name": "Grain", "category": "Grain"}]
+        p0["guards"] = []
+        self.assertFalse(ge._player_carrying_contraband(p0, "Weapons or Fine Wine"))
+
+        p0["cart"] = [{"id": "m1", "name": "Contraband Gladii", "category": "Weapons", "isMissionCargo": True}]
+        self.assertFalse(ge._player_carrying_contraband(p0, "Weapons or Fine Wine"))
+
+        p0["cart"] = [{"id": "w1", "name": "Gladii", "category": "Weapons"}]
+        self.assertTrue(ge._player_carrying_contraband(p0, "Weapons or Fine Wine"))
+        self.assertTrue(ge._player_carrying_contraband(p0, "Guards or Weapons"))
+
+        p0["cart"] = []
+        p0["guards"] = [{"id": "gd1", "name": "Veteran Guard"}]
+        self.assertTrue(ge._player_carrying_contraband(p0, "Guards or Weapons"))
+        self.assertFalse(ge._player_carrying_contraband(p0, "Weapons"))
+
+        # 2) At Favor 0 with Fine Wine on cart -> leg_6 (-1..0 ifCarrying Weapons or Fine Wine) triggers Combat!
+        p0["guards"] = []
+        p0["cart"] = [{"id": "fw1", "name": "Falernian Wine", "category": "Fine Wine"}]
+        pend_combat = ge._build_pending_encounter_state(state, p0, leg6, "legiones", 1)
+        self.assertEqual(pend_combat["reaction"], "combat")
+        self.assertTrue(pend_combat["combatMandatory"])
+        self.assertEqual(pend_combat["matchedTierIndex"], 1)
+
+        # 3) At Favor 0 with only Grain -> leg_6 downgrades to peaceful no_contraband inspection!
+        p0["cart"] = [{"id": "g1", "name": "Grain", "category": "Grain"}]
+        pend_clean = ge._build_pending_encounter_state(state, p0, leg6, "legiones", 1)
+        self.assertEqual(pend_clean["reaction"], "no_contraband")
+        self.assertFalse(pend_clean["combatMandatory"])
+        self.assertFalse(pend_clean["canInitiateCombat"])
+        self.assertEqual(pend_clean["matchedTierIndex"], 1)
+        self.assertIn("Inspecting cart for Weapons or Fine Wine", pend_clean["card"]["actionText"])
+
+        state["pendingEncounter"] = pend_clean
+        state["logs"] = []
+        ok, msg = ge.handle_player_action(state, p0["userId"], {"type": "resolve_encounter", "decision": "fulfill"})
+        self.assertTrue(ok, msg)
+        self.assertIsNone(state.get("pendingEncounter"))
+        self.assertEqual(p0["favor"][leg6["faction"]], 0)
+        self.assertTrue(any("none found, waved through." in entry.get("text", "") for entry in state["logs"]))
+
+        # 4) AI bot auto-resolution passes no_contraband inspection peacefully
+        p1 = state["players"][1]
+        p1["isBot"] = True
+        p1["cart"] = [{"id": "g2", "name": "Grain", "category": "Grain"}]
+        p1["influence"] = []
+        pend_bot = ge._build_pending_encounter_state(state, p1, nef29, "nefarii", 1)
+        self.assertEqual(pend_bot["reaction"], "no_contraband")
+        state["pendingEncounter"] = pend_bot
+        state["logs"] = []
+        acted = ge._execute_single_bot_encounter_step(state)
+        self.assertTrue(acted)
+        self.assertIsNone(state.get("pendingEncounter"))
+        self.assertEqual(p1["favor"][nef29["faction"]], 0)
+        self.assertTrue(any("none found, waved through." in entry.get("text", "") for entry in state["logs"]))
+
+    def test_rebalance_mission_influence_and_favor_updates(self):
+        with open(REPO_ROOT / "src/data/decks.json", "r", encoding="utf-8") as f:
+            decks = json.load(f)
+        with open(REPO_ROOT / "src/data/market_and_missions.json", "r", encoding="utf-8") as f:
+            mm = json.load(f)
+        missions = mm["missiones"]
+        influence = decks["influence"]
+
+        self.assertFalse(any(m.get("kind") == "expose" for m in missions))
+        self.assertEqual(len(missions), 52)
+        cb_cards = [c for c in influence if "Casus Belli" in c.get("name", "")]
+        self.assertEqual(len(cb_cards), 2)
+        self.assertFalse(any(c.get("id") == "inf_60" for c in influence))
+
+        inf_by_id = {c["id"]: c for c in influence}
+        self.assertEqual(inf_by_id["inf_2"]["favorGain"]["cash"], 6)
+        self.assertEqual(inf_by_id["inf_39"]["favorGain"]["cash"], 6)
+        for fid in ("inf_16", "inf_18", "inf_52"):
+            self.assertEqual(inf_by_id[fid]["favorGain"]["cash"], 4)
+            self.assertIn("4(d)", inf_by_id[fid]["effectText"])
+
+        mis_by_id = {m["id"]: m for m in missions}
+        self.assertEqual(mis_by_id["mis_3"]["reward"]["amount"], 10)
+        self.assertEqual(mis_by_id["mis_18"]["reward"]["amount"], 12)
+        self.assertEqual(mis_by_id["mis_28"]["reward"]["amount"], 10)
+        self.assertEqual(mis_by_id["mis_10"]["modifier"], "=")
+        self.assertEqual(mis_by_id["mis_10"]["reward"]["amount"], 8)
+        self.assertIn("= Scarcity", mis_by_id["mis_10"]["text"])
+        self.assertEqual(mis_by_id["mis_54"]["modifier"], "=")
+        self.assertEqual(mis_by_id["mis_54"]["reward"]["amount"], 12)
+        self.assertIn("= Scarcity", mis_by_id["mis_54"]["text"])
+        self.assertIn("mis_34", mis_by_id)
+        self.assertIn("mis_51", mis_by_id)
+
+        eq_sell_missions = [m for m in missions if m.get("kind") == "sell" and m.get("modifier") == "="]
+        self.assertGreaterEqual(len(eq_sell_missions), 6)
+
+    def test_bot_influence_ai_supplicant_procurer_make_haste_informants(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        state["phase"] = "delivery"
+        state["turn"] = 5
+        bot = state["players"][1]
+        bot["isBot"] = True
+        bot["botDifficulty"] = "ionic"
+        bot["position"] = "C3"
+        bot["cash"] = 18
+        bot["movesRemaining"] = 1
+        bot["cart"] = []
+
+        # Ensure Grain is in decks["market"] and give a distant mission target for Make Haste
+        if not any(c.get("category") == "Grain" for c in state["decks"]["market"]):
+            state["decks"]["market"].insert(0, {
+                "id": "grn_test",
+                "name": "Grain",
+                "category": "Grain",
+                "subcategory": "Grain",
+                "track": "Grain",
+                "blocks": 1,
+                "buy": [5, 4, 3, 2, 1],
+                "sell": [9, 7, 5, 3, 2],
+            })
+        bot["missions"] = [
+            {"id": "m_sell", "kind": "sell", "category": "Grain", "cell": "F6", "modifier": "=", "completed": False},
+            {"id": "m_del", "kind": "delivery", "pickupCell": "F6", "deliverCell": "A1", "blocks": 1, "pickedUp": False, "completed": False},
+        ]
+        bot["influence"] = [
+            {"id": "inf_proc", "name": "Procurer", "effectCode": "buy_deck_good"},
+            {"id": "inf_mh", "name": "Make Haste", "effectCode": "move_twice"},
+            {"id": "inf_info", "name": "Informants", "effectCode": "reorder_top_3_any"},
+        ]
+        ge._bot_try_proactive_self_influence(state, bot)
+        self.assertEqual(len(bot["cart"]), 1, "Bot should procure a good with Procurer")
+        self.assertEqual(bot["movesRemaining"], 2, "Bot should gain +1 move from Make Haste")
+        self.assertTrue(bot["turnEffects"].get("makeHasteExtraTransact"))
+        self.assertIsNone(bot.get("pendingTop3Reorder"), "Bot should finish Informants reorder immediately")
+        self.assertEqual(len(bot["influence"]), 0, "Bot should have played Procurer, Make Haste, and Informants")
+
+        # 2) Supplicant during unfavorable combat/demand check
+        demand_card = {
+            "id": "pat_sup_test",
+            "name": "Senator",
+            "deck": "Patricii",
+            "type": "character",
+            "faction": "Domna",
+            "combatFormula": "2(R)+2",
+            "friendlyFavor": ["Domna"],
+            "friendlyReward": "8(d)",
+            "hostileFavor": ["-Domna"],
+            "combatReward": "8(d)",
+            "actionText": "Give 6(d).",
+            "reactions": [
+                {"condition": "<=0", "type": "combat"},
+                {"condition": ">=1", "type": "demand"},
+                {"condition": ">=2", "type": "payoff"},
+            ],
+        }
+        bot["favor"]["Domna"] = 0  # <=0 = combat (rank 0), +2 Supplicant -> 2 = payoff (rank 6)!
+        bot["influence"] = [{"id": "inf_sup", "name": "Supplicant", "effectCode": "temp_favor_plus_2"}]
+        pend = ge._build_pending_encounter_state(state, bot, demand_card, "patricii", 1)
+        self.assertEqual(pend["reaction"], "combat")
+        state["pendingEncounter"] = pend
+        acted = ge._execute_single_bot_encounter_step(state)
+        self.assertTrue(acted)
+        self.assertEqual(len(bot["influence"]), 0, "Bot should play Supplicant when +2 shifts reaction upward")
 
     def test_frontend_ui_js_suite_via_jsc(self):
         jsc = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"

@@ -186,6 +186,10 @@ globalThis.CustomEvent = function (name, opts) {
 };
 
 // Load application source under test
+load("public/tutorial.js");
+load("public/profile_settings.js");
+load("public/rulebook_view.js");
+load("public/dice_and_sfx.js");
 load("public/app.js");
 
 function assert(cond, msg) {
@@ -221,7 +225,7 @@ const inf39Catalog = { id: "inf_39", name: "Patron", effectCode: "patron_geta_au
 const inf2Legacy = { id: "inf_2", name: "Patron", effectText: "OLD STALE TEXT" };
 const inf39Legacy = { id: "inf_39b", name: "Patron", effectText: "OLD STALE TEXT" };
 
-assert(getInfluenceCardEffectText(inf2Catalog).includes("8(d)") && getInfluenceCardEffectText(inf2Catalog).includes("lose 1 Caracalla") && getInfluenceCardEffectText(inf2Catalog).includes("1 Domna"), "inf_2 effectText");
+assert(getInfluenceCardEffectText(inf2Catalog).includes("6(d)") && getInfluenceCardEffectText(inf2Catalog).includes("lose 1 Caracalla") && getInfluenceCardEffectText(inf2Catalog).includes("1 Domna"), "inf_2 effectText");
 assert(getInfluenceCardEffectText(inf2Legacy).includes("lose 1 Caracalla") && getInfluenceCardEffectText(inf2Legacy).includes("1 Domna"), "inf_2 legacy effectText");
 assert(getInfluenceCardEffectText(inf39Legacy).includes("lose 1 Geta") && getInfluenceCardEffectText(inf39Legacy).includes("1 Aurelian"), "inf_39 legacy effectText");
 assert(JSON.stringify(getInfluenceCardFavorList(inf2Legacy)) === JSON.stringify(["-Caracalla", "-Domna"]), "inf_2 legacy gems");
@@ -410,5 +414,302 @@ assert(
   cleanupSec && JSON.stringify(cleanupSec).includes("pass the First Player Token clockwise (once per season)"),
   "Clean-Up RULEBOOK_SECTIONS documents passing First Player Token once per season"
 );
+
+// 6. Item 1: Verify Tiber bridge pills are turned off on Delivery board
+const gsRome = buildMinimalGs("delivery");
+gsRome.players[0].position = "B1";
+const romeBoardEl = renderRomeNightBoard(gsRome, gsRome.players[0]);
+assert(romeBoardEl.querySelectorAll(".tiber-bridge-pill").length === 0, "Delivery board hides .tiber-bridge-pill labels");
+
+// 7. Item 2: Verify Pick Random Decree button and Rulebook first-time skip recommendation
+const gsClimate = buildMinimalGs("setup_climate");
+gsClimate.politicalClimate = {
+  options: DEFAULT_POLITICAL_CLIMATE_OPTIONS,
+  activeByFactor: {},
+  activeIds: [],
+  draftOrder: [0, 1],
+  draftStep: 0,
+};
+const climateBoardEl = renderPoliticalClimateBoard(gsClimate, gsClimate.players[0]);
+assert(climateBoardEl.querySelector("#btn-random-decree") !== null, "Political Climate Board shows Pick Random Decree button on active player pick");
+const setupRuleSec = RULEBOOK_SECTIONS.find((s) => s.id === "setup");
+assert(
+  setupRuleSec && JSON.stringify(setupRuleSec).toLowerCase().includes("skip the political track"),
+  "In-app Rulebook recommends first-time players skip the political track"
+);
+
+// 8. Item 4: Verify all 33 stylized location-aware encounter PNG assets map cleanly
+assert(getEncounterFigureAssetMeta("mob", "center").src.endsWith("/encounters/mob_center.png"), "Mob center uses mob_center.png");
+assert(getEncounterFigureAssetMeta("mob", "flat_edge").src.endsWith("/encounters/mob_edge.png"), "Mob edge uses mob_edge.png");
+assert(getEncounterFigureAssetMeta("theater", "center").src.endsWith("/encounters/theater_center.png"), "Theater center uses theater_center.png");
+assert(getEncounterFigureAssetMeta("theater", "flat_edge").src.endsWith("/encounters/theater_edge.png"), "Theater edge uses theater_edge.png");
+assert(getEncounterFigureAssetMeta("soothsayer", "center").src.endsWith("/encounters/soothsayer_center.png"), "Soothsayer center uses soothsayer_center.png");
+assert(getEncounterFigureAssetMeta("soothsayer", "corner_edge").src.endsWith("/encounters/soothsayer_edge.png"), "Soothsayer edge uses soothsayer_edge.png");
+assert(getEncounterFigureAssetMeta("patricii", "center").src.endsWith("/encounters/patricii_center.png"), "Patricii center uses patricii_center.png");
+assert(getEncounterFigureAssetMeta("patricii", "flat_edge").src.endsWith("/encounters/patricii_edge.png"), "Patricii edge uses patricii_edge.png");
+for (const cnt of [1, 2, 3, 4]) {
+  for (const loc of ["center", "flat_edge", "corner_edge"]) {
+    assert(
+      getEncounterFigureAssetMeta(`nefarii:${cnt}`, loc).src.endsWith(`/encounters/nefarii_${cnt}_${loc}.png`),
+      `Nefarii ${cnt} ${loc} maps to distinct non-overlapping icon`
+    );
+    assert(
+      getEncounterFigureAssetMeta(`legiones:${cnt}`, loc).src.endsWith(`/encounters/legiones_${cnt}_${loc}.png`),
+      `Legiones ${cnt} ${loc} maps to distinct non-overlapping icon`
+    );
+  }
+}
+const cornerLegEdge = renderDynamicEdgeSlotNode("NE", "legiones:3", "B2");
+assert(
+  cornerLegEdge.querySelectorAll("img")[0].attributes.src.endsWith("/encounters/legiones_3_corner_edge.png"),
+  "Corner edge Legiones(3) uses corner_edge sprite"
+);
+const flatMobEdge = renderDynamicEdgeSlotNode("N", "mob", "B2");
+assert(
+  flatMobEdge.querySelectorAll("img")[0].attributes.src.endsWith("/encounters/mob_edge.png"),
+  "Flat edge Mob uses mob_edge sprite"
+);
+const cornerTheaterSE = renderDynamicEdgeSlotNode("SE", "theater", "B2");
+const theaterSeImg = cornerTheaterSE.querySelectorAll("img")[0];
+assert(
+  theaterSeImg.attributes.src.endsWith("/encounters/theater_corner_edge.png") &&
+    theaterSeImg.classList.contains("is-corner-wedge") &&
+    theaterSeImg.classList.contains("is-corner-mirror"),
+  "SE corner Theater uses mirrored theater_corner_edge wedge sprite"
+);
+const cornerMobNW = renderDynamicEdgeSlotNode("NW", "mob", "B2");
+assert(
+  cornerMobNW.querySelectorAll("img")[0].attributes.src.endsWith("/encounters/mob_top_corner_edge.png"),
+  "NW corner Mob uses mob_top_corner_edge wedge sprite"
+);
+const cornerSoothNE = renderDynamicEdgeSlotNode("NE", "soothsayer", "B2");
+const cornerPatSW = renderDynamicEdgeSlotNode("SW", "patricii:1", "B2");
+assert(
+  cornerSoothNE.querySelectorAll("img")[0].classList.contains("is-compact-corner") &&
+    cornerPatSW.querySelectorAll("img")[0].classList.contains("is-compact-corner"),
+  "Corner Soothsayer and Patricius stay compact with is-compact-corner"
+);
+
+// 9. Item 5: Verify Clock Board, Hour Token Piece, Key, and Roll Charts in Delivery view
+gsRome.turn = 4;
+gsRome.turnHourLabel = "11:00 P.M.";
+const clockEl = renderRomeClockBoard(gsRome);
+const clockText = collectAllText(clockEl);
+assert(clockEl.id === "rome-clock-board", "Clock board renders #rome-clock-board");
+assert(clockEl.querySelectorAll(".rome-clock-hour-slot").length === 11, "Clock board shows Hours I..X plus Dawn");
+assert(clockEl.querySelectorAll(".rome-clock-token").length === 1, "Clock board places exactly 1 active hour game piece");
+const activeSlots = clockEl.querySelectorAll(".is-active");
+assert(activeSlots.length === 1 && collectAllText(activeSlots[0]).includes("11:00 P.M."), "Active clock slot matches Turn 4 (11:00 P.M.)");
+assert(
+  clockText.includes("PATRICII") &&
+    clockText.includes("PERSISTENT") &&
+    clockText.includes("REFRESH") &&
+    clockText.includes("GAMBLING") &&
+    clockText.includes("GREEN BORDER") &&
+    clockText.includes("RED BORDER") &&
+    clockText.includes("Theater Troupe") &&
+    clockText.includes("Angry Mob") &&
+    clockText.includes("Soothsayer") &&
+    clockText.includes("Driver Fate"),
+  "Clock board includes expanded Key and all 4 Roll Charts"
+);
+const leftStack = clockEl.querySelectorAll(".rome-clock-left-stack")[0];
+const leftStackText = collectAllText(leftStack);
+const leftImgs = leftStack.querySelectorAll("img").map((im) => im.attributes.src || "");
+assert(
+  leftStack &&
+    leftStackText.includes("Stadium Gambling") &&
+    leftStackText.includes("Triple Up") &&
+    leftImgs.some((s) => s.endsWith("/assets/icons/dice.png")),
+  "Stadium Gambling renders under Key with valid Rome dice.png icon"
+);
+
+// Verify Random 2 & 2 button is removed on setup_discard and Match Fixing has no Play button in hand
+const gsDiscUi = buildMinimalGs("setup_discard");
+gsDiscUi.players[0].missions = [{ id: "m1" }, { id: "m2" }, { id: "m3" }, { id: "m4" }];
+gsDiscUi.players[0].influence = [{ id: "i1" }, { id: "i2" }, { id: "i3" }, { id: "i4" }];
+const discPanel = renderSetupDiscardPanel(gsDiscUi.players[0]);
+const discText = collectAllText(discPanel);
+assert(!discText.includes("Random 2 & 2") && discText.includes("Auto-Select 2 & 2"), "Setup discard removed Random 2 & 2 button");
+
+const gsHandMf = buildMinimalGs("delivery");
+gsHandMf.players[0].position = "B1";
+gsHandMf.players[0].influence = [{ id: "mf1", name: "Match Fixing", effectCode: "match_fixing", cost: 4 }];
+appState.gameState = gsHandMf;
+const mfHandText = collectAllText(renderTabletopView());
+assert(!mfHandText.includes("▶ Play") && mfHandText.includes("Play in Gamble UI"), "Match Fixing shows Gamble UI badge instead of Play button in hand");
+
+// 10. Item 3: Verify Guided First-Season Tutorial progression & disable checkbox
+const tut = window.NightMerchantTutorial;
+assert(tut && typeof tut.computeActiveTutorialStep === "function", "NightMerchantTutorial exported");
+const gsTut = buildMinimalGs("setup_discard");
+gsTut.season = "Spring";
+const v0 = gsTut.players[0];
+const stepDiscard = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(
+  stepDiscard &&
+    stepDiscard.id === "spring_setup_discard" &&
+    stepDiscard.paragraphs.join(" ").includes("If an Influence card doesn’t seem valuable or if you don’t understand it, toss it.") &&
+    stepDiscard.paragraphs.join(" ").includes("Check out the goods that have populated the market board before deciding to keep any Sell missions."),
+  "Tutorial Step 1 includes required quotes"
+);
+
+gsTut.phase = "setup_climate";
+const stepClimate = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(stepClimate && stepClimate.id === "spring_setup_climate", "Tutorial Step 2 opens on setup_climate");
+
+gsTut.phase = "market";
+v0.cash = 10;
+gsTut.marketMeta = {
+  Grain: { scarcitySymbol: ">>", scarcityLabel: "Abundant (>>)" },
+  Wine: { scarcitySymbol: "=", scarcityLabel: "Uncommon (=)" },
+};
+// colIndex 5 (">>") is Abundant column; colIndex 3 ("=") is Uncommon column even on Grain!
+gsTut.marketBoard = {
+  Grain: [
+    null,
+    null,
+    null,
+    { id: "g_uncommon", name: "Mid Rye", currentBuyPrice: 9, colIndex: 3, colSymbol: "=" },
+    null,
+    { id: "g_abundant", name: "Abundant Wheat", currentBuyPrice: 6, colIndex: 5, colSymbol: ">>" },
+    null,
+  ],
+  Wine: [
+    null,
+    null,
+    null,
+    { id: "w_1", name: "Cheap Jug", currentBuyPrice: 2, colIndex: 3, colSymbol: "=" },
+  ],
+};
+// While a rival is active or NPC pacing is running, market tutorial must wait!
+gsTut.activePlayerIndex = 1;
+assert(tut.computeActiveTutorialStep(gsTut, v0, { enabled: true }) === null, "Market tutorial waits when another player is active");
+gsTut.activePlayerIndex = 0;
+assert(
+  tut.computeActiveTutorialStep(gsTut, v0, { enabled: true, isNpcPacing: true }) === null,
+  "Market tutorial waits while rival turn animations are playing"
+);
+const stepMarketBuy = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(
+  stepMarketBuy &&
+    stepMarketBuy.id === "spring_market_buy" &&
+    stepMarketBuy.paragraphs.join(" ").includes("Abundant Wheat") &&
+    !stepMarketBuy.paragraphs.join(" ").includes("Mid Rye"),
+  "Tutorial Market recommends affordable good actually in the Abundant (>>) column"
+);
+v0.cash = 2; // Now cannot afford Abundant Wheat (6), should pick cheapest affordable Wine (2)
+const stepMarketCheap = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(
+  stepMarketCheap && stepMarketCheap.paragraphs.join(" ").includes("Cheap Jug"),
+  "Tutorial Market falls back to cheapest affordable good when Abundant (>>) column is unaffordable"
+);
+v0.marketBought = 1;
+const stepMarketPass = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(
+  stepMarketPass &&
+    stepMarketPass.id === "spring_market_pass" &&
+    stepMarketPass.paragraphs.join(" ").toLowerCase().includes("multiple times"),
+  "Tutorial warns player they may need to click Pass multiple times"
+);
+
+gsTut.phase = "delivery_entry";
+const stepScoutC3 = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(stepScoutC3 && stepScoutC3.id === "spring_entry_scout_c3" && stepScoutC3.paragraphs.join(" ").includes("C3"), "Tutorial prompts Scouting C3 before entering");
+v0.scoutedInfo = [{ targetType: "tile", targetKey: "C3", revealedData: { name: "Forum" } }];
+const stepForumExplained = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(
+  stepForumExplained &&
+    stepForumExplained.id === "spring_entry_c3_explained" &&
+    stepForumExplained.paragraphs.join(" ").includes("D3") &&
+    stepForumExplained.paragraphs.join(" ").includes("D4") &&
+    stepForumExplained.paragraphs.join(" ").includes("Buy and Sell"),
+  "Tutorial explains 3 Forum tiles C3/D3/D4 after scouting C3"
+);
+const stepEnterB1 = tut.computeActiveTutorialStep(gsTut, v0, {
+  enabled: true,
+  dismissedSteps: new Set(["spring_entry_c3_explained"]),
+});
+assert(stepEnterB1 && stepEnterB1.id === "spring_entry_enter_b1" && stepEnterB1.paragraphs.join(" ").includes("B1"), "Tutorial prompts entering at B1 after scouting");
+
+gsTut.phase = "delivery";
+v0.position = "B1";
+const stepNextScout = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(stepNextScout && stepNextScout.id === "spring_delivery_scout_next", "Tutorial prompts scouting next planned tile on entering Rome");
+const stepTx = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true, hasTransaction: true });
+assert(stepTx && stepTx.id === "spring_delivery_transaction", "Tutorial explains first available hourly transaction");
+gsTut.turn = 6;
+gsTut.turnHourLabel = "1:00 A.M.";
+const stepTurn6 = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true, hasTransaction: false });
+assert(stepTurn6 && stepTurn6.id === "spring_delivery_turn6_curfew" && stepTurn6.paragraphs.join(" ").includes("Turn 10"), "Tutorial reminds player on Turn 6 to exit on Turn 10 or sooner");
+gsTut.pendingEncounter = { playerIndex: 0, card: { name: "Patrician" } };
+const stepEnc = tut.computeActiveTutorialStep(gsTut, v0, { enabled: true });
+assert(stepEnc && stepEnc.id === "spring_delivery_encounter", "Tutorial explains first Encounter immediately");
+gsTut.season = "Summer";
+assert(tut.computeActiveTutorialStep(gsTut, v0, { enabled: true }) === null, "Tutorial stops after Season 1 (Spring)");
+
+// Verify popup DOM renders disable checkbox and unchecking works + Profile toggle present
+appState.activeTab = "tabletop";
+appState.user = { id: 1, username: "test", settings: { tutorialEnabled: true } };
+gsTut.season = "Spring";
+gsTut.phase = "setup_discard";
+gsTut.pendingEncounter = null;
+appState.gameState = gsTut;
+tut.syncTutorialUiInDom();
+const popupNode = document.querySelector("#nm-tutorial-popup");
+assert(popupNode !== null && document.querySelector("#tutorial-disable-checkbox") !== null, "Rendered tutorial popup contains #tutorial-disable-checkbox");
+tut.setTutorialEnabledPreference(false);
+assert(tut.isTutorialEnabled() === false && document.querySelector("#nm-tutorial-popup") === null, "Disabling tutorial immediately removes popup");
+const profileEl = renderProfileView();
+assert(collectAllText(profileEl).includes("Guided First-Season Tutorial"), "Profile view renders tutorial preference toggle");
+
+// 10. Verify ifCarrying contraband threat formatting & no_contraband encounter UI
+assert(formatReactionCondition("-1..0") === "-1 to 0", "formatReactionCondition formats negative-to-zero range");
+assert(formatReactionCondition("0..1") === "0-1", "formatReactionCondition formats zero-to-one range");
+const carrySym = formatReactionTypeSymbol({ type: "combat", ifCarrying: "Weapons or Fine Wine" });
+assert(carrySym.includes("Weapons or Fine Wine") && carrySym.includes("(COMBAT_ICON)"), "formatReactionTypeSymbol includes ifCarrying and combat icon");
+assert(formatReactionTypeSymbol({ type: "no_contraband", ifCarrying: "Weapons" }) === "✓", "formatReactionTypeSymbol renders no_contraband checkmark");
+
+const gsContra = buildMinimalGs("delivery");
+gsContra.viewerPlayerIndex = 0;
+const contraCard = {
+  id: "leg_6",
+  name: "Night Patrol",
+  faction: "Caracalla",
+  deck: "legiones",
+  combat: "X(R)",
+  friendlyFavor: "+Caracalla",
+  hostileFavor: "-Caracalla",
+  actionText: "Inspecting cart for Weapons or Fine Wine — none found.",
+  reactions: [
+    { condition: "<=-2", type: "combat" },
+    { condition: "-1..0", type: "combat", ifCarrying: "Weapons or Fine Wine" },
+    { condition: ">=1", type: "offer", actionText: "? 6(d) Bribe" },
+  ],
+};
+const contraPend = {
+  playerIndex: 0,
+  deck: "legiones",
+  card: contraCard,
+  reaction: "no_contraband",
+  reactionType: "no_contraband",
+  matchedTierIndex: 1,
+  combatMandatory: false,
+  canInitiateCombat: false,
+  stage: "pre_decision",
+};
+gsContra.pendingEncounter = contraPend;
+const contraCardEl = renderPhysicalEncounterCardNode(contraCard, contraPend, { interactive: true });
+const contraTierCells = contraCardEl.querySelectorAll(".phys-enc-tier-cell");
+assert(contraTierCells.length === 3, "Physical encounter card renders 3 reaction tiers");
+assert(collectAllText(contraTierCells[1]).includes("✓"), "Active no_contraband tier displays ✓ instead of combat icon");
+assert(!contraTierCells[1].className.includes("enc-section-locked"), "Active no_contraband tier is not combat-locked");
+assert(contraTierCells[1].className.includes("section-fulfill"), "Active no_contraband tier is clickable to pass inspection");
+
+const contraPanelEl = renderPendingEncounterPanel(gsContra, gsContra.players[0]);
+const contraPanelTxt = collectAllText(contraPanelEl);
+assert(contraPanelTxt.includes("Contraband Inspection Passed"), "Encounter panel renders Contraband Inspection Passed banner");
+assert(contraPanelTxt.includes("✓ Pass Inspection (No Contraband)"), "Encounter panel renders Pass Inspection button");
+assert(!contraPanelTxt.includes("Refuse Request") && !contraPanelTxt.includes("Decline / Pass Offer"), "Encounter panel hides Refuse button for no_contraband");
 
 print("JS_UI_TESTS_PASSED");

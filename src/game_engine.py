@@ -742,7 +742,105 @@ def calculate_faction_favor(player: Dict[str, Any], faction: Optional[str]) -> i
     return player.get("favor", {}).get(faction, 0) + player.get("tempFavor", 0)
 
 
-def apply_favor_list(player: Dict[str, Any], favor_list: List[str], reason: str = "") -> List[str]:
+def _infer_favor_collection_from_reason(reason: str, delta: int = 0) -> Optional[str]:
+    """Infers whether a favor delta belongs to 'friendly', 'hostile', or 'decree'."""
+    r_low = str(reason or "").lower()
+    if any(k in r_low for k in (
+        "opulence decree",
+        "senatorial privilege",
+        "empress mediator",
+        "theater troupe",
+    )):
+        return "decree"
+    if any(k in r_low for k in (
+        "combat with",
+        "failing/canceling",
+        "refusing ",
+        "unable to ",
+        "having no ",
+        "hostile",
+    )):
+        return "hostile"
+    if any(k in r_low for k in (
+        "completing mission",
+        "influence card",
+        "trained dog",
+        "plea",
+        "buying ",
+        "selling ",
+        "giving ",
+        "paying ",
+        "patronage",
+        "accepting offer",
+        "friendly",
+    )):
+        return "friendly"
+    if delta > 0:
+        return "friendly"
+    if delta < 0:
+        return "hostile"
+    return None
+
+
+def _ensure_favor_collections(player: Dict[str, Any]) -> Dict[str, Dict[str, int]]:
+    """Ensures player['favorCollections'] exists, backfilling from favorHistory for legacy saves."""
+    existing = player.get("favorCollections")
+    if (
+        isinstance(existing, dict)
+        and isinstance(existing.get("friendly"), dict)
+        and isinstance(existing.get("hostile"), dict)
+    ):
+        for f in FACTIONS:
+            existing["friendly"].setdefault(f, 0)
+            existing["hostile"].setdefault(f, 0)
+        return existing
+
+    fc: Dict[str, Dict[str, int]] = {
+        "friendly": {f: 0 for f in FACTIONS},
+        "hostile": {f: 0 for f in FACTIONS},
+    }
+    hist = player.get("favorHistory") or {}
+    has_hist = any(isinstance(hist.get(f), list) and len(hist.get(f)) > 0 for f in FACTIONS)
+    if has_hist:
+        for f in FACTIONS:
+            f_sum = 0
+            h_sum = 0
+            for entry in hist.get(f, []) or []:
+                if not isinstance(entry, dict):
+                    continue
+                d = int(entry.get("delta", 0) or 0)
+                if d == 0:
+                    continue
+                coll = entry.get("collection") or _infer_favor_collection_from_reason(entry.get("reason", ""), d)
+                r_low = str(entry.get("reason", "") or "").lower()
+                if coll == "theater_clear_friendly" or ("theater troupe" in r_low and "friendly" in r_low):
+                    f_sum = 0
+                elif coll == "theater_clear_hostile" or ("theater troupe" in r_low and "hostile" in r_low):
+                    h_sum = 0
+                elif coll == "friendly":
+                    f_sum += d
+                elif coll == "hostile":
+                    h_sum += d
+            fc["friendly"][f] = f_sum
+            fc["hostile"][f] = h_sum
+    else:
+        for f in FACTIONS:
+            cur = int((player.get("favor") or {}).get(f, 0) or 0)
+            if cur > 0:
+                fc["friendly"][f] = cur
+            elif cur < 0:
+                fc["hostile"][f] = cur
+
+    player["favorCollections"] = fc
+    return fc
+
+
+def apply_favor_list(
+    player: Dict[str, Any],
+    favor_list: List[str],
+    reason: str = "",
+    collection: Optional[str] = None,
+) -> List[str]:
     applied = []
     fac_deltas: Dict[str, int] = {}
     for item in favor_list or []:
@@ -761,12 +859,17 @@ def apply_favor_list(player: Dict[str, Any], favor_list: List[str], reason: str 
                 applied.append(f"+1 {fac}")
                 fac_deltas[fac] = fac_deltas.get(fac, 0) + 1
     if fac_deltas:
+        fc = _ensure_favor_collections(player)
         hist = player.setdefault("favorHistory", {f: [] for f in FACTIONS})
         for fac, delta in fac_deltas.items():
             if delta != 0:
+                eff_coll = collection or _infer_favor_collection_from_reason(reason, delta) or "friendly"
+                if eff_coll in ("friendly", "hostile"):
+                    fc[eff_coll][fac] = int(fc[eff_coll].get(fac, 0)) + delta
                 hist.setdefault(fac, []).append({
                     "delta": delta,
                     "reason": reason or "Encounter / Mission consequence",
+                    "collection": eff_coll,
                     "newTotal": player["favor"][fac],
                 })
     return applied
@@ -1400,6 +1503,10 @@ def create_initial_game_state(
             "influence": dealt_influence,
             "soothsayerings": [],
             "favor": {f: 0 for f in FACTIONS},
+            "favorCollections": {
+                "friendly": {f: 0 for f in FACTIONS},
+                "hostile": {f: 0 for f in FACTIONS},
+            },
             "favorHistory": {f: [] for f in FACTIONS},
             "tempFavor": 0,
             "friendInGuard": False,
@@ -1952,13 +2059,11 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
         elif strat == "missions":
             if kind == "delivery":
                 sc += 30
-            elif kind in ("sell", "expose"):
+            elif kind == "sell":
                 sc += 22
         else:
             if kind in ("sell", "delivery"):
                 sc += 20
-            elif kind == "expose":
-                sc += 14
         if tier >= 2:
             if kind == "sell" and cat in market_cats:
                 sc += 12
@@ -1985,19 +2090,19 @@ def _bot_complete_setup_discard(state: Dict[str, Any], player: Dict[str, Any]) -
         nm = str(c.get("name", ""))
         sc = 10
         if "Patron" in nm:
-            sc += 6
+            sc += 5
         if strat == "aggressive" and any(k in nm for k in ("Mercenary", "Gladiator", "Casus Belli", "Hired Thug", "Flying Chamber Pot")):
             sc += 20
-        elif strat == "luxury" and any(k in nm for k in ("Puffery", "Wine Forger", "Shortcut", "Make Haste")):
+        elif strat == "luxury" and any(k in nm for k in ("Puffery", "Wine Forger", "Shortcut", "Make Haste", "Procurer")):
             sc += 18
-        elif strat == "missions" and any(k in nm for k in ("Make Haste", "Shortcut", "Friend In The Guard")):
+        elif strat == "missions" and any(k in nm for k in ("Make Haste", "Shortcut", "Friend In The Guard", "Procurer", "Supplicant")):
             sc += 20
-        elif strat == "opportunist" and any(k in nm for k in ("Twist Of Fate", "Make Haste", "Trained Dog", "Plea")):
+        elif strat == "opportunist" and any(k in nm for k in ("Twist Of Fate", "Make Haste", "Trained Dog", "Plea", "Informants")):
             sc += 18
         if tier >= 2:
-            if any(k in nm for k in ("Puffery", "Make Haste", "Shortcut", "Twist Of Fate", "Cartwright")):
+            if any(k in nm for k in ("Puffery", "Make Haste", "Shortcut", "Twist Of Fate", "Cartwright", "Procurer", "Supplicant")):
                 sc += 14
-            if "Friend In The" in nm or "Thug" in nm:
+            if "Friend In The" in nm or "Thug" in nm or "Informants" in nm:
                 sc += 10
         return sc
 
@@ -3318,9 +3423,9 @@ def _get_chart_roll_preview(
         return f"Rolled {r_rom} (III) → The crowd clamors noisily as {player['name']} passes safely!"
     if chart_type == "theater":
         if r_clamped == 0:
-            return f"Rolled {r_rom} (0) → Mocked on stage! Lose all positive Friendly Favor!"
+            return f"Rolled {r_rom} (0) → Mocked on stage! Lose all Friendly Favor outcomes!"
         if r_clamped == 1:
-            return f"Rolled {r_rom} (I) → Satire clears your name! Lose all negative Hostile Favor!"
+            return f"Rolled {r_rom} (I) → Satire clears your name! Lose all Hostile Favor outcomes!"
         if r_clamped == 2:
             return f"Rolled {r_rom} (II) → Blocked by revelers! Lose the rest of this turn and next turn!"
         return f"Rolled {r_rom} (III) → Inspired performance! Roll 1(R) to draw bonus Influence cards!"
@@ -3330,12 +3435,17 @@ def _get_chart_roll_preview(
     return f"Rolled {r_rom}"
 
 
+def _net_collection_favor_total(player: Dict[str, Any], kind: str) -> int:
+    fc = _ensure_favor_collections(player)
+    return sum(int(v or 0) for v in (fc.get(kind) or {}).values())
+
+
 def _bot_self_chart_action_kind(player: Dict[str, Any], c_type: str, r: int) -> Optional[str]:
     tier = _bot_difficulty_tier(player)
     if tier == 0:
         return None
     cart = player.get("cart", [])
-    pos_fav = sum(v for v in (player.get("favor") or {}).values() if v > 0)
+    friendly_net = _net_collection_favor_total(player, "friendly")
     infs = player.get("influence", [])
 
     if c_type == "mob":
@@ -3351,8 +3461,9 @@ def _bot_self_chart_action_kind(player: Dict[str, Any], c_type: str, r: int) -> 
         if bad_mob and any("Twist Of Fate" in str(c.get("name", "")) for c in infs):
             return "twist_of_fate"
     elif c_type == "theater":
-        bad_th = (r == 0 and pos_fav >= (1 if tier >= 2 else 2)) or (r == 2)
-        if r in (0, 2) and any("Dramaturge" in str(c.get("name", "")) for c in infs):
+        # Roll 0 hurts if net Friendly outcomes > 0; clearing net-negative Friendly (Patron) helps!
+        bad_th = (r == 0 and friendly_net >= (1 if tier >= 2 else 2)) or (r == 2)
+        if r in (0, 2) and (r == 2 or friendly_net > 0) and any("Dramaturge" in str(c.get("name", "")) for c in infs):
             return "dramaturge"
         if r == 2 and any("Lucky Break" in str(c.get("name", "")) for c in infs):
             return "lucky_break"
@@ -3383,13 +3494,14 @@ def _does_bot_want_post_chart_intervention(
     if player.get("isBot") and _bot_self_chart_action_kind(player, chart_type, r) is not None:
         return True
 
-    neg_fav = sum(abs(v) for v in player["favor"].values() if v < 0)
+    hostile_relief = -_net_collection_favor_total(player, "hostile")
+    friendly_relief = -_net_collection_favor_total(player, "friendly")
     is_lucky_rival = False
     is_extreme = False
     if chart_type == "mob" and r == 3 and len(player["cart"]) > 0:
         is_lucky_rival = True
         is_extreme = len(player["cart"]) >= 2
-    elif chart_type == "theater" and (r == 3 or (r == 1 and neg_fav >= 2)):
+    elif chart_type == "theater" and (r == 3 or (r == 1 and hostile_relief >= 2) or (r == 0 and friendly_relief >= 2)):
         is_lucky_rival = True
         is_extreme = (r == 3)
     elif chart_type == "death" and (r == 3 or (r == 2 and player["cash"] <= 4 and len(player["cart"]) > 0)):
@@ -3499,13 +3611,14 @@ def _run_bot_post_chart_interventions(
 
     # 2. Adversarial intervention by opposing bots
     r = int(chart_state.get("chartRoll", 0))
-    neg_fav = sum(abs(v) for v in player["favor"].values() if v < 0)
+    hostile_relief = -_net_collection_favor_total(player, "hostile")
+    friendly_relief = -_net_collection_favor_total(player, "friendly")
     is_lucky_rival = False
     is_extreme = False
     if c_type == "mob" and r == 3 and len(player["cart"]) > 0:
         is_lucky_rival = True
         is_extreme = len(player["cart"]) >= 2
-    elif c_type == "theater" and (r == 3 or (r == 1 and neg_fav >= 2)):
+    elif c_type == "theater" and (r == 3 or (r == 1 and hostile_relief >= 2) or (r == 0 and friendly_relief >= 2)):
         is_lucky_rival = True
         is_extreme = (r == 3)
     elif c_type == "death" and (r == 3 or (r == 2 and player["cash"] <= 4 and len(player["cart"]) > 0)):
@@ -3706,23 +3819,32 @@ def _apply_table_encounter_outcome(
     if enc_type == "theater":
         dice_shown = [{"value": r, "roman": r_rom, "sign": 1, "label": "Troupe ®", "color": player["color"]}]
         th_lbl = "🎭 Troupe"
-        if r == 0:
+
+        def _clear_favor_collection(target_kind: str, hist_reason: str, clear_tag: str) -> None:
+            fc = _ensure_favor_collections(player)
             fav_hist = player.setdefault("favorHistory", {f: [] for f in FACTIONS})
             for f in FACTIONS:
-                old_val = player["favor"].get(f, 0)
-                if old_val > 0:
-                    player["favor"][f] = 0
-                    fav_hist.setdefault(f, []).append({"delta": -old_val, "reason": "Theater Troupe (mocked on stage: lost Friendly Favor)"})
-            msg = f"Theater Troupe (rolled ®={r_rom})! {player['name']} was mocked on stage and lost all positive Friendly Favor!"
+                coll_val = int((fc.get(target_kind) or {}).get(f, 0) or 0)
+                if coll_val != 0:
+                    player["favor"][f] = int(player["favor"].get(f, 0)) - coll_val
+                    fav_hist.setdefault(f, []).append({
+                        "delta": -coll_val,
+                        "reason": hist_reason,
+                        "collection": f"theater_clear_{target_kind}",
+                        "newTotal": player["favor"][f],
+                    })
+                fc[target_kind][f] = 0
+                for entry in fav_hist.get(f, []):
+                    if isinstance(entry, dict) and entry.get("collection") == target_kind and not entry.get("cleared"):
+                        entry["cleared"] = clear_tag
+
+        if r == 0:
+            _clear_favor_collection("friendly", "Theater Troupe (0: lost Friendly Favor Collection)", "theater_0")
+            msg = f"Theater Troupe (rolled ®={r_rom})! {player['name']} was mocked on stage and lost all Friendly Favor outcomes!"
             th_lbl = "👎 Lost Friendly Favor"
         elif r == 1:
-            fav_hist = player.setdefault("favorHistory", {f: [] for f in FACTIONS})
-            for f in FACTIONS:
-                old_val = player["favor"].get(f, 0)
-                if old_val < 0:
-                    player["favor"][f] = 0
-                    fav_hist.setdefault(f, []).append({"delta": -old_val, "reason": "Theater Troupe (satire cleared Hostile Favor)"})
-            msg = f"Theater Troupe (rolled ®={r_rom})! Satire cleared {player['name']}'s name — lost all negative Hostile Favor!"
+            _clear_favor_collection("hostile", "Theater Troupe (I: lost Hostile Favor Collection)", "theater_1")
+            msg = f"Theater Troupe (rolled ®={r_rom})! Satire cleared {player['name']}'s name — lost all Hostile Favor outcomes!"
             th_lbl = "✨ Cleared Hostile Favor"
         elif r == 2:
             player["skipTurns"] = player.get("skipTurns", 0) + 1
@@ -3821,13 +3943,13 @@ def _normalize_market_or_influence_card(card: Optional[Dict[str, Any]]) -> None:
     if cid == "inf_2" or efc == "patron_caracalla_domna":
         card["name"] = "Patron"
         card["effectCode"] = "patron_caracalla_domna"
-        card["effectText"] = "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)"
-        card["favorGain"] = {"cash": 8, "extraFavor": ["-Caracalla", "-Domna"]}
+        card["effectText"] = "Receive 6(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)"
+        card["favorGain"] = {"cash": 6, "extraFavor": ["-Caracalla", "-Domna"]}
     elif cid == "inf_39" or efc == "patron_geta_aurelius":
         card["name"] = "Patron"
         card["effectCode"] = "patron_geta_aurelius"
-        card["effectText"] = "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)"
-        card["favorGain"] = {"cash": 8, "extraFavor": ["-Geta", "-Aurelius"]}
+        card["effectText"] = "Receive 6(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)"
+        card["favorGain"] = {"cash": 6, "extraFavor": ["-Geta", "-Aurelius"]}
     elif cid == "wpn_1" or (
         (card.get("name") == "Sagittae" or card.get("item") == "Sagittae")
         and (card.get("track") == "Weapons" or card.get("category") == "Weapons")
@@ -4056,6 +4178,26 @@ def evaluate_reaction_condition(favor_val: int, cond: str) -> bool:
         return favor_val == int(c)
     except ValueError:
         return False
+
+
+def _player_carrying_contraband(player: Dict[str, Any], carry_req: Any) -> bool:
+    """Checks if a player carries non-mission cargo or hired Guards matching an encounter's ifCarrying rule."""
+    if not carry_req:
+        return True
+    raw = str(carry_req).strip()
+    if not raw:
+        return True
+    parts = [p.strip() for p in re.split(r"\s+(?:or|and)\s+|/|,", raw, flags=re.IGNORECASE) if p.strip()]
+    cart_goods = [c for c in player.get("cart", []) if not c.get("isMissionCargo")]
+    for part in parts:
+        pl = part.lower()
+        if pl.startswith("guard") or pl.startswith("hench"):
+            if len(player.get("guards", [])) > 0:
+                return True
+            continue
+        if any(matches_category(c, part) for c in cart_goods):
+            return True
+    return False
 
 
 def parse_opponent_combat(formula: str, x_count: int, extra_dice_mod: int = 0) -> Tuple[int, List[int], int]:
@@ -6637,21 +6779,51 @@ def _build_pending_encounter_state(
 ) -> Dict[str, Any]:
     if not source_label and state.get("pendingEncounter"):
         source_label = state["pendingEncounter"].get("encounterSource")
+    if isinstance(card.get("_baseCard"), dict):
+        card = card["_baseCard"]
     faction = card.get("faction")
     favor_score = calculate_faction_favor(player, faction)
 
     matched_reaction = "combat"
     matched_tier_idx = 0
     matched_tier_obj = None
+    skipped_contraband_tier = None
     reactions = card.get("reactions", [])
     for idx_r, r_item in enumerate(reactions):
         cond_str = str(r_item.get("condition", ">=0")).strip()
         if evaluate_reaction_condition(favor_score, cond_str):
+            carry_req = r_item.get("ifCarrying")
+            if carry_req and not _player_carrying_contraband(player, carry_req):
+                skipped_contraband_tier = (idx_r, r_item)
+                continue
             matched_reaction = r_item.get("type", "demand")
             matched_tier_idx = idx_r
             matched_tier_obj = r_item
+            skipped_contraband_tier = None
             if not (cond_str.startswith(">") or cond_str.startswith("≥")):
                 break
+
+    if matched_tier_obj is None and skipped_contraband_tier is not None:
+        matched_tier_idx, matched_tier_obj = skipped_contraband_tier
+        matched_reaction = "no_contraband"
+
+    if isinstance(matched_tier_obj, dict) and (
+        any(k in matched_tier_obj for k in ("actionText", "mission", "friendlyReward"))
+        or matched_reaction == "no_contraband"
+    ):
+        base_card = card
+        card = dict(card)
+        card["_baseCard"] = base_card
+        if "friendlyReward" in matched_tier_obj:
+            card["friendlyReward"] = matched_tier_obj.get("friendlyReward")
+        if "actionText" in matched_tier_obj:
+            card["actionText"] = matched_tier_obj.get("actionText")
+        elif matched_reaction == "no_contraband" and matched_tier_obj.get("ifCarrying"):
+            card["actionText"] = f"Inspecting cart for {matched_tier_obj.get('ifCarrying')} — none found."
+        if "mission" in matched_tier_obj:
+            card["mission"] = copy.deepcopy(matched_tier_obj.get("mission"))
+        elif matched_reaction == "no_contraband":
+            card["mission"] = None
 
     action_text = (card.get("actionText") or "").strip()
     if action_text.startswith("?") and matched_reaction in ("demand", "mission_request"):
@@ -6819,6 +6991,10 @@ def trigger_deck_encounter(state: Dict[str, Any], player: Dict[str, Any], enc_co
 
     _inc_encounter_stat(player, deck_key, 1)
     pending = _build_pending_encounter_state(state, player, card, deck_key, x_count, source_label=source_label)
+    if player.get("isBot"):
+        rebuilt_pend = _bot_try_supplicant_in_encounter(state, player, pending)
+        if rebuilt_pend is not None:
+            pending = rebuilt_pend
     faction = card.get("faction")
     favor_score = pending["favorScore"]
     matched_reaction = pending["reaction"]
@@ -8696,6 +8872,12 @@ def resolve_pending_encounter_choice(
         )
         add_log(state, f"{player['name']} received patronage from {card['name']} ({tier_reward})! {' '.join(r_notes + f_notes)}", "encounter")
         return True, f"Collected {tier_reward}."
+
+    if reaction == "no_contraband":
+        carry_lbl = (matched_tier or {}).get("ifCarrying") or "contraband"
+        msg = f"{card['name']} inspected {player['name']}'s cart for {carry_lbl} — none found, waved through."
+        add_log(state, msg, "encounter")
+        return True, msg
 
     is_offer_reaction = (
         reaction in ("offer", "mission_offer", "mission_bonus", "quest_optional", "deck_quest_offer", "cash_reward")
@@ -12590,6 +12772,30 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
             else:
                 return False, "Choose which rival merchant on your tile to challenge with Casus Belli."
 
+    if "Match Fixing" in cname:
+        if not action.get("fromGamble"):
+            return False, "Match Fixing can only be played inside the Stadium Gambling interface."
+        if state.get("phase") != "delivery" or state.get("activePlayerIndex") != player.get("index"):
+            return False, "Match Fixing can only be played on your Night Delivery turn."
+        curr_cell_mf = normalize_cell_id(player.get("position"))
+        rev_mf = (state["romeBoard"].get(curr_cell_mf, {}) or {}).get("revealed") if curr_cell_mf else None
+        if (
+            not curr_cell_mf
+            or not rev_mf
+            or not rev_mf.get("gamble")
+            or player.get("exitedRome")
+            or player.get("nightEnded")
+            or player.get("eliminated")
+            or player.get("turnStep") == "done"
+        ):
+            return False, "Match Fixing can only be played while standing on a revealed Stadium Gambling tile inside Rome."
+        if state.get("pendingEncounter") or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
+            return False, "Resolve your active encounter or prompt before gambling with Match Fixing."
+        if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
+            return False, "You have already performed your Transaction or Gambled this turn."
+        if (player.get("turnEffects") or {}).get("matchFixing"):
+            return False, "Match Fixing is already active for this turn."
+
     if "Shortcut" in cname:
         player["influence"].remove(card)
         player["turnEffects"]["shortcut"] = True
@@ -12885,7 +13091,7 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
 
     if "Patron" in cname:
         fg = card.get("favorGain") or {}
-        cash_b = int(fg.get("cash", 8))
+        cash_b = int(fg.get("cash", 6))
         player["cash"] += cash_b
         extra_fav = list(fg.get("extraFavor") or [])
         if not extra_fav:
@@ -13158,6 +13364,76 @@ def _clear_any_bot_subprompts(state: Dict[str, Any]) -> bool:
     return changed
 
 
+_ENCOUNTER_REACTION_RANK = {
+    "combat": 0,
+    "demand_strict": 1,
+    "mission_strict": 2,
+    "deck_quest_strict": 2,
+    "demand": 3,
+    "mission_request": 3,
+    "deck_quest_demand": 3,
+    "no_contraband": 4,
+    "offer": 5,
+    "mission_offer": 5,
+    "deck_quest_offer": 5,
+    "quest_optional": 5,
+    "payoff": 6,
+    "cash_reward": 6,
+    "reward": 6,
+}
+
+
+def _bot_try_supplicant_in_encounter(
+    state: Dict[str, Any], p_enc: Dict[str, Any], pend: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Plays Supplicant/Minor Supplicant before deciding if +Favor improves the encounter tier."""
+    if not isinstance(pend, dict) or pend.get("isPvp") or pend.get("stage", "pre_decision") != "pre_decision":
+        return None
+    c_enc = pend.get("card") or {}
+    deck_k = pend.get("deck", (c_enc.get("deck") or "patricii").lower())
+    if _find_combat_mission_for_encounter(p_enc, c_enc, deck_k) is not None:
+        return None
+    cur_r = str(pend.get("reaction") or pend.get("reactionType") or "demand")
+    cur_rank = _ENCOUNTER_REACTION_RANK.get(cur_r, 3)
+    if cur_rank >= 6:
+        return None
+
+    sup_cards = [c for c in p_enc.get("influence", []) if "Supplicant" in str(c.get("name", ""))]
+    if not sup_cards:
+        return None
+    # Prefer Minor Supplicant (+1) first if enough, else Supplicant (+2)
+    sup_cards.sort(key=lambda c: 0 if "Minor" in str(c.get("name", "")) else 1)
+
+    orig_temp = int(p_enc.get("tempFavor", 0))
+    for sup_c in sup_cards:
+        boost = 1 if "Minor" in str(sup_c.get("name", "")) else 2
+        p_enc["tempFavor"] = orig_temp + boost
+        sim = _build_pending_encounter_state(
+            state, p_enc, c_enc, deck_k, int(pend.get("xCount", 1)), source_label=pend.get("encounterSource")
+        )
+        p_enc["tempFavor"] = orig_temp
+        new_r = str(sim.get("reaction") or sim.get("reactionType") or "demand")
+        new_rank = _ENCOUNTER_REACTION_RANK.get(new_r, 3)
+        if new_rank > cur_rank:
+            ok_inf, _ = _execute_influence_card(state, p_enc, sup_c, {})
+            if ok_inf:
+                rebuilt = _build_pending_encounter_state(
+                    state, p_enc, c_enc, deck_k, int(pend.get("xCount", 1)), source_label=pend.get("encounterSource")
+                )
+                if state.get("pendingEncounter") is pend:
+                    state["pendingEncounter"] = rebuilt
+                add_npc_event(
+                    state,
+                    p_enc,
+                    "influence",
+                    f"Played '{sup_c.get('name', 'Supplicant')}' ({cur_r} → {new_r})",
+                    cell=p_enc.get("position"),
+                    visual={"kind": "influence", "cardName": sup_c.get("name", "Supplicant"), "outcomeLabel": f"🙏 +{boost} Favor"},
+                )
+                return rebuilt
+    return None
+
+
 def _execute_single_bot_encounter_step(state: Dict[str, Any]) -> bool:
     """Executes one step of a pendingEncounter belonging to an AI bot."""
     pend = state.get("pendingEncounter")
@@ -13197,6 +13473,11 @@ def _execute_single_bot_encounter_step(state: Dict[str, Any]) -> bool:
             _clear_any_bot_subprompts(state)
             _finish_pending_encounter_continuations(state, p_enc)
         return bool(ok)
+
+    if stage == "pre_decision":
+        rebuilt_p = _bot_try_supplicant_in_encounter(state, p_enc, pend)
+        if rebuilt_p is not None:
+            pend = rebuilt_p
 
     c_enc = pend.get("card") or {}
     deck_k = pend.get("deck", (c_enc.get("deck") or "patricii").lower())
@@ -13553,6 +13834,75 @@ def _bot_should_play_patron(
     return climate_delta >= 12
 
 
+def _bot_choose_procurer_good(
+    state: Dict[str, Any],
+    bot: Dict[str, Any],
+    eff_max_b: Optional[int] = None,
+    cash_reserve: int = 2,
+    min_profit: int = 4,
+    require_mission_or_high_profit: bool = False,
+) -> Optional[Tuple[Dict[str, Any], int, bool]]:
+    """Selects an affordable Good from decks['market'] to procure at '>' Scarcity price via Procurer."""
+    max_b, _ = get_player_cart_limits(bot)
+    if eff_max_b is not None:
+        max_b = min(max_b, eff_max_b)
+    used_b, _ = get_player_cart_usage(bot)
+    tier = _bot_difficulty_tier(bot)
+    sellable_cart = [c for c in bot.get("cart", []) if not c.get("isMissionCargo")]
+    mission_cats = [
+        str(m.get("category", ""))
+        for m in bot.get("missions", [])
+        if m.get("kind") == "sell" and not m.get("completed")
+    ]
+    unfilled_mission_cats = [
+        mc for mc in mission_cats if not any(matches_category(c, mc) for c in sellable_cart)
+    ]
+
+    best_card = None
+    best_score = -999.0
+    best_profit = 0
+    best_is_mission = False
+    for card in state.get("decks", {}).get("market", []):
+        if card.get("track") == "Guards":
+            continue
+        blocks = int(card.get("blocks", 1) or 1)
+        if used_b + blocks > max_b:
+            continue
+        buy_arr = card.get("buy") or []
+        if not buy_arr:
+            continue
+        price = int(buy_arr[3]) if len(buy_arr) > 3 else int(buy_arr[2])
+        if price > int(bot.get("cash", 0)) - cash_reserve:
+            continue
+        track_name = str(card.get("track") or card.get("category") or "")
+        track_cards = state.get("marketBoard", {}).get(track_name, [])
+        shift = state.get("seasonTrackShifts", {}).get(track_name, 0) if tier == 3 else 0
+        sc_idx = get_track_scarcity_index(track_cards, shift)
+        sell_arr = card.get("sell") or [price]
+        expected_sell = int(sell_arr[min(sc_idx, len(sell_arr) - 1)])
+        profit = expected_sell - price
+        matches_unfilled = any(matches_category(card, mc) for mc in unfilled_mission_cats)
+        matches_any_mission = any(matches_category(card, mc) for mc in mission_cats)
+        if require_mission_or_high_profit and not matches_unfilled and profit < min_profit:
+            continue
+        if not matches_any_mission and profit < min_profit:
+            continue
+        sc = float(profit)
+        if matches_unfilled:
+            sc += 24.0
+        elif matches_any_mission:
+            sc += 8.0
+        sc += (2.0 - blocks) * 0.5
+        if sc > best_score:
+            best_score = sc
+            best_card = card
+            best_profit = profit
+            best_is_mission = matches_unfilled or matches_any_mission
+    if best_card is None:
+        return None
+    return best_card, best_profit, best_is_mission
+
+
 def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     strategy = bot.get("botStrategy", "balanced")
     tier = _bot_difficulty_tier(bot)
@@ -13570,6 +13920,16 @@ def _run_bot_market_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
                 _execute_influence_card(state, bot, inf_c, {})
                 add_npc_event(state, bot, "influence", f"Played '{nm}' in Ostia")
                 break
+
+    # Play Procurer in Ostia to grab a scarce mission/high-profit Good at Common (>) price
+    proc_card = next((c for c in bot.get("influence", []) if "Procurer" in str(c.get("name", ""))), None)
+    if proc_card is not None:
+        picked = _bot_choose_procurer_good(state, bot, cash_reserve=1, min_profit=3)
+        if picked is not None:
+            g_card, _, _ = picked
+            ok_p, _ = _execute_influence_card(state, bot, proc_card, {"goodCardId": g_card.get("id")})
+            if ok_p:
+                add_npc_event(state, bot, "influence", f"Played 'Procurer' in Ostia ({g_card.get('name', 'Good')})")
 
     max_b, max_g = get_player_cart_limits(bot)
     used_b, used_g = get_player_cart_usage(bot)
@@ -13832,23 +14192,248 @@ def _run_bot_entry_turn(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
         state["activePlayerIndex"] = (state["activePlayerIndex"] + 1) % n
 
 
+def _bot_score_tile_for_informants(
+    state: Dict[str, Any],
+    bot: Dict[str, Any],
+    tile: Dict[str, Any],
+) -> float:
+    """Scores an unrevealed neighborhood tile stack candidate for a bot using Informants."""
+    sellable_cart = [c for c in bot.get("cart", []) if not c.get("isMissionCargo")]
+    mission_cats = [
+        str(m.get("category", ""))
+        for m in bot.get("missions", [])
+        if m.get("kind") == "sell" and not m.get("completed")
+    ]
+    mod_bonus = {"++": 12.0, "+": 8.0, "=": 5.0, "-": 1.5, "--": 0.0}
+    sc = 0.0
+    for ts in tile.get("sells", []) or []:
+        cat = str(ts.get("category", ""))
+        mod = str(ts.get("modifier", "="))
+        if any(matches_category(c, cat) for c in sellable_cart):
+            sc += 18.0 + mod_bonus.get(mod, 3.0)
+        if cat in mission_cats:
+            sc += 12.0 + mod_bonus.get(mod, 3.0) * 0.5
+    if tile.get("gamble") and int(bot.get("cash", 0)) >= 6:
+        sc += 6.0
+    enc_s = str(tile.get("encounter") or "").lower()
+    if enc_s and enc_s != "none":
+        kill_match = any(
+            not m.get("completed")
+            and m.get("kind") == "kill"
+            and enc_s.startswith(str(m.get("targetDeck") or "").lower())
+            for m in bot.get("missions", [])
+        )
+        if kill_match:
+            sc += 8.0
+        elif "_3" in enc_s or "_4" in enc_s:
+            sc -= 10.0
+        elif enc_s.startswith(("legiones", "nefarii")):
+            sc -= 3.0
+    edges = tile.get("edges") or {}
+    red_cnt = sum(1 for v in edges.values() if v in ("red", None, "none"))
+    sc -= 2.5 * red_cnt
+    return sc
+
+
+def _bot_score_encounter_for_informants(
+    bot: Dict[str, Any],
+    card: Dict[str, Any],
+    deck_key: str,
+) -> float:
+    """Scores an encounter card candidate for a bot ordering top 3 of an encounter deck."""
+    kill_m = _find_combat_mission_for_encounter(bot, card, deck_key)
+    party_strength = 1 + len(bot.get("guards", []))
+    cp = int((card.get("combat") or {}).get("cp", 4) or 4)
+    if kill_m is not None and party_strength * 1.5 >= cp:
+        return 30.0 - float(cp)
+    sc = 0.0
+    if not card.get("hostile"):
+        sc += 12.0
+    if card.get("demandKind") in (None, "none"):
+        sc += 8.0
+    if card.get("friendlyReward"):
+        sc += 6.0
+    sc -= float(cp) * 1.2
+    return sc
+
+
+def _bot_try_informants(state: Dict[str, Any], bot: Dict[str, Any], inf_card: Dict[str, Any]) -> bool:
+    """Plays Informants for a bot to inspect and reorder the top 3 tiles of a stack or encounter deck."""
+    if (
+        state.get("pendingEncounter")
+        or bot.get("pendingTop3Reorder")
+        or bot.get("exitedRome")
+        or bot.get("nightEnded")
+        or bot.get("turnStep") == "done"
+    ):
+        return False
+    curr_cell = normalize_cell_id(bot.get("position"))
+    candidate_cells: List[str] = []
+    if curr_cell:
+        for d in DIR_DELTAS:
+            adj = get_target_cell(curr_cell, d)
+            if adj and not is_tiber_crossing_blocked(curr_cell, adj):
+                candidate_cells.append(adj)
+    for g_cell, _ in _compute_bot_goal_cells(state, bot):
+        nc = normalize_cell_id(g_cell)
+        if nc and nc not in candidate_cells:
+            candidate_cells.append(nc)
+
+    target_type = "deck"
+    target_key = "patricii"
+    best_gain = -999.0
+    for cell_id in candidate_cells:
+        c_st = state.get("romeBoard", {}).get(cell_id) or {}
+        if c_st.get("revealed"):
+            continue
+        stk = c_st.get("stack") or []
+        if len(stk) < 2:
+            continue
+        top3 = stk[:3]
+        scores = [_bot_score_tile_for_informants(state, bot, t) for t in top3]
+        gain = (max(scores) - scores[0]) + (2.0 if max(scores) >= 12.0 else 0.0)
+        if gain > best_gain:
+            best_gain = gain
+            target_type = "tile"
+            target_key = cell_id
+
+    if target_type != "tile" or best_gain < 1.0:
+        # Consider an encounter deck with >= 2 cards (prefer deck matching active kill mission or upcoming tiles)
+        deck_pref: List[str] = []
+        for m in bot.get("missions", []):
+            if not m.get("completed") and m.get("kind") == "kill":
+                td = str(m.get("targetDeck") or "").lower()
+                if td in ("patricii", "legiones", "nefarii") and td not in deck_pref:
+                    deck_pref.append(td)
+        for d_k in ("patricii", "legiones", "nefarii"):
+            if d_k not in deck_pref:
+                deck_pref.append(d_k)
+        chosen_deck = next(
+            (d_k for d_k in deck_pref if len(state.get("decks", {}).get(d_k, [])) >= 2),
+            None,
+        )
+        if chosen_deck is not None:
+            target_type = "deck"
+            target_key = chosen_deck
+        elif target_type != "tile":
+            return False
+
+    ok_inf, _ = _execute_influence_card(
+        state, bot, inf_card, {"targetType": target_type, "targetKey": target_key}
+    )
+    if not ok_inf:
+        return False
+    pend_r = bot.get("pendingTop3Reorder")
+    if not pend_r:
+        return True
+
+    t_type = pend_r.get("targetType", target_type)
+    t_key = pend_r.get("targetKey", target_key)
+    target_list = (
+        state["romeBoard"].get(t_key, {}).get("stack", [])
+        if t_type == "tile"
+        else state["decks"].get(t_key, [])
+    )
+    k = min(3, len(target_list))
+    if k > 0:
+        orig_top = list(target_list[:k])
+        if t_type == "tile":
+            sorted_top = sorted(
+                orig_top,
+                key=lambda item: _bot_score_tile_for_informants(state, bot, item),
+                reverse=True,
+            )
+        else:
+            sorted_top = sorted(
+                orig_top,
+                key=lambda item: _bot_score_encounter_for_informants(bot, item, t_key),
+                reverse=True,
+            )
+        target_list[:k] = sorted_top
+        top_one = sorted_top[0]
+        summary_str = (
+            _summarize_tile(top_one)
+            if t_type == "tile"
+            else f"Top of {t_key.capitalize()}: {top_one.get('name', 'Card')}"
+        )
+        bot.setdefault("scoutedInfo", []).append({
+            "id": f"top3_{secrets.token_hex(4)}",
+            "turn": state.get("turn", 1),
+            "targetType": t_type,
+            "targetKey": t_key,
+            "label": f"Informants Top 3 ({pend_r.get('label', t_key)})",
+            "summary": summary_str,
+            "revealedData": copy.deepcopy(top_one),
+        })
+    bot["pendingTop3Reorder"] = None
+    add_log(
+        state,
+        f"{bot['name']} reordered the top {k} item(s) of {pend_r.get('label', t_key)}.",
+        "action",
+    )
+    add_npc_event(
+        state,
+        bot,
+        "influence",
+        f"Played 'Informants' on {pend_r.get('label', t_key)}",
+        cell=bot.get("position"),
+        visual={"kind": "influence", "cardName": inf_card.get("name", "Informants"), "outcomeLabel": f"🔍 {t_key}"},
+    )
+    return True
+
+
 def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
-    """Plays beneficial non-reactive Influence cards in Rome (Patron, Thug, Wine Forger, Cartwright, Friend In The City Guard)."""
+    """Plays beneficial non-reactive Influence cards in Rome (Patron, Favor, Thug, Wine Forger, Cartwright, Friend In The City Guard, Procurer, Make Haste, Informants)."""
     if state.get("pendingEncounter") or not bot.get("influence"):
         return
     tier = _bot_difficulty_tier(bot)
     turn_num = int(state.get("turn", 1))
     max_b, max_g = get_player_cart_limits(bot)
     used_b, used_g = get_player_cart_usage(bot)
+    curr_cell = normalize_cell_id(bot.get("position"))
     for c in list(bot.get("influence", [])):
         nm = str(c.get("name", ""))
         if "Patron" in nm:
             if _bot_should_play_patron(state, bot, c, in_market=False):
+                cash_b = int((c.get("favorGain") or {}).get("cash", 6))
                 _execute_influence_card(state, bot, c, {})
-                add_npc_event(state, bot, "influence", f"Played '{nm}' (+8d)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🃏 +8d"})
+                add_npc_event(state, bot, "influence", f"Played '{nm}' (+{cash_b}d)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": f"🃏 +{cash_b}d"})
         elif "Favor" in nm and (c.get("favorGain") or {}).get("faction") != "Geta":
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", f"Played '{nm}'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": f"🃏 {nm}"})
+        elif "Procurer" in nm and turn_num <= 7:
+            picked = _bot_choose_procurer_good(state, bot, cash_reserve=2, min_profit=5, require_mission_or_high_profit=True)
+            if picked is not None:
+                g_card, _, _ = picked
+                ok_p, _ = _execute_influence_card(state, bot, c, {"goodCardId": g_card.get("id")})
+                if ok_p:
+                    add_npc_event(state, bot, "influence", f"Played 'Procurer' ({g_card.get('name', 'Good')})", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": f"🛒 {g_card.get('name', 'Good')}"})
+                    used_b, _ = get_player_cart_usage(bot)
+        elif "Make Haste" in nm and state.get("phase") == "delivery":
+            if (
+                curr_cell
+                and int(bot.get("movesRemaining", 0)) >= 1
+                and not bot.get("exitedRome")
+                and not bot.get("nightEnded")
+                and not (bot.get("turnEffects") or {}).get("makeHasteExtraTransact")
+            ):
+                dist_exit = _bot_distance_to_exit(curr_cell, state)
+                goals = _compute_bot_goal_cells(state, bot)
+                sellable_cart = [it for it in bot.get("cart", []) if not it.get("isMissionCargo")]
+                far_high_goal = any(
+                    w >= 40 and _bot_grid_distance(curr_cell, g_cell, state) >= 2
+                    for g_cell, w in goals
+                )
+                urgent_exit = turn_num >= 8 and dist_exit >= 2
+                multi_sell_rush = len(sellable_cart) >= 2 and turn_num >= 4
+                late_goal_rush = turn_num >= 6 and bool(goals)
+                if urgent_exit or far_high_goal or multi_sell_rush or late_goal_rush:
+                    ok_mh, _ = _execute_influence_card(state, bot, c, {})
+                    if ok_mh:
+                        add_npc_event(state, bot, "influence", "Played 'Make Haste' (+1 Move)", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "⚡ +1 Move"})
+        elif ("Informants" in nm or str(c.get("effectCode", "")).startswith("reorder_top_3")) and state.get("phase") == "delivery":
+            if turn_num >= 2 or len(bot.get("cart", [])) >= 1:
+                _bot_try_informants(state, bot, c)
         elif tier >= 2 and "Thug" in nm and used_g + 1 <= max_g:
             _execute_influence_card(state, bot, c, {})
             add_npc_event(state, bot, "influence", "Deployed Free Guard 'Thug'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛡️ Thug (+1 CP)"})
@@ -13866,6 +14451,7 @@ def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]
             if should_friend:
                 _execute_influence_card(state, bot, c, {})
                 add_npc_event(state, bot, "influence", "Played 'Friend In The City Guard'", cell=bot.get("position"), visual={"kind": "influence", "cardName": nm, "outcomeLabel": "🛡️ Free Tolls"})
+
 
 
 def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
@@ -14308,7 +14894,7 @@ def _bot_try_transact(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
     can_gamble_strat = (mf is not None and tier >= 2) or (bot.get("botStrategy") == "opportunist" and (tier != 3 or bot["cash"] >= 10)) or (tier == 1 and bot.get("botStrategy") == "opportunist")
     if rev_tile.get("gamble") and bot["cash"] >= 6 and can_gamble_strat:
         if tier >= 2 and mf is not None and not bot.get("turnEffects", {}).get("matchFixing"):
-            _execute_influence_card(state, bot, mf, {})
+            _execute_influence_card(state, bot, mf, {"fromGamble": True})
         bet = min(MAX_GAMBLE_WAGER, max(2, bot["cash"] // (3 if bot.get("turnEffects", {}).get("matchFixing") else 5)))
         if bet > 0:
             bot["cash"] -= bet

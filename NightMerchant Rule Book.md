@@ -84,6 +84,7 @@ Once all 24 Goods have been placed on the Market, realign all of the Goods in ea
 7) Players must choose two **(2)** Mission cards and two **(2)** Influence cards to discard to the bottom of their respective decks.  
 
 8) **Political Climate Draft (6×3 Board)**: The **first Player to finish discarding** Influence and Mission cards claims **First Pick** on the **Political Climate & End-Game Modifiers** board (six columns: *Caracalla*, *Geta*, *Domna*, *Plautilla*, *Aurelians*, and *Missions*, with three options per column). **At most one (1) option may be enacted per column.**  
+- **First-Time Player Recommendation**: New players are encouraged to **skip the Political Climate track** their first time playing (or use the Random Decree selection) so you can focus on learning the Ostia Market, Nocturnal Delivery, and Encounters before introducing Senate decrees.
 - **2 Players (4 Active Modifiers)**: Snake draft **`1st Discarder → Rival → Rival → 1st Discarder`** (the fastest discarder gets **first pick and last pick**!).  
 - **3–6 Players (`min(N, 6)` Active Modifiers)**: Each Player enacts **1** modifier in the exact order they finished discarding.  
 
@@ -211,7 +212,7 @@ i) **Identify Character’s Faction**. Indicated by the color of the highlighted
 ii) **Calculate Player’s Favor (Uncapped)**. Count the number of positive Favor gems that Player has collected for the corresponding Faction and subtract the number of negated gems collected for that Faction (plus any temporary Favor modifier). **Faction Favor is uncapped** and can climb to `±5` or higher!  
 iii) **Determine Character’s Reaction.** Compare Player’s Favor to the highlighted threshold bars on the encounter card.  
 iv) **Apply Reaction**. Possible reactions include:  
-a) **Combat Icon**: Initiate combat. *(Digital adaptation note: Players cannot voluntarily initiate combat against non-threatening encounters unless unlocked by a combat Mission or the ‘Casus Belli’ Influence card.)*  
+a) **Combat Icon** *(or **Contraband Inspection**: e.g., `Weapons (Combat)`)*: Initiate combat. On certain `Legiones` and `Nefarii` cards, a tier only triggers Combat **if you are carrying matching non-mission Cargo or hired Guards** (such as `Weapons`, `Fine Wine`, `Exotic Animals`, `Marble`, or `Guards`). If you pass an inspection tier cleanly without carrying the flagged contraband, the encounter resolves peacefully (`✓`) with no penalty! *(Digital adaptation note: Players cannot voluntarily initiate combat against non-threatening encounters unless unlocked by a combat Mission or the ‘Casus Belli’ Influence card.)*  
 b) **!! (Demand)**: Player must fulfill the demand or initiate combat. If Player is only partially able to fulfill the demand, Player can avoid combat by satisfying the demand to the greatest extent possible (taking Hostile Favor consequences). If Player has none of the thing being demanded (when noted on card), ignore the demand completely.  
 c) **! (Request)**: Player must fulfill the request or take Hostile Favor consequences.  
 d) **? (Offer)**: Player may partake in the offered transaction. This does not consume the Player’s transaction for the turn.  
@@ -381,6 +382,6 @@ COMBAT BETWEEN PLAYERS
   - **Legiones** (*Roman Helmet*): Always draws **1** card from the Legiones deck (30 cards: `Caracalla` 9, `Plautilla` 8, `Geta` 5, `Julia Domna` 3, `Aurelius` 3, Events 2; `+2 CP` under Army Pay Hike). Historically, Praetorians and soldiers extorted merchants and were often as dangerous as street criminals. If Combat occurs, `X` = icon count (`X(R)+X`).
   - **Nefarii** (*Dagger / `2×` / `3×` Daggers*): Always draws **1** card from the Nefarii underworld deck (29 cards: `Plautilla` 8, `Caracalla` 5, `Geta` 5, `Julia Domna` 5, `Aurelius` 3, Events 3). The number of daggers (`1`, `2`, or `3`) sets **`X`** in **`X(R)+X` Combat** (for example, `3× Daggers` rolls **`3(R)+3` CP**, NOT 3 cards).
   - **Angry Mob** (*Torch & Pitchfork*): Roll `1(R)` (`0`: lose Wine; `I`: lose Grain; `II`: lose costliest Good; `III`: safe).
-  - **Theater Troupe** (*Comedy/Tragedy Masks*): Roll `1(R)` (`0`: lose positive Favor; `I`: lose negative Favor; `II`: lose rest of turn & next turn; `III`: draw `1(R)` Influence).
+  - **Theater Troupe** (*Comedy/Tragedy Masks*): Roll `1(R)` (`0`: lose all Friendly Consequence Favor; `I`: lose all Hostile Consequence Favor; `II`: lose rest of turn & next turn; `III`: draw `1(R)` Influence).
   - **Soothsayer** (*Augur’s Hand*): Draws a mandatory Soothsayer Mission and seals `1(R)` face-down Influence cards beneath it until fulfilled.
   - **Stadium Dice**: Spend your hourly Transaction to wager `1(d)–20(d)` and roll `1(R)` to win `Wager × Roll`.

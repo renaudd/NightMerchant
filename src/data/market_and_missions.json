@@ -924,7 +924,7 @@
     },
     {
       "id": "ea_2",
-      "name": "Buffalo",
+      "name": "Aurochs",
       "category": "Animals",
       "subcategory": "Exotic Animals",
       "track": "Animals",
@@ -2137,9 +2137,10 @@
       "category": "Marble",
       "modifier": "+",
       "cell": "A1",
-      "rewardText": "Caracalla & Domna Favor",
+      "rewardText": "10(d) & Caracalla & Domna Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Caracalla",
@@ -2154,9 +2155,10 @@
       "category": "Cheap Wine",
       "modifier": "++",
       "cell": "D4",
-      "rewardText": "Geta Favor (-Domna)",
+      "rewardText": "8(d) & Geta Favor (-Domna)",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 8
       },
       "favor": [
         "-Domna",
@@ -2197,23 +2199,6 @@
         "Plautilla"
       ],
       "text": "Sell Grain at -- Scarcity in E2 (Subura)."
-    },
-    {
-      "id": "mis_7",
-      "name": "Noctes Romanae",
-      "kind": "expose",
-      "exposeType": "patricii",
-      "exposeCount": 4,
-      "description": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)",
-      "rewardText": "16(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 16
-      },
-      "favor": [
-        "Domna"
-      ],
-      "text": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)"
     },
     {
       "id": "mis_8",
@@ -2261,15 +2246,15 @@
       "name": "Price Gouge Grain",
       "kind": "sell",
       "category": "Grain",
-      "modifier": "+",
+      "modifier": "=",
       "cell": "C1",
-      "rewardText": "4(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 4
+        "amount": 8
       },
       "favor": [],
-      "text": "Sell Grain at + Scarcity in C1 (Mons Pincius)."
+      "text": "Sell Grain at = Scarcity in C1 (Mons Pincius)."
     },
     {
       "id": "mis_11",
@@ -2420,9 +2405,10 @@
       "category": "Exotic Animals",
       "modifier": "+",
       "cell": "B3",
-      "rewardText": "Caracalla & Geta Favor",
+      "rewardText": "12(d) & Caracalla & Geta Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 12
       },
       "favor": [
         "Caracalla",
@@ -2606,24 +2592,6 @@
       "text": "Sell Exotic Animals at = Scarcity in C5 (Circus Maximus)."
     },
     {
-      "id": "mis_26",
-      "name": "Martial Law",
-      "kind": "expose",
-      "exposeType": "legiones",
-      "exposeCount": 12,
-      "description": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)",
-      "rewardText": "40(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 40
-      },
-      "favor": [
-        "Caracalla",
-        "Geta"
-      ],
-      "text": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)"
-    },
-    {
       "id": "mis_27",
       "name": "Poultry Delivery",
       "kind": "delivery",
@@ -2639,10 +2607,10 @@
         5,
         4
       ],
-      "rewardText": "6(d)",
+      "rewardText": "10(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 10
       },
       "favor": [],
       "text": "Pick up Chickens (Meat Animals • 1■) in C1 (Mons Pincius), Deliver to D5 (Mons Palatinus). [Fenced Sell: 19/12/7/5/4]"
@@ -2654,9 +2622,10 @@
       "category": "Marble",
       "modifier": "=",
       "cell": "D6",
-      "rewardText": "Caracalla Favor",
+      "rewardText": "10(d) & Caracalla Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Caracalla"
@@ -2694,9 +2663,10 @@
       "category": "Weapons",
       "modifier": "++",
       "cell": "E4",
-      "rewardText": "Caracalla Favor (-Plautilla)",
+      "rewardText": "12(d) & Caracalla Favor (-Plautilla)",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 12
       },
       "favor": [
         "-Plautilla",
@@ -2735,10 +2705,10 @@
       "category": "Meat Animals",
       "modifier": "=",
       "cell": "E6",
-      "rewardText": "6(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 8
       },
       "favor": [
         "Geta"
@@ -2752,10 +2722,10 @@
       "category": "Grain",
       "modifier": "++",
       "cell": "D3",
-      "rewardText": "2(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 2
+        "amount": 8
       },
       "favor": [
         "-Caracalla",
@@ -2905,23 +2875,6 @@
       "text": "Sell Fine Wine at - Scarcity in A5 (Horti Caesaris)."
     },
     {
-      "id": "mis_41",
-      "name": "City Of Thieves",
-      "kind": "expose",
-      "exposeType": "nefarii",
-      "exposeCount": 8,
-      "description": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)",
-      "rewardText": "26(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 26
-      },
-      "favor": [
-        "Plautilla"
-      ],
-      "text": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)"
-    },
-    {
       "id": "mis_42",
       "name": "Patronize The Arts",
       "kind": "sell",
@@ -3008,9 +2961,10 @@
       "category": "Fine Wine",
       "modifier": "+",
       "cell": "D5",
-      "rewardText": "Geta Favor",
+      "rewardText": "10(d) & Geta Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Geta"
@@ -3052,10 +3006,10 @@
       "category": "Cheap Wine",
       "modifier": "+",
       "cell": "A3",
-      "rewardText": "2(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 2
+        "amount": 8
       },
       "favor": [
         "Geta"
@@ -3123,10 +3077,10 @@
         6,
         4
       ],
-      "rewardText": "6(d)",
+      "rewardText": "10(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 10
       },
       "favor": [],
       "text": "Pick up Narbo (Cheap Wine • 1■) in B4 (Trans Tiberim), Deliver to E6 (Caeliolus). [Fenced Sell: 24/15/9/6/4]"
@@ -3151,18 +3105,18 @@
       "name": "Imperial Tomb Marble",
       "kind": "sell",
       "category": "Marble",
-      "modifier": "+",
+      "modifier": "=",
       "cell": "A1",
-      "rewardText": "8(d)",
+      "rewardText": "12(d)",
       "reward": {
         "type": "cash",
-        "amount": 8
+        "amount": 12
       },
       "favor": [
         "Domna",
         "Geta"
       ],
-      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+      "text": "Sell Marble at = Scarcity in A1 (Mausoleum Hadriani)."
     },
     {
       "id": "mis_55",

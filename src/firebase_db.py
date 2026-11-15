@@ -739,6 +739,7 @@ def update_user_profile(
             "confirmEndTurn",
             "allowUndoByDefault",
             "skipMissionCompletionPopups",
+            "tutorialEnabled",
         ):
             if b_key in settings:
                 curr_settings[b_key] = bool(settings[b_key])

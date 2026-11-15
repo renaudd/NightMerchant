@@ -924,7 +924,7 @@
     },
     {
       "id": "ea_2",
-      "name": "Buffalo",
+      "name": "Aurochs",
       "category": "Animals",
       "subcategory": "Exotic Animals",
       "track": "Animals",
@@ -2092,10 +2092,10 @@
     {
       "id": "inf_2",
       "name": "Patron",
-      "effectText": "Receive 8(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
+      "effectText": "Receive 6(d), lose 1 Caracalla Favor (Ruby) and 1 Domna Favor (Diamond)",
       "effectCode": "patron_caracalla_domna",
       "favorGain": {
-        "cash": 8,
+        "cash": 6,
         "extraFavor": [
           "-Caracalla",
           "-Domna"
@@ -2154,11 +2154,11 @@
     {
       "id": "inf_16",
       "name": "Plautilla Favor",
-      "effectText": "Receive 6(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Plautilla Favor (Sapphire), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_plautilla",
       "favorGain": {
         "faction": "Plautilla",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Caracalla",
           "Plautilla"
@@ -2177,11 +2177,11 @@
     {
       "id": "inf_18",
       "name": "Aurelian Favor",
-      "effectText": "Receive 6(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Aurelian Favor (Amethyst), and lose 1 Caracalla Favor (Ruby) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_aurelius",
       "favorGain": {
         "faction": "Aurelius",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Caracalla",
           "Aurelius"
@@ -2303,10 +2303,10 @@
     {
       "id": "inf_39",
       "name": "Patron",
-      "effectText": "Receive 8(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
+      "effectText": "Receive 6(d), lose 1 Geta Favor (Emerald) and 1 Aurelian Favor (Amethyst)",
       "effectCode": "patron_geta_aurelius",
       "favorGain": {
-        "cash": 8,
+        "cash": 6,
         "extraFavor": [
           "-Geta",
           "-Aurelius"
@@ -2387,11 +2387,11 @@
     {
       "id": "inf_52",
       "name": "Domna Favor",
-      "effectText": "Receive 6(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
+      "effectText": "Receive 4(d), gain 1 Domna Favor (Diamond), and lose 1 Plautilla Favor (Sapphire) and 1 Aurelian Favor (Amethyst) (can be played after encounter is revealed)",
       "effectCode": "faction_favor_domna",
       "favorGain": {
         "faction": "Domna",
-        "cash": 6,
+        "cash": 4,
         "extraFavor": [
           "-Plautilla",
           "-Aurelius",
@@ -2450,14 +2450,6 @@
     },
     {
       "id": "inf_59",
-      "name": "Casus Belli",
-      "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
-      "effectCode": "casus_belli",
-      "favorGain": null,
-      "sellTable": null
-    },
-    {
-      "id": "inf_60",
       "name": "Casus Belli",
       "effectText": "Initiate combat with a present opponent: exhausts transaction; cannot be used on Turn 1. Or, initiate combat in any Encounter.",
       "effectCode": "casus_belli",
@@ -2530,9 +2522,10 @@
       "category": "Marble",
       "modifier": "+",
       "cell": "A1",
-      "rewardText": "Caracalla & Domna Favor",
+      "rewardText": "10(d) & Caracalla & Domna Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Caracalla",
@@ -2547,9 +2540,10 @@
       "category": "Cheap Wine",
       "modifier": "++",
       "cell": "D4",
-      "rewardText": "Geta Favor (-Domna)",
+      "rewardText": "8(d) & Geta Favor (-Domna)",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 8
       },
       "favor": [
         "-Domna",
@@ -2590,23 +2584,6 @@
         "Plautilla"
       ],
       "text": "Sell Grain at -- Scarcity in E2 (Subura)."
-    },
-    {
-      "id": "mis_7",
-      "name": "Noctes Romanae",
-      "kind": "expose",
-      "exposeType": "patricii",
-      "exposeCount": 4,
-      "description": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)",
-      "rewardText": "16(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 16
-      },
-      "favor": [
-        "Domna"
-      ],
-      "text": "Expose 4 Patricii (4 individual saffron Patricii icons visible on exposed tiles)"
     },
     {
       "id": "mis_8",
@@ -2654,15 +2631,15 @@
       "name": "Price Gouge Grain",
       "kind": "sell",
       "category": "Grain",
-      "modifier": "+",
+      "modifier": "=",
       "cell": "C1",
-      "rewardText": "4(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 4
+        "amount": 8
       },
       "favor": [],
-      "text": "Sell Grain at + Scarcity in C1 (Mons Pincius)."
+      "text": "Sell Grain at = Scarcity in C1 (Mons Pincius)."
     },
     {
       "id": "mis_11",
@@ -2813,9 +2790,10 @@
       "category": "Exotic Animals",
       "modifier": "+",
       "cell": "B3",
-      "rewardText": "Caracalla & Geta Favor",
+      "rewardText": "12(d) & Caracalla & Geta Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 12
       },
       "favor": [
         "Caracalla",
@@ -2999,24 +2977,6 @@
       "text": "Sell Exotic Animals at = Scarcity in C5 (Circus Maximus)."
     },
     {
-      "id": "mis_26",
-      "name": "Martial Law",
-      "kind": "expose",
-      "exposeType": "legiones",
-      "exposeCount": 12,
-      "description": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)",
-      "rewardText": "40(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 40
-      },
-      "favor": [
-        "Caracalla",
-        "Geta"
-      ],
-      "text": "Expose 12 Legiones (12 individual red Legiones icons visible on exposed tiles)"
-    },
-    {
       "id": "mis_27",
       "name": "Poultry Delivery",
       "kind": "delivery",
@@ -3032,10 +2992,10 @@
         5,
         4
       ],
-      "rewardText": "6(d)",
+      "rewardText": "10(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 10
       },
       "favor": [],
       "text": "Pick up Chickens (Meat Animals • 1■) in C1 (Mons Pincius), Deliver to D5 (Mons Palatinus). [Fenced Sell: 19/12/7/5/4]"
@@ -3047,9 +3007,10 @@
       "category": "Marble",
       "modifier": "=",
       "cell": "D6",
-      "rewardText": "Caracalla Favor",
+      "rewardText": "10(d) & Caracalla Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Caracalla"
@@ -3087,9 +3048,10 @@
       "category": "Weapons",
       "modifier": "++",
       "cell": "E4",
-      "rewardText": "Caracalla Favor (-Plautilla)",
+      "rewardText": "12(d) & Caracalla Favor (-Plautilla)",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 12
       },
       "favor": [
         "-Plautilla",
@@ -3128,10 +3090,10 @@
       "category": "Meat Animals",
       "modifier": "=",
       "cell": "E6",
-      "rewardText": "6(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 8
       },
       "favor": [
         "Geta"
@@ -3145,10 +3107,10 @@
       "category": "Grain",
       "modifier": "++",
       "cell": "D3",
-      "rewardText": "2(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 2
+        "amount": 8
       },
       "favor": [
         "-Caracalla",
@@ -3298,23 +3260,6 @@
       "text": "Sell Fine Wine at - Scarcity in A5 (Horti Caesaris)."
     },
     {
-      "id": "mis_41",
-      "name": "City Of Thieves",
-      "kind": "expose",
-      "exposeType": "nefarii",
-      "exposeCount": 8,
-      "description": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)",
-      "rewardText": "26(d)",
-      "reward": {
-        "type": "cash",
-        "amount": 26
-      },
-      "favor": [
-        "Plautilla"
-      ],
-      "text": "Expose 8 Nefarii (8 individual black Nefarii icons visible on exposed tiles)"
-    },
-    {
       "id": "mis_42",
       "name": "Patronize The Arts",
       "kind": "sell",
@@ -3401,9 +3346,10 @@
       "category": "Fine Wine",
       "modifier": "+",
       "cell": "D5",
-      "rewardText": "Geta Favor",
+      "rewardText": "10(d) & Geta Favor",
       "reward": {
-        "type": "none"
+        "type": "cash",
+        "amount": 10
       },
       "favor": [
         "Geta"
@@ -3445,10 +3391,10 @@
       "category": "Cheap Wine",
       "modifier": "+",
       "cell": "A3",
-      "rewardText": "2(d)",
+      "rewardText": "8(d)",
       "reward": {
         "type": "cash",
-        "amount": 2
+        "amount": 8
       },
       "favor": [
         "Geta"
@@ -3516,10 +3462,10 @@
         6,
         4
       ],
-      "rewardText": "6(d)",
+      "rewardText": "10(d)",
       "reward": {
         "type": "cash",
-        "amount": 6
+        "amount": 10
       },
       "favor": [],
       "text": "Pick up Narbo (Cheap Wine • 1■) in B4 (Trans Tiberim), Deliver to E6 (Caeliolus). [Fenced Sell: 24/15/9/6/4]"
@@ -3544,18 +3490,18 @@
       "name": "Imperial Tomb Marble",
       "kind": "sell",
       "category": "Marble",
-      "modifier": "+",
+      "modifier": "=",
       "cell": "A1",
-      "rewardText": "8(d)",
+      "rewardText": "12(d)",
       "reward": {
         "type": "cash",
-        "amount": 8
+        "amount": 12
       },
       "favor": [
         "Domna",
         "Geta"
       ],
-      "text": "Sell Marble at + Scarcity in A1 (Mausoleum Hadriani)."
+      "text": "Sell Marble at = Scarcity in A1 (Mausoleum Hadriani)."
     },
     {
       "id": "mis_55",
@@ -3589,7 +3535,7 @@
     {
       "id": "pat_1",
       "name": "Procession",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -3605,7 +3551,7 @@
     {
       "id": "pat_2",
       "name": "Quintus Tineius Clemens",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Senior patrician senator and consul ordinarius of 195 from the distinguished Tineii family.",
@@ -3647,7 +3593,7 @@
     {
       "id": "pat_3",
       "name": "Salve!",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -3663,7 +3609,7 @@
     {
       "id": "pat_4",
       "name": "Lucius Flavius Philostratus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Commissioned by the Empress to write the Life of Apollonius of Tyana.",
@@ -3693,7 +3639,7 @@
     {
       "id": "pat_5",
       "name": "Decimus Caelius Calvinus Balbinus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Would serve as consul with Caracalla in 213. Emperor for three months in 238.",
@@ -3735,7 +3681,7 @@
     {
       "id": "pat_6",
       "name": "Julia Avita Mamaea",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Niece of Julia Domna. Future empress mother to Alexander Severus.",
@@ -3777,7 +3723,7 @@
     {
       "id": "pat_7",
       "name": "Ushered Along",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -3793,7 +3739,7 @@
     {
       "id": "pat_8",
       "name": "Lucius Fabius Cilo",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
       "bio": "Tutor of Caracalla and Geta.",
@@ -3836,7 +3782,7 @@
     {
       "id": "pat_9",
       "name": "Marcus Annius Flavius Libo",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Was Consul in 204. Distant cousin of Marcus Aurelius.",
@@ -3879,7 +3825,7 @@
     {
       "id": "pat_10",
       "name": "Julia Soaemias",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Murdered alongside son Elagabalus by Praetorians and discarded in the Tiber in 222.",
@@ -3915,7 +3861,7 @@
     {
       "id": "pat_11",
       "name": "Marcus Ulpius Leurus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Senator during the reign of Caracalla. May have been a Plautilla sympathizer.",
@@ -3958,7 +3904,7 @@
     {
       "id": "pat_12",
       "name": "Quintus Anicius Faustus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Built the desert forts of Roman Africa; sidelined by Caracalla until recalled to govern Asia in 217.",
@@ -3982,10 +3928,10 @@
           "type": "mission_request"
         }
       ],
-      "actionText": "Pick up Buffalo in F5 and Deliver to C2",
+      "actionText": "Pick up Aurochs in F5 and Deliver to C2",
       "mission": {
         "kind": "delivery",
-        "item": "Buffalo",
+        "item": "Aurochs",
         "pickupCell": "F5",
         "deliverCell": "C2",
         "category": "Meat Animal",
@@ -4004,7 +3950,7 @@
     {
       "id": "pat_13",
       "name": "Publius Septimius Geta",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
       "bio": "Co-Emperor. Ambushed by Caracalla at a parley. Died in the arms of their mother, Julia Domna.",
@@ -4043,7 +3989,7 @@
     {
       "id": "pat_14",
       "name": "Cornificia",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Surviving daughter of Marcus Aurelius. Ordered to take her own life by Caracalla after she wept openly with Julia Domna over the murder of Geta.",
@@ -4094,7 +4040,7 @@
     {
       "id": "pat_15",
       "name": "Quintus Tineius Sacerdos",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Served as consul ordinarius in 219 with Emperor Elagabalus. Aligned with Aurelians.",
@@ -4135,7 +4081,7 @@
     {
       "id": "pat_16",
       "name": "Lucius Aurelius Commodus Pompeianus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Caracalla took the precaution of making his murder appear to have been perpetrated by bandits.",
@@ -4182,7 +4128,7 @@
     {
       "id": "pat_17",
       "name": "Serenus Sammonicus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Renowned physician-poet. Owner of a 62,000-scroll library. Hacked to death at dinner during 211 purge.",
@@ -4191,7 +4137,7 @@
         "Aurelius",
         "-Caracalla"
       ],
-      "friendlyReward": "4(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Aurelius"
       ],
@@ -4224,7 +4170,7 @@
     {
       "id": "pat_18",
       "name": "Marcus Nummius Senecio Albinus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Served as consul in 227.",
@@ -4261,7 +4207,7 @@
     {
       "id": "pat_19",
       "name": "Lucius Valerius Messalla Apollinaris",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Thought to have been the son of Thrasea Priscus. Served as consul in 214.",
@@ -4292,7 +4238,7 @@
     {
       "id": "pat_20",
       "name": "Lucius Valerius Messalla Thrasea Priscus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
       "bio": "Patrician senator of ancient Republican lineage; executed during Caracalla's purge as a suspected partisan of Geta.",
@@ -4338,7 +4284,7 @@
     {
       "id": "pat_21",
       "name": "Julia Maesa",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Julia Domna's older sister. Mother of Julia Soaemias and Julia Avita Mamaea.",
@@ -4380,7 +4326,7 @@
     {
       "id": "pat_22",
       "name": "Marcus Aurelius Antoninus (Caracalla)",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Senior Co-Emperor — nicknamed Caracalla after the hooded Gallic tunic he popularized. Murdered his brother Geta in December 211.",
@@ -4429,7 +4375,7 @@
     {
       "id": "pat_23",
       "name": "Cassius Dio",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Bithynian senator, member of Julia Domna's court circle, and eyewitness historian.",
@@ -4468,10 +4414,10 @@
     {
       "id": "pat_24",
       "name": "Castor",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
-      "bio": "Confidant of Septimius Severus. Tried to restrain Caracalla's plots. Ambushed and murdered in 211.",
+      "bio": "Confidant of Septimius Severus who tried to restrain Caracalla's plots; ambushed and murdered by Caracalla's henchmen in 211.",
       "combatFormula": "1(R)",
       "friendlyFavor": [
         "Geta",
@@ -4519,7 +4465,7 @@
     {
       "id": "pat_25",
       "name": "Publius Helvius Pertinax Jr",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Son of Pertinax; executed for joking that Caracalla should add 'Geticus Maximus' to his victory titles for slaying Geta.",
@@ -4557,7 +4503,7 @@
     {
       "id": "pat_26",
       "name": "Gaius Julius Avitus Alexianus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Husband of Julia Maesa and prefect of imperial child-welfare endowments under Caracalla.",
@@ -4587,7 +4533,7 @@
     {
       "id": "pat_27",
       "name": "Gaius Septimius Severus Aper",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Geta",
       "bio": "Consul Ordinarius in 207. Executed in late 211 or early 212.",
@@ -4631,7 +4577,7 @@
     {
       "id": "pat_28",
       "name": "Aemilius Papinianus",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Celebrated jurist. Executed for refusing to compose a legal defense for Geta's murder.",
@@ -4681,7 +4627,7 @@
     {
       "id": "pat_29",
       "name": "Brutta Figura",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -4697,7 +4643,7 @@
     {
       "id": "pat_30",
       "name": "Julia Domna",
-      "deck": "patricii",
+      "deck": "Patricii",
       "type": "character",
       "faction": "Domna",
       "bio": "Empress mother of Geta and Caracalla. Committed suicide following Caracalla's assassination in 217.",
@@ -4744,7 +4690,7 @@
     {
       "id": "leg_1",
       "name": "Publius Catius Sabinus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Intimate supporter of Caracalla. Ordered killed by Elagabalus, but mistakenly expelled from Rome instead.",
@@ -4773,7 +4719,7 @@
     {
       "id": "leg_2",
       "name": "Publius Cornelius Anulinus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Would serve as Consul ordinarius in 216.",
@@ -4806,7 +4752,7 @@
     {
       "id": "leg_3",
       "name": "Macrinus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Conspired to assassinate Caracalla after a seer prophesied that he would become Emperor. Emperor from 217-218.",
@@ -4843,7 +4789,7 @@
     {
       "id": "leg_4",
       "name": "Clodius Pompeianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Member of the Claudian Aurelian dynasty. Consul in 241.",
@@ -4876,7 +4822,7 @@
     {
       "id": "leg_5",
       "name": "Tiberius Claudius Aurelius Quintianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Great-grandson of Marcus Aurelius; served as military tribune and senator under Caracalla.",
@@ -4911,7 +4857,7 @@
     {
       "id": "leg_6",
       "name": "Vigiles Urbani",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Watchmen of the city. Primarily firefighters.",
@@ -4926,11 +4872,16 @@
       "combatReward": "4(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": "<=1",
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Weapons or Fine Wine"
+        },
+        {
+          "condition": "=1",
           "type": "demand"
         },
         {
@@ -4944,7 +4895,7 @@
     {
       "id": "leg_7",
       "name": "Centurions",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Roman soldiers.",
@@ -4973,7 +4924,7 @@
     {
       "id": "leg_8",
       "name": "Praetorian Guard",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
       "bio": "The Imperial Guard.",
@@ -4994,7 +4945,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Exotic Animals or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -5008,7 +4964,7 @@
     {
       "id": "leg_9",
       "name": "Praetorian Guard",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
       "bio": "The Imperial Guard.",
@@ -5037,7 +4993,7 @@
     {
       "id": "leg_10",
       "name": "Cohortes Urbanae",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Roman police force used to counterbalance the Praetorian Guard.",
@@ -5052,11 +5008,16 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": "<=1",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": "0..1",
           "type": "demand"
         },
         {
@@ -5070,7 +5031,7 @@
     {
       "id": "leg_11",
       "name": "Sextus Varius Marcellus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
       "bio": "Married to Julia Soaemias, father of future emperor Elagabalus; served as Prefect in Rome in 211.",
@@ -5104,7 +5065,7 @@
     {
       "id": "leg_12",
       "name": "Praetorian Guard",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "The Imperial Guard.",
@@ -5125,7 +5086,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -5139,7 +5105,7 @@
     {
       "id": "leg_13",
       "name": "Quintus Maecius Laetus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Veteran equestrian commander and Praetorian Prefect in 211. Appointed at Septimius Severus's deathbed.",
@@ -5183,7 +5149,7 @@
     {
       "id": "leg_14",
       "name": "Lucius Tiberius Claudius Pompeianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Son of Lucius A.C. Pompeianus. Great grandson of Marcus Aurelius. Consul in 231.",
@@ -5215,7 +5181,7 @@
     {
       "id": "leg_15",
       "name": "Gaius Vettius Gratus Sabinianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
       "bio": "Curator of Via Flaminia. Responsible for Rome's food supply.",
@@ -5223,7 +5189,7 @@
       "friendlyFavor": [
         "Geta"
       ],
-      "friendlyReward": "4(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta"
       ],
@@ -5260,7 +5226,7 @@
     {
       "id": "leg_16",
       "name": "Legio II Parthica ('The Albanians')",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
       "bio": "Barred their camp gates against Caracalla after Geta's murder until bribed with vast donatives.",
@@ -5311,7 +5277,7 @@
     {
       "id": "leg_17",
       "name": "Quintus Virius Egnatius Sulpicius Priscus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Suffect Consul sometime under Caracalla.",
@@ -5348,7 +5314,7 @@
     {
       "id": "leg_18",
       "name": "Cohortes Urbanae",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Roman city guard. These ones are loyal to Plautilla.",
@@ -5364,11 +5330,16 @@
       "combatReward": "10(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": ">=0",
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Guards or Weapons"
+        },
+        {
+          "condition": ">=1",
           "type": "deck_quest_offer"
         },
         {
@@ -5382,7 +5353,7 @@
     {
       "id": "leg_19",
       "name": "Gaius Octavius Appius Suetrius Sabinus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Served under Caracalla. Lived on the Aventine.",
@@ -5390,7 +5361,7 @@
       "friendlyFavor": [
         "Caracalla"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Caracalla"
       ],
@@ -5419,7 +5390,7 @@
     {
       "id": "leg_20",
       "name": "Julius Martialis",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
       "bio": "Initial assassin in the murder of Caracalla.",
@@ -5454,7 +5425,7 @@
     {
       "id": "leg_21",
       "name": "Quintus Hedius Lollianus Plautius Avitus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Consul ordinarius in 209. Not killed by Caracalla.",
@@ -5487,7 +5458,7 @@
     {
       "id": "leg_22",
       "name": "Titus Flavius Sallustius Paelignianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Suffect Consul in 231.",
@@ -5522,7 +5493,7 @@
     {
       "id": "leg_23",
       "name": "Lucius Virius Agricola",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Geta",
       "bio": "Consul ordinarius in 230.",
@@ -5531,7 +5502,7 @@
         "Geta",
         "-Caracalla"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta",
         "-Domna"
@@ -5561,7 +5532,7 @@
     {
       "id": "leg_24",
       "name": "Nemesianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Tribune in 217. Pretended to come to Caracalla's rescue after he had been stabbed by Martialis. Instead slew him.",
@@ -5595,7 +5566,7 @@
     {
       "id": "leg_25",
       "name": "Marcus Clodius Pupienus Maximus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Co-emperor for three months in 238. Dragged from the palace and hacked to death in the streets by Praetorians.",
@@ -5638,7 +5609,7 @@
     {
       "id": "leg_26",
       "name": "Road Blocked",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -5654,7 +5625,7 @@
     {
       "id": "leg_27",
       "name": "Lucius Virius Lupus Iulianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Consul in 232.",
@@ -5669,8 +5640,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Weapons"
         },
         {
           "condition": ">=0",
@@ -5695,7 +5671,7 @@
     {
       "id": "leg_28",
       "name": "Gaius Valerius Patruinus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Praetorian Prefect in 211; executed during Caracalla's purge right after Geta's assassination.",
@@ -5715,7 +5691,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Exotic Animals"
+        },
+        {
+          "condition": "=0",
           "type": "demand"
         },
         {
@@ -5729,7 +5710,7 @@
     {
       "id": "leg_29",
       "name": "Ushered Along",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -5745,7 +5726,7 @@
     {
       "id": "leg_30",
       "name": "Marcus Julius Gessius Marcianus",
-      "deck": "legiones",
+      "deck": "Legiones",
       "type": "character",
       "faction": "Domna",
       "bio": "Married to Julia Mamaea. Father of Severus Alexander.",
@@ -5761,8 +5742,13 @@
       "combatReward": "10(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Marble"
         },
         {
           "condition": ">=0",
@@ -5781,7 +5767,7 @@
     {
       "id": "nef_1",
       "name": "Aelius Herodianus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
       "bio": "Celebrated grammarian whose treatises on Greek accentuation were prized by Domna's learned circle.",
@@ -5814,7 +5800,7 @@
     {
       "id": "nef_2",
       "name": "Marcus Antonius Gordianus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Would become Emperor Gordian II for twenty-two days in 238. Killed at the Battle of Carthage.",
@@ -5847,7 +5833,7 @@
     {
       "id": "nef_3",
       "name": "Salve!",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -5863,7 +5849,7 @@
     {
       "id": "nef_4",
       "name": "Carpophorus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
       "bio": "Famed Roman bestiarius celebrated for slaying twenty wild beasts in a single arena spectacle.",
@@ -5897,7 +5883,7 @@
     {
       "id": "nef_5",
       "name": "Gaius Sempronius Rufus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Notorious eunuch, street poisoner, and palace informer exiled to an island by Severus.",
@@ -5927,7 +5913,7 @@
     {
       "id": "nef_6",
       "name": "Smuggler",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
       "bio": "This procurer of rare goods works for Julia Domna.",
@@ -5943,8 +5929,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Marble"
         },
         {
           "condition": ">=0",
@@ -5969,7 +5960,7 @@
     {
       "id": "nef_7",
       "name": "Maximinus Thrax",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Thracian recruit, famous for out-wrestling whole cohorts in camp games; Emperor in 235.",
@@ -5998,7 +5989,7 @@
     {
       "id": "nef_8",
       "name": "Bato",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Caracalla commanded Bato to fight three gladiators consecutively, then rewarded him with a magnificent funeral.",
@@ -6027,7 +6018,7 @@
     {
       "id": "nef_9",
       "name": "Bulla Felix",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Legendary 'Robin Hood' bandit captain of 600 brigands. Betrayed by his mistress and thrown to wild beasts.",
@@ -6048,7 +6039,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Marble or Exotic Animals"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -6062,7 +6058,7 @@
     {
       "id": "nef_10",
       "name": "Fulvius Plautius Hortensianus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Son of the executed prefect Plautianus and brother of Fulvia Plautilla. Caracalla orders both siblings strangled.",
@@ -6096,7 +6092,7 @@
     {
       "id": "nef_11",
       "name": "Gannys",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
       "bio": "Shrewd palace operative.",
@@ -6125,7 +6121,7 @@
     {
       "id": "nef_12",
       "name": "Theocritus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Former slave and Roman pantomime dancer who taught Caracalla to dance.",
@@ -6167,7 +6163,7 @@
     {
       "id": "nef_13",
       "name": "Tiberius Clodius Pupienus Pulcher Maximus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
       "bio": "Consul suffectus in 224.",
@@ -6175,7 +6171,7 @@
       "friendlyFavor": [
         "Geta"
       ],
-      "friendlyReward": "5(d)",
+      "friendlyReward": "8(d)",
       "hostileFavor": [
         "-Geta",
         "-Domna"
@@ -6205,7 +6201,7 @@
     {
       "id": "nef_14",
       "name": "Serapion",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Underground Egyptian astrologer.",
@@ -6234,7 +6230,7 @@
     {
       "id": "nef_15",
       "name": "Subura Cutthroat",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Aurelius",
       "bio": "Hired blade.",
@@ -6254,7 +6250,12 @@
           "type": "combat"
         },
         {
-          "condition": "<=0",
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine or Weapons"
+        },
+        {
+          "condition": "=0",
           "type": "demand_strict"
         },
         {
@@ -6268,7 +6269,7 @@
     {
       "id": "nef_16",
       "name": "Euprepes",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
       "bio": "Celebrated Roman charioteer who crowned 782 Circus victories. Marked for death by Caracalla solely because he raced for Geta's preferred faction.",
@@ -6301,7 +6302,7 @@
     {
       "id": "nef_17",
       "name": "Brutta Figura",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -6317,7 +6318,7 @@
     {
       "id": "nef_18",
       "name": "Suppositicius",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
       "bio": "Fresh arena substitute gladiator thrown in against an exhausted Bato during Caracalla's rigged spectacle; Geta's partisans backed him out of spite.",
@@ -6347,7 +6348,7 @@
     {
       "id": "nef_19",
       "name": "Fulvia Plautilla",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Estranged wife of Caracalla. Banished to Lipara after her father's execution. Ordered strangled in 211.",
@@ -6396,7 +6397,7 @@
     {
       "id": "nef_20",
       "name": "Coeranus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Egyptian equestrian confidant of Plautianus exiled to an island in 205.",
@@ -6431,7 +6432,7 @@
     {
       "id": "nef_21",
       "name": "Flamma",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Geta",
       "bio": "Fought 34 bouts, won 21, refused the wooden rudis of freedom four times. Died in the arena at age 30.",
@@ -6462,7 +6463,7 @@
     {
       "id": "nef_22",
       "name": "Euodus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Caracalla",
       "bio": "Engineered the palace trap against Plautianus. Nonetheless executed by Caracalla in late 211.",
@@ -6505,7 +6506,7 @@
     {
       "id": "nef_23",
       "name": "Lupanar Procurer",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Brothel-keeper.",
@@ -6539,7 +6540,7 @@
     {
       "id": "nef_24",
       "name": "Saturninus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Nocturnal courier.",
@@ -6555,8 +6556,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Fine Wine"
         },
         {
           "condition": ">=0",
@@ -6581,7 +6587,7 @@
     {
       "id": "nef_25",
       "name": "Herodian Of Antioch",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Minor imperial freedman-clerk in 211. Author of Herodian's Roman History.",
@@ -6616,7 +6622,7 @@
     {
       "id": "nef_26",
       "name": "Epagathus",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
       "bio": "Palace enforcer.",
@@ -6650,7 +6656,7 @@
     {
       "id": "nef_27",
       "name": "Road Blocked",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "event",
       "faction": null,
       "bio": null,
@@ -6666,7 +6672,7 @@
     {
       "id": "nef_28",
       "name": "Emporium Dock-Thief",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Plautilla",
       "bio": "Riverfront smuggling gang.",
@@ -6682,8 +6688,13 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
+        },
+        {
+          "condition": "-1",
+          "type": "combat",
+          "ifCarrying": "Wine"
         },
         {
           "condition": ">=0",
@@ -6708,7 +6719,7 @@
     {
       "id": "nef_29",
       "name": "Poacher",
-      "deck": "nefarii",
+      "deck": "Nefarii",
       "type": "character",
       "faction": "Domna",
       "bio": "Purveyor of fine contraband.",
@@ -6724,15 +6735,20 @@
       "combatReward": "6(d)",
       "reactions": [
         {
-          "condition": "<=-1",
+          "condition": "<=-2",
           "type": "combat"
         },
         {
-          "condition": ">=0",
-          "type": "deck_quest_offer"
+          "condition": "-1..0",
+          "type": "combat",
+          "ifCarrying": "Exotic Animals"
         },
         {
           "condition": ">=1",
+          "type": "deck_quest_offer"
+        },
+        {
+          "condition": ">=2",
           "type": "offer"
         }
       ],

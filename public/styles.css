@@ -392,6 +392,14 @@ button, input, select {
   background-position: center, center 44%;
 }
 
+.panel-title.fresco-banner-header .badge,
+.panel-title.fresco-banner-header .btn {
+  text-shadow: none;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
 .panel-title.fresco-banner-header.fresco-cart {
   background-image:
     linear-gradient(90deg, rgba(38, 20, 12, 0.84) 0%, rgba(48, 26, 16, 0.56) 50%, rgba(38, 20, 12, 0.84) 100%),
@@ -813,7 +821,7 @@ button, input, select {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-template-rows: repeat(6, minmax(188px, auto));
   min-width: 820px;
-  background-image: url("./assets/icons/ostia_market_board_bg.jpg?v=58");
+  background-image: url("./assets/icons/ostia_market_board_bg.jpg?v=61");
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
@@ -1414,7 +1422,7 @@ button, input, select {
   gap: 0;
   padding: 0;
   aspect-ratio: 1 / 1;
-  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=58");
+  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=61");
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
@@ -2263,7 +2271,7 @@ button, input, select {
   margin: 0 auto;
   border-radius: 8px;
   border: 2px solid var(--gold);
-  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=58");
+  background-image: url("./assets/icons/rome_211_map_bg_v4.jpg?v=61");
   background-size: 600% 600%;
   background-repeat: no-repeat;
   position: relative;
@@ -2298,22 +2306,34 @@ button, input, select {
   pointer-events: none;
 }
 
-/* Cardinal edges — inset so bars and badges sit cleanly inside tile border */
-.dyn-edge-N  { top: 3px; left: 50%; transform: translateX(-50%); }
-.dyn-edge-S  { bottom: 3px; left: 50%; transform: translateX(-50%); }
-.dyn-edge-E  { right: 3px; top: 50%; transform: translateY(-50%); }
-.dyn-edge-W  { left: 3px; top: 50%; transform: translateY(-50%); }
+/* Cardinal edges — hug tile border cleanly at 0-1px */
+.dyn-edge-N  { top: 0px; left: 50%; transform: translateX(-50%); }
+.dyn-edge-S  { bottom: 0px; left: 50%; transform: translateX(-50%); }
+.dyn-edge-E  { right: 0px; top: 50%; transform: translateY(-50%); }
+.dyn-edge-W  { left: 0px; top: 50%; transform: translateY(-50%); }
 
-/* Diagonal corner edges — 16x16 box inset 4px from both borders so rotated 45deg bars fit 100% inside tile */
-.dyn-edge-NW { top: 4px; left: 4px; min-width: 16px; min-height: 16px; }
-.dyn-edge-NE { top: 4px; right: 4px; min-width: 16px; min-height: 16px; }
-.dyn-edge-SW { bottom: 4px; left: 4px; min-width: 16px; min-height: 16px; }
-.dyn-edge-SE { bottom: 4px; right: 4px; min-width: 16px; min-height: 16px; }
+.dyn-edge-slot.dyn-edge-E.has-vertical-enc,
+.dyn-edge-slot.dyn-edge-W.has-vertical-enc {
+  width: 28px;
+  height: 76px;
+}
 
-.inspector-preview .dyn-edge-NW { top: 6px; left: 6px; min-width: 22px; min-height: 22px; }
-.inspector-preview .dyn-edge-NE { top: 6px; right: 6px; min-width: 22px; min-height: 22px; }
-.inspector-preview .dyn-edge-SW { bottom: 6px; left: 6px; min-width: 22px; min-height: 22px; }
-.inspector-preview .dyn-edge-SE { bottom: 6px; right: 6px; min-width: 22px; min-height: 22px; }
+.inspector-preview .dyn-edge-slot.dyn-edge-E.has-vertical-enc,
+.inspector-preview .dyn-edge-slot.dyn-edge-W.has-vertical-enc {
+  width: 38px;
+  height: 106px;
+}
+
+/* Diagonal corner edges — hug corners closely */
+.dyn-edge-NW { top: 0px; left: 0px; min-width: 22px; min-height: 22px; }
+.dyn-edge-NE { top: 0px; right: 0px; min-width: 22px; min-height: 22px; }
+.dyn-edge-SW { bottom: 0px; left: 0px; min-width: 22px; min-height: 22px; }
+.dyn-edge-SE { bottom: 0px; right: 0px; min-width: 22px; min-height: 22px; }
+
+.inspector-preview .dyn-edge-NW { top: 1px; left: 1px; min-width: 28px; min-height: 28px; }
+.inspector-preview .dyn-edge-NE { top: 1px; right: 1px; min-width: 28px; min-height: 28px; }
+.inspector-preview .dyn-edge-SW { bottom: 1px; left: 1px; min-width: 28px; min-height: 28px; }
+.inspector-preview .dyn-edge-SE { bottom: 1px; right: 1px; min-width: 28px; min-height: 28px; }
 
 .dyn-edge-bar {
   display: block;
@@ -2396,12 +2416,18 @@ button, input, select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   gap: 1px;
-  background: rgba(254, 249, 236, 0.88);
-  border: 1px solid #16a34a;
+  background: rgba(247, 237, 216, 0.78);
+  border: 1px solid rgba(22, 163, 74, 0.82);
+  border-radius: 3px;
+  padding: 0 1px;
+  box-shadow: 0 1px 2px rgba(30, 18, 8, 0.32);
+}
+
+.dyn-edge-enc-group.is-corner-group {
+  padding: 0;
   border-radius: 4px;
-  padding: 1px 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .dyn-edge-enc-group.has-tiber-toll {
@@ -2414,14 +2440,69 @@ button, input, select {
 }
 
 .dyn-edge-enc-icon {
-  height: 14px;
+  height: 26px;
   width: auto;
+  max-width: 68px;
   object-fit: contain;
   display: block;
+  filter: drop-shadow(0 1px 1px rgba(255, 250, 236, 0.85));
+}
+
+.dyn-edge-enc-icon.is-corner-enc {
+  height: 29px;
+  max-width: 34px;
+}
+
+.dyn-edge-enc-icon.is-corner-enc.is-compact-corner {
+  height: 22px;
+  max-width: 24px;
+}
+
+.dyn-edge-enc-icon.is-corner-wedge {
+  height: 28px;
+  max-width: 32px;
+}
+
+.dyn-edge-enc-icon.is-corner-mirror {
+  transform: scaleX(-1);
+}
+
+.dyn-edge-enc-icon.is-crowd-edge {
+  height: 24px;
+  max-width: 64px;
+}
+
+.dyn-edge-E .dyn-edge-enc-group.is-vertical-edge {
+  transform: rotate(90deg);
+}
+
+.dyn-edge-W .dyn-edge-enc-group.is-vertical-edge {
+  transform: rotate(-90deg);
 }
 
 .inspector-preview .dyn-edge-enc-icon {
-  height: 20px;
+  height: 35px;
+  max-width: 92px;
+}
+
+.inspector-preview .dyn-edge-enc-icon.is-corner-enc {
+  height: 38px;
+  max-width: 46px;
+}
+
+.inspector-preview .dyn-edge-enc-icon.is-corner-enc.is-compact-corner {
+  height: 29px;
+  max-width: 32px;
+}
+
+.inspector-preview .dyn-edge-enc-icon.is-corner-wedge {
+  height: 40px;
+  max-width: 44px;
+}
+
+.inspector-preview .dyn-edge-enc-icon.is-crowd-edge {
+  height: 32px;
+  max-width: 86px;
 }
 
 /* Trade Banners (Buys & Sells) on Revealed Tile */
@@ -2533,15 +2614,27 @@ button, input, select {
 }
 
 .dyn-center-enc-icon {
-  height: 36px;
+  height: 58px;
   width: auto;
+  max-width: 92px;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 1px 2px rgba(255, 252, 242, 0.95)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 1px 1.5px rgba(255, 250, 236, 0.92)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.32));
+}
+
+.dyn-center-enc-icon.is-soothsayer-center {
+  height: 48px;
+  max-width: 68px;
 }
 
 .inspector-preview .dyn-center-enc-icon {
-  height: 58px;
+  height: 88px;
+  max-width: 144px;
+}
+
+.inspector-preview .dyn-center-enc-icon.is-soothsayer-center {
+  height: 72px;
+  max-width: 104px;
 }
 
 /* Bottom Persistent/Refresh & Gamble Dice — clear SW/SE edge icons without overlapping side edges */
@@ -2557,12 +2650,12 @@ button, input, select {
 }
 
 .dyn-tile-card.has-edge-sw .dyn-tile-bottom-left {
-  bottom: 26px;
+  bottom: 30px;
   left: 9px;
 }
 
 .dyn-tile-card.inspector-preview.has-edge-sw .dyn-tile-bottom-left {
-  bottom: 35px;
+  bottom: 40px;
   left: 12px;
 }
 
@@ -3027,13 +3120,15 @@ button, input, select {
 }
 
 .phys-enc-tier-effect {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   line-height: 1.05;
   font-weight: 900;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  text-align: center;
+  gap: 2px;
 }
 
 .enc-tier-inline-icon,
@@ -8043,4 +8138,412 @@ button, input, select {
   line-height: 1.4;
   color: #2f1d10;
   margin-top: 0.4rem;
+}
+
+/* =========================================================================
+   ROME CLOCK BOARD, ENCOUNTER KEY & ROLL CHARTS
+   ========================================================================= */
+
+.rome-clock-board-panel {
+  background: linear-gradient(180deg, #f4ead4 0%, #eadbc0 100%);
+  border: 2px solid #754e28;
+  border-radius: 8px;
+  padding: 0.85rem 0.95rem;
+  box-shadow: var(--bevel-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  color: #2a180c;
+}
+
+.rome-clock-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1.5px solid rgba(117, 78, 40, 0.35);
+  padding-bottom: 0.45rem;
+}
+
+.rome-clock-board-title {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: #5b1b15;
+  letter-spacing: 0.02em;
+}
+
+.rome-clock-curfew-note {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b3518;
+  background: rgba(255, 250, 238, 0.75);
+  border: 1px solid rgba(138, 100, 33, 0.38);
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+}
+
+.rome-clock-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+@media (max-width: 1100px) {
+  .rome-clock-hours-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .rome-clock-hours-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.rome-clock-hour-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 70px;
+  padding: 0.35rem 0.25rem;
+  border-radius: 6px;
+  background: rgba(255, 251, 242, 0.82);
+  border: 1.5px solid #a8875a;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rome-clock-hour-slot.is-dawn {
+  background: linear-gradient(180deg, #fef2f2 0%, #fde6d8 100%);
+  border-color: #991b1b;
+}
+
+.rome-clock-hour-slot.is-late-night {
+  background: linear-gradient(180deg, #fffbeb 0%, #f5e5c4 100%);
+  border-color: #b45309;
+}
+
+.rome-clock-hour-slot.is-active {
+  background: linear-gradient(180deg, #fff7d6 0%, #fde68a 100%);
+  border: 2px solid #8c241b;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.35), 0 4px 10px rgba(68, 25, 10, 0.25);
+  transform: translateY(-2px);
+}
+
+.rome-clock-numeral {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #5b1b15;
+}
+
+.rome-clock-hour-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #4a311e;
+  line-height: 1.15;
+}
+
+.rome-clock-token-well {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px dashed rgba(117, 78, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.rome-clock-token {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a 0%, #b45309 65%, #5b1b15 100%);
+  border: 2px solid #fffbeb;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.rome-clock-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.55fr);
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.rome-clock-left-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+@media (max-width: 960px) {
+  .rome-clock-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rome-clock-subcard {
+  background: rgba(255, 250, 240, 0.78);
+  border: 1.5px solid #a8875a;
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem;
+}
+
+.rome-clock-subcard-title {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #5b1b15;
+  margin-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(117, 78, 40, 0.25);
+  padding-bottom: 0.25rem;
+}
+
+.rome-clock-gamble-head {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.rome-clock-key-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+@media (max-width: 520px) {
+  .rome-clock-key-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rome-clock-key-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(244, 232, 206, 0.68);
+  border: 1px solid rgba(138, 100, 33, 0.35);
+  border-radius: 5px;
+  padding: 0.32rem 0.45rem;
+}
+
+.rome-clock-key-icon-box {
+  width: 34px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rome-clock-key-icon {
+  max-width: 34px;
+  max-height: 28px;
+  object-fit: contain;
+}
+
+.rome-clock-key-bar {
+  display: inline-block;
+  width: 26px;
+  height: 7px;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.rome-clock-key-bar.edge-green {
+  background: #16a34a;
+  border: 1px solid #052e16;
+}
+
+.rome-clock-key-bar.edge-red {
+  background: #dc2626;
+  border: 1px solid #450a0a;
+}
+
+.rome-clock-key-text {
+  font-size: 0.71rem;
+  line-height: 1.25;
+  color: #2b1a0e;
+}
+
+.rome-clock-key-text strong {
+  display: block;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.72rem;
+  color: #5b1b15;
+}
+
+.rome-clock-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+@media (max-width: 620px) {
+  .rome-clock-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rome-chart-box {
+  background: rgba(247, 237, 217, 0.82);
+  border: 1px solid rgba(138, 100, 33, 0.45);
+  border-radius: 5px;
+  padding: 0.42rem 0.5rem;
+}
+
+.rome-chart-box-head {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.76rem;
+  color: #5b1b15;
+  margin-bottom: 0.3rem;
+}
+
+.rome-chart-box-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.rome-chart-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  padding: 0.12rem 0;
+  border-top: 1px dashed rgba(138, 100, 33, 0.22);
+}
+
+.rome-chart-row:first-of-type {
+  border-top: none;
+}
+
+.rome-chart-die-pill {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.68rem;
+  min-width: 24px;
+  text-align: center;
+  padding: 0.04rem 0.24rem;
+  border-radius: 3px;
+  background: #4e2116;
+  color: #fde6b0;
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   GUIDED FIRST-SEASON TUTORIAL POPUP & TARGET HIGHLIGHT
+   ========================================================================= */
+
+.nm-tutorial-popup {
+  position: fixed;
+  right: 1.15rem;
+  bottom: 1.15rem;
+  width: min(390px, calc(100vw - 2rem));
+  z-index: 10050;
+  background: linear-gradient(180deg, #fffaf0 0%, #f1e3c7 100%);
+  border: 2.5px solid #9a5e18;
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(24, 10, 4, 0.48), 0 0 0 3px rgba(217, 160, 56, 0.25);
+  padding: 0.85rem 0.95rem;
+  color: #241409;
+  display: flex;
+  flex-direction: column;
+  gap: 0.52rem;
+}
+
+.nm-tutorial-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(154, 94, 24, 0.32);
+  padding-bottom: 0.35rem;
+}
+
+.nm-tutorial-title {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #6e2119;
+}
+
+.nm-tutorial-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: #6e2119;
+  color: #fde6b0;
+  padding: 0.12rem 0.42rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.nm-tutorial-body {
+  font-size: 0.81rem;
+  line-height: 1.44;
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.nm-tutorial-quote {
+  margin: 0.1rem 0;
+  padding: 0.34rem 0.52rem;
+  border-left: 3px solid #9a5e18;
+  background: rgba(255, 253, 247, 0.72);
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+  color: #4a2a12;
+  font-size: 0.78rem;
+}
+
+.nm-tutorial-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(154, 94, 24, 0.28);
+  padding-top: 0.45rem;
+  margin-top: 0.1rem;
+}
+
+.nm-tutorial-disable-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5b1b15;
+  cursor: pointer;
+}
+
+@keyframes nmTutorialPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.85), 0 0 14px rgba(245, 158, 11, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.95), 0 0 22px rgba(245, 158, 11, 0.95);
+  }
+}
+
+.nm-tutorial-target-highlight {
+  animation: nmTutorialPulse 1.45s ease-in-out infinite !important;
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px;
 }

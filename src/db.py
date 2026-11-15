@@ -235,6 +235,7 @@ DEFAULT_USER_SETTINGS: Dict[str, Any] = {
     "confirmEndTurn": False,
     "allowUndoByDefault": False,
     "skipMissionCompletionPopups": False,
+    "tutorialEnabled": True,
     "hotkeys": dict(DEFAULT_HOTKEYS),
 }
 
@@ -1063,6 +1064,8 @@ def update_user_profile(
                     current_settings["allowUndoByDefault"] = bool(settings["allowUndoByDefault"])
                 if "skipMissionCompletionPopups" in settings:
                     current_settings["skipMissionCompletionPopups"] = bool(settings["skipMissionCompletionPopups"])
+                if "tutorialEnabled" in settings:
+                    current_settings["tutorialEnabled"] = bool(settings["tutorialEnabled"])
                 if "hotkeys" in settings and isinstance(settings["hotkeys"], dict):
                     current_settings["hotkeys"] = sanitize_hotkeys_dict(settings["hotkeys"])
 
