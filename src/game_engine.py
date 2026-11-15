@@ -3201,7 +3201,7 @@ def _get_winning_opponent(state: Dict[str, Any], bot: Dict[str, Any]) -> Optiona
 
 
 def _count_bot_adversarial_cards(bot: Dict[str, Any]) -> int:
-    adv_keywords = ("Twist Of Fate", "Chamber Pot", "Gladiator", "Mercenary", "Distraction", "Surprise Shipment", "Prophecy")
+    adv_keywords = ("Twist Of Fate", "Chamber Pot", "Gladiator", "Mercenary", "Distraction", "Prophecy")
     return sum(1 for c in bot.get("influence", []) if any(k in str(c.get("name", "")) for k in adv_keywords))
 
 
@@ -11362,6 +11362,40 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
         msg = _complete_delivery_mission(state, target_p, m, curr_cell)
         return True, msg
 
+    # 1B. Spontaneous Anytime Influence Cards (Patron, Favor, Cartwright, Thug, Wine Forger, Procurer)
+    if act_type == "play_influence" and state.get("phase") not in ("setup_discard", "setup_climate", "finished"):
+        req_card_id = action.get("cardId")
+        owner_p = next(
+            (
+                p for p in state["players"]
+                if not p.get("isBot")
+                and (user_id is None or p.get("userId") == user_id or p.get("userId") is None)
+                and any(c.get("id") == req_card_id for c in p.get("influence", []))
+            ),
+            None,
+        )
+        if owner_p:
+            cand_card = next((c for c in owner_p["influence"] if c.get("id") == req_card_id), None)
+            if cand_card and _is_spontaneous_anytime_influence_card(cand_card):
+                ok, msg = _execute_influence_card(state, owner_p, cand_card, action)
+                if ok and state.get("pendingEncounter") and state["pendingEncounter"].get("stage", "pre_decision") == "pre_decision":
+                    pend_now = state["pendingEncounter"]
+                    enc_p_now = state["players"][pend_now["playerIndex"]]
+                    prev_int = pend_now.get("interveningPlayerIndex")
+                    state["pendingEncounter"] = _build_pending_encounter_state(
+                        state,
+                        enc_p_now,
+                        pend_now["card"],
+                        pend_now.get("deck", "patricii"),
+                        pend_now.get("xCount", 1),
+                        source_label=pend_now.get("encounterSource"),
+                    )
+                    if prev_int is not None:
+                        state["pendingEncounter"]["interveningPlayerIndex"] = prev_int
+                elif ok and not state.get("pendingEncounter") and state.get("phase") not in ("delivery_entry",):
+                    run_bots_until_human(state)
+                return ok, msg
+
     # 2. Pending Encounter Choice (including human intervention on another player's encounter/combat/chart roll)
     if state.get("pendingEncounter"):
         pend = state["pendingEncounter"]
@@ -11388,6 +11422,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                     pend["card"],
                     pend.get("deck", "patricii"),
                     pend.get("xCount", 1),
+                    source_label=pend.get("encounterSource"),
                 )
                 if prev_int is not None:
                     state["pendingEncounter"]["interveningPlayerIndex"] = prev_int
@@ -11592,7 +11627,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
             summary_str = (
                 _summarize_tile(top_one)
                 if t_type == "tile"
-                else f"Top of {t_key.capitalize()}: {top_one.get('name', 'Card')}"
+                else f"Top of {_deck_display_name(t_key)}: {top_one.get('name', 'Card')}"
             )
             target_p["scoutedInfo"].append({
                 "id": f"top3_{secrets.token_hex(4)}",
@@ -11936,9 +11971,7 @@ def _execute_player_action_inner(state: Dict[str, Any], user_id: Optional[int], 
                 return True, f"Buried top unrevealed tile of {target_key} to bottom of stack."
 
             if target_type == "deck":
-                target_key = str(action.get("targetKey") or "").strip().lower()
-                if target_key == "goods":
-                    target_key = "market"
+                target_key = _normalize_deck_key(action.get("targetKey"), default="")
                 if target_key not in state["decks"]:
                     return False, "Invalid deck target."
                 dk = state["decks"][target_key]
@@ -12382,10 +12415,36 @@ _DECK_DISPLAY_NAMES = {
 }
 
 
-def _deck_display_name(deck_key: str) -> str:
-    dk = str(deck_key or "").strip().lower()
+def _is_spontaneous_anytime_influence_card(card: Dict[str, Any]) -> bool:
+    """Influence cards that grant money, favor, goods, or cart/guard space can be played anytime."""
+    cname = str(card.get("name") or "")
+    eff = str(card.get("effectCode") or "")
+    return (
+        cname in ("Patron", "Cartwright", "Thug", "Wine Forger", "Procurer")
+        or "Favor" in cname
+        or eff in (
+            "patron_caracalla_domna",
+            "patron_geta_aurelius",
+            "permanent_storage_plus_2",
+            "free_guard_1r",
+            "wine_forger",
+            "buy_from_deck_uncommon",
+        )
+        or eff.startswith("faction_favor_")
+    )
+
+
+def _normalize_deck_key(raw_key: Any, default: str = "patricii") -> str:
+    dk = str(raw_key or default).strip().lower()
     if dk == "goods":
-        dk = "market"
+        return "market"
+    if dk == "missions":
+        return "missiones"
+    return dk
+
+
+def _deck_display_name(deck_key: str) -> str:
+    dk = _normalize_deck_key(deck_key, default="")
     return _DECK_DISPLAY_NAMES.get(dk, dk.capitalize())
 
 
@@ -12400,9 +12459,7 @@ def _record_scout_target(
     """Validates a Scout target (neighborhood stack or any of the 6 decks) and records secret intelligence."""
     t_type = str(target_type or "tile").strip().lower()
     if t_type == "deck":
-        t_key = str(raw_key or "patricii").strip().lower()
-        if t_key == "goods":
-            t_key = "market"
+        t_key = _normalize_deck_key(raw_key, default="patricii")
         if t_key not in state.get("decks", {}):
             return False, "Invalid scout deck target."
         dk = state["decks"][t_key]
@@ -12623,6 +12680,79 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 False,
                 "Lucky Break is a reactive card — play it after rolling on the Death, Angry Mob, or Theater Troupe chart (+1 to roll).",
             )
+    if "Distraction" in cname or "Mercenary" in cname:
+        valid_pre_combat = (
+            pend is not None
+            and (
+                pend_stage == "combat_consumable_pre_roll"
+                or (
+                    pend_stage == "pre_decision"
+                    and (pend.get("canInitiateCombat") or pend.get("combatMandatory") or pend.get("combatThreatened"))
+                )
+            )
+        )
+        if not valid_pre_combat:
+            return (
+                False,
+                f"{cname} is a reactive card — play it before rolling when an Encounter with Combat is active.",
+            )
+    if "Gladiator" in cname or "Flying Chamber Pot" in cname:
+        if not pend or pend_stage != "combat_post_roll":
+            return (
+                False,
+                f"{cname} is a reactive card — play it after rolling during an active Combat.",
+            )
+    if "Supplicant" in cname:
+        if not pend or pend_stage != "pre_decision" or pend.get("playerIndex") != player.get("index"):
+            return (
+                False,
+                f"{cname} is a reactive card — play it during your active Encounter before choosing an option to modify Favor.",
+            )
+    if "Man Of The People" in cname:
+        if not pend or pend_stage not in ("chart_pre_roll", "chart_post_roll") or pend.get("chartType") != "mob":
+            return (
+                False,
+                "Man Of The People is a reactive card — play it when an Angry Mob encounter occurs.",
+            )
+    if "Dramaturge" in cname:
+        if not pend or pend_stage not in ("chart_pre_roll", "chart_post_roll") or pend.get("chartType") != "theater":
+            return (
+                False,
+                "Dramaturge is a reactive card — play it when a Theater Troupe encounter occurs.",
+            )
+    if "Make Haste" in cname:
+        if (
+            state.get("phase") != "delivery"
+            or pend is not None
+            or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase"))
+            or not normalize_cell_id(player.get("position"))
+            or player.get("exitedRome")
+            or player.get("nightEnded")
+            or player.get("eliminated")
+            or player.get("turnStep") == "done"
+        ):
+            return (
+                False,
+                "Make Haste can only be played on your Night Delivery turn while your Cart is active on the city board.",
+            )
+    if "Puffery" in cname:
+        if (
+            state.get("phase") != "delivery"
+            or pend is not None
+            or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase"))
+            or not normalize_cell_id(player.get("position"))
+            or player.get("exitedRome")
+            or player.get("nightEnded")
+            or player.get("eliminated")
+            or player.get("turnStep") == "done"
+        ):
+            return (
+                False,
+                "Puffery can only be played on your Night Delivery turn while your Cart is active on the city board.",
+            )
+    if str(card.get("effectCode", "")).startswith("reorder_top_3") or "informants" in cname.lower():
+        if pend is not None or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
+            return False, "Resolve the current encounter or prompt before playing Informants."
     if "Prophecy" in cname and (pend is not None or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase"))):
         return False, "Resolve the current encounter or prompt before playing Prophecy."
     if "Shortcut" in cname:
@@ -12724,10 +12854,12 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 or pend.get("isPvp")
                 or pend.get("playerIndex") != player.get("index")
                 or pend.get("interveningPlayerIndex") is not None
+                or pend.get("canInitiateCombat")
+                or pend.get("combatMandatory")
             ):
                 return (
                     False,
-                    "Casus Belli can only initiate combat during your initial NPC Encounter decision window, or on your Night Delivery turn (Turn 2+) against a present opponent.",
+                    "Casus Belli can only initiate combat during your initial NPC Encounter decision window when combat is not already available, or on your Night Delivery turn (Turn 2+) against a present opponent.",
                 )
         else:
             if state.get("phase") != "delivery" or state.get("activePlayerIndex") != player.get("index"):
@@ -12791,6 +12923,8 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
             return False, "Match Fixing can only be played while standing on a revealed Stadium Gambling tile inside Rome."
         if state.get("pendingEncounter") or _player_has_blocking_prompt(player, include_top3=True, phase=state.get("phase")):
             return False, "Resolve your active encounter or prompt before gambling with Match Fixing."
+        if int(player.get("cash", 0)) <= 0:
+            return False, "Match Fixing requires at least 1(d) to wager at the Stadium."
         if player.get("transactedThisTurn") or player.get("gambledThisTurn"):
             return False, "You have already performed your Transaction or Gambled this turn."
         if (player.get("turnEffects") or {}).get("matchFixing"):
@@ -13242,12 +13376,6 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
             add_log(state, f"{player['name']} played 'Prophecy' to consult the Soothsayer!", "action")
         resolve_table_encounter(state, target_p, "soothsayer")
         return True, f"Triggered Soothsayer for {target_p['name']}."
-    if "Surprise Shipment" in cname:
-        track_name = action.get("track", "Wine")
-        if track_name in state["seasonTrackShifts"]:
-            state["seasonTrackShifts"][track_name] += 1
-        add_log(state, f"{player['name']} played 'Surprise Shipment' — moved {track_name} scarcity one level to the right for this Season!", "action")
-        return True, f"Shifted {track_name} scarcity for this season."
     if "Casus Belli" in cname:
         if casus_belli_pvp_target is not None:
             player["transactedThisTurn"] = True
@@ -13273,9 +13401,9 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
     eff_code = str(card.get("effectCode", ""))
     eff_txt = str(card.get("effectText", "")).lower()
     if eff_code.startswith("reorder_top_3") or "informants" in cname.lower() or "look at the top three" in eff_txt:
-        target_type = action.get("targetType", "deck")
+        target_type = str(action.get("targetType", "deck")).strip().lower()
         raw_tkey = action.get("targetKey", "patricii")
-        target_key = normalize_cell_id(raw_tkey) if target_type == "tile" else raw_tkey
+        target_key = normalize_cell_id(raw_tkey) if target_type == "tile" else _normalize_deck_key(raw_tkey, default="patricii")
         if target_type == "tile" and target_key in state["romeBoard"]:
             stk = state["romeBoard"][target_key]["stack"]
             top_items = copy.deepcopy(stk[:3])
@@ -13286,7 +13414,7 @@ def _execute_influence_card(state: Dict[str, Any], player: Dict[str, Any], card:
                 target_key = "patricii"
             dk = state["decks"][target_key]
             top_items = copy.deepcopy(dk[:3])
-            label_str = f"{target_key.capitalize()} Deck"
+            label_str = f"{_deck_display_name(target_key)} Deck"
         player["pendingTop3Reorder"] = {
             "id": f"top3_{secrets.token_hex(4)}",
             "targetType": target_type,
@@ -14354,7 +14482,7 @@ def _bot_try_informants(state: Dict[str, Any], bot: Dict[str, Any], inf_card: Di
         summary_str = (
             _summarize_tile(top_one)
             if t_type == "tile"
-            else f"Top of {t_key.capitalize()}: {top_one.get('name', 'Card')}"
+            else f"Top of {_deck_display_name(t_key)}: {top_one.get('name', 'Card')}"
         )
         bot.setdefault("scoutedInfo", []).append({
             "id": f"top3_{secrets.token_hex(4)}",
@@ -14455,7 +14583,7 @@ def _bot_try_proactive_self_influence(state: Dict[str, Any], bot: Dict[str, Any]
 
 
 def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, Any]) -> None:
-    """Allows NPC bots to play proactive adversarial Influence cards (Surprise Shipment, Prophecy) against the winning player."""
+    """Allows NPC bots to play proactive adversarial Influence cards (Prophecy) against the winning player."""
     if state.get("pendingEncounter") or not bot.get("influence"):
         return
     leader = _get_winning_opponent(state, bot)
@@ -14463,34 +14591,7 @@ def _bot_try_adversarial_turn_influence(state: Dict[str, Any], bot: Dict[str, An
         return
     tier = _bot_difficulty_tier(bot)
 
-    # 1. Surprise Shipment: depress scarcity on a Goods category heavily held on the leader's Cart (and not held by this bot)
-    ss_card = next((c for c in bot["influence"] if "Surprise Shipment" in str(c.get("name", ""))), None)
-    if ss_card:
-        best_track = None
-        best_leader_val = 0
-        for t_name in ("Marble", "Wine", "Animals", "Weapons", "Grain"):
-            if any(c.get("track") == t_name for c in bot.get("cart", [])):
-                continue
-            track_cards = state["marketBoard"].get(t_name, [])
-            shift = state.get("seasonTrackShifts", {}).get(t_name, 0)
-            sc_idx = get_track_scarcity_index(track_cards, shift)
-            if sc_idx >= 4:
-                continue
-            leader_items = [c for c in leader.get("cart", []) if c.get("track") == t_name and c.get("sell")]
-            if not leader_items:
-                continue
-            leader_blocks = sum(int(c.get("blocks", 1)) for c in leader_items)
-            leader_val = sum(int(c["sell"][sc_idx]) for c in leader_items)
-            if (leader_blocks >= 2 or leader_val >= 8) and leader_val > best_leader_val:
-                best_leader_val = leader_val
-                best_track = t_name
-        if best_track:
-            _execute_influence_card(state, bot, ss_card, {"track": best_track})
-            add_npc_event(state, bot, "influence", f"Played 'Surprise Shipment' on {best_track}", cell=bot.get("position"), visual={"kind": "influence", "cardName": "Surprise Shipment", "outcomeLabel": f"📉 {best_track}"})
-            if state.get("pendingEncounter"):
-                return
-
-    # 2. Prophecy: saddle the winning player with a Soothsayer encounter when their mission slate is crowded or night is late
+    # Prophecy: saddle the winning player with a Soothsayer encounter when their mission slate is crowded or night is late
     proph_card = next((c for c in bot["influence"] if "Prophecy" in str(c.get("name", ""))), None)
     if proph_card and (int(state.get("turn", 1)) >= (4 if tier == 3 else 5) or len(leader.get("missions", [])) >= (2 if tier == 3 else 3)):
         _execute_influence_card(state, bot, proph_card, {"targetPlayerIndex": leader["index"]})
@@ -14958,6 +15059,42 @@ def _format_mission_text(m: Dict[str, Any]) -> str:
     return _normalize_relative_scarcity_text(str(m.get("description") or "Complete special objective in Rome."))
 
 
+def _prepare_rome_tile_for_view(
+    coord: str, tile_obj: Dict[str, Any], include_outgoing: bool = False
+) -> Dict[str, Any]:
+    """Deep-copies a Rome tile with effective board edges, normalized scarcity modifiers, and optional outgoing directions."""
+    tile_cp = copy.deepcopy(tile_obj)
+    eff_edges = get_effective_tile_edges(coord, tile_cp)
+    tile_cp["edges"] = eff_edges
+    for s_entry in (tile_cp.get("sells") or []):
+        if "modifier" in s_entry:
+            s_entry["modifier"] = normalize_scarcity_modifier(str(s_entry["modifier"]))
+    for b_entry in (tile_cp.get("buys") or []):
+        if "modifier" in b_entry:
+            b_entry["modifier"] = normalize_scarcity_modifier(str(b_entry["modifier"]))
+    if include_outgoing:
+        out_dirs = {}
+        for d in DIR_DELTAS:
+            val = eff_edges.get(d)
+            t_cell = get_target_cell(coord, d)
+            tiber_blocked = is_tiber_crossing_blocked(coord, t_cell)
+            bridge_name = get_tiber_bridge_name(coord, t_cell)
+            toll_cost = parse_edge_toll(val)
+            if val is not None or tiber_blocked:
+                out_dirs[d] = {
+                    "edge": val,
+                    "targetCell": t_cell,
+                    "isExit": t_cell is None and val is not None,
+                    "tiberBlocked": tiber_blocked,
+                    "bridgeName": bridge_name,
+                    "tollCost": toll_cost,
+                    "bridgeTollCost": 0,
+                    "passable": (val not in ("red", None, "none")) and not tiber_blocked,
+                }
+        tile_cp["outgoingDirections"] = out_dirs
+    return tile_cp
+
+
 def sanitize_state_for_player(
     state: Dict[str, Any],
     user_id: Optional[int],
@@ -14970,6 +15107,10 @@ def sanitize_state_for_player(
     _normalize_state_encounter_cards(state)
     human_players = [p for p in state["players"] if not p["isBot"]]
     single_human = (user_id is None) and (len(human_players) == 1)
+    is_non_spectator_viewer = any(
+        (p.get("userId") is not None and p.get("userId") == user_id) or (single_human and not p["isBot"])
+        for p in state["players"]
+    )
 
     # Enrich marketBoard with live prices and track scarcity metadata
     market_meta = {}
@@ -14999,40 +15140,19 @@ def sanitize_state_for_player(
             enriched_cards.append(cc)
         market_tracks[t_name] = enriched_cards
 
-    # Enrich romeBoard while hiding unrevealed tile stack contents
+    # Enrich romeBoard; prepare nextTile for non-spectators so Scout reveals instantaneously
     rome_view = {}
     for raw_coord, cell in state["romeBoard"].items():
         coord = normalize_cell_id(raw_coord) or raw_coord
-        rev = copy.deepcopy(cell.get("revealed"))
-        if rev:
-            eff_edges = get_effective_tile_edges(coord, rev)
-            rev["edges"] = eff_edges
-            for s_entry in (rev.get("sells") or []):
-                if "modifier" in s_entry:
-                    s_entry["modifier"] = normalize_scarcity_modifier(str(s_entry["modifier"]))
-            for b_entry in (rev.get("buys") or []):
-                if "modifier" in b_entry:
-                    b_entry["modifier"] = normalize_scarcity_modifier(str(b_entry["modifier"]))
-            out_dirs = {}
-            for d in DIR_DELTAS:
-                val = eff_edges.get(d)
-                t_cell = get_target_cell(coord, d)
-                tiber_blocked = is_tiber_crossing_blocked(coord, t_cell)
-                bridge_name = get_tiber_bridge_name(coord, t_cell)
-                toll_cost = parse_edge_toll(val)
-                if val is not None or tiber_blocked:
-                    out_dirs[d] = {
-                        "edge": val,
-                        "targetCell": t_cell,
-                        "isExit": t_cell is None and val is not None,
-                        "tiberBlocked": tiber_blocked,
-                        "bridgeName": bridge_name,
-                        "tollCost": toll_cost,
-                        "bridgeTollCost": 0,
-                        "passable": (val not in ("red", None, "none")) and not tiber_blocked,
-                    }
-            rev["outgoingDirections"] = out_dirs
-        stack_len = len(cell.get("stack", []))
+        rev_raw = cell.get("revealed")
+        rev = _prepare_rome_tile_for_view(coord, rev_raw, include_outgoing=True) if rev_raw else None
+        stk = cell.get("stack", [])
+        stack_len = len(stk)
+        next_tile = (
+            _prepare_rome_tile_for_view(coord, stk[0], include_outgoing=False)
+            if (is_non_spectator_viewer and stack_len > 0)
+            else None
+        )
         rome_view[coord] = {
             "coord": coord,
             "name": cell.get("name", NEIGHBORHOOD_NAMES.get(coord, coord)),
@@ -15040,6 +15160,7 @@ def sanitize_state_for_player(
             "isForum": coord in FORUM_CELLS,
             "westBank": coord in WEST_BANK_CELLS,
             "revealed": rev,
+            "nextTile": next_tile,
             "stackCount": stack_len,
             "unrevealedCount": stack_len,
         }
@@ -15344,9 +15465,14 @@ def sanitize_state_for_player(
             g["upkeepCost"] = get_guard_upkeep_cost(state, g)
 
         for si_entry in p_copy.get("scoutedInfo") or []:
-            if isinstance(si_entry, dict) and isinstance(si_entry.get("tile"), dict):
+            if not isinstance(si_entry, dict):
+                continue
+            if isinstance(si_entry.get("tile"), dict):
                 si_coord = normalize_cell_id(si_entry.get("cell") or si_entry["tile"].get("coord")) or "B1"
                 si_entry["tile"]["edges"] = get_effective_tile_edges(si_coord, si_entry["tile"])
+            if si_entry.get("targetType") == "tile" and isinstance(si_entry.get("revealedData"), dict):
+                si_coord = normalize_cell_id(si_entry.get("targetKey") or si_entry["revealedData"].get("coord")) or "B1"
+                si_entry["revealedData"] = _prepare_rome_tile_for_view(si_coord, si_entry["revealedData"], include_outgoing=False)
 
         p_copy["pendingCartOverflow"] = copy.deepcopy(p.get("pendingCartOverflow") or [])
         enriched_mkt_rewards: List[Dict[str, Any]] = []
@@ -15441,6 +15567,31 @@ def sanitize_state_for_player(
             "total": p_cnt + l_cnt + n_cnt,
         }
 
+    goods_deck_base_counts = {
+        "Grain": 12,
+        "Animals": 18,
+        "Wine": 18,
+        "Weapons": 12,
+        "Marble": 12,
+        "Guards": 12,
+    }
+    goods_deck_counts: Dict[str, Any] = {}
+    market_deck = state["decks"].get("market", [])
+    for g_cat, g_base in goods_deck_base_counts.items():
+        matching_cards = [
+            c for c in market_deck
+            if (c.get("track") or c.get("category")) == g_cat
+        ]
+        subcounts: Dict[str, int] = {}
+        for c in matching_cards:
+            sub = str(c.get("subcategory") or c.get("name") or g_cat)
+            subcounts[sub] = subcounts.get(sub, 0) + 1
+        goods_deck_counts[g_cat] = {
+            "remaining": len(matching_cards),
+            "base": g_base,
+            "subcounts": subcounts,
+        }
+
     undo_idx, undo_type, undo_lbl = _get_undo_target_info(state)
     human_count = sum(1 for p in state.get("players", []) if not p.get("isBot"))
 
@@ -15514,6 +15665,7 @@ def sanitize_state_for_player(
         "romeBoard": rome_view,
         "deckCounts": {k: len(v) for k, v in state["decks"].items()},
         "factionDeckCounts": faction_deck_counts,
+        "goodsDeckCounts": goods_deck_counts,
         "sourceableGoods": sourceable_goods,
         "players": players_view,
         "pendingEncounter": pend_view,

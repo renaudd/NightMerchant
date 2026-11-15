@@ -34,8 +34,8 @@ SECURE_SESSION_COOKIE_NAME = "__Secure-nm_session"
 DEFAULT_ALLOWED_ORIGINS: Set[str] = {
     "https://dashiellrenaud.com",
     "https://www.dashiellrenaud.com",
-    "http://127.0.0.1:8080",
-    "http://localhost:8080",
+    "http://127.0.0.1:8081",
+    "http://localhost:8081",
 }
 
 REFERENCE_CATALOG = [
@@ -1301,7 +1301,7 @@ class NightMerchantHandler(BaseHTTPRequestHandler):
         self._send_json(405, {"ok": False, "error": "Method not allowed."})
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
+def run_server(host: str = "127.0.0.1", port: int = 8081) -> None:
     store = storage.get_backend()
     store.init_db()
     # Strictly enforce 127.0.0.1 loopback in local development and tests;
@@ -1334,7 +1334,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
 
 
 if __name__ == "__main__":
-    port_num = int(os.getenv("PORT") or os.getenv("NIGHTMERCHANT_PORT", "8080"))
+    port_num = int(os.getenv("PORT") or os.getenv("NIGHTMERCHANT_PORT", "8081"))
     in_container = bool(
         os.getenv("K_SERVICE", "").strip()
         or os.getenv("NIGHTMERCHANT_CLOUD_RUN", "").strip() == "1"

@@ -75,6 +75,10 @@ function makeFakeElement(tag) {
       this._listeners[evt] = this._listeners[evt] || [];
       this._listeners[evt].push(fn);
     },
+    click() {
+      const ev = { target: this, currentTarget: this, stopPropagation() {}, preventDefault() {} };
+      (this._listeners.click || []).forEach((fn) => fn(ev));
+    },
     removeEventListener() {},
     contains(other) {
       if (other === this) return true;
@@ -711,5 +715,240 @@ const contraPanelTxt = collectAllText(contraPanelEl);
 assert(contraPanelTxt.includes("Contraband Inspection Passed"), "Encounter panel renders Contraband Inspection Passed banner");
 assert(contraPanelTxt.includes("✓ Pass Inspection (No Contraband)"), "Encounter panel renders Pass Inspection button");
 assert(!contraPanelTxt.includes("Refuse Request") && !contraPanelTxt.includes("Decline / Pass Offer"), "Encounter panel hides Refuse button for no_contraband");
+
+// 11. Verify UI updates: Edge Toll key, Climate ? modal, Compact banner, 6 Decks modal, Collapsible sections, Reactive vs Anytime Influence
+const clkExpanded = renderRomeClockBoard(gsContra);
+const clkExpandedTxt = collectAllText(clkExpanded);
+const keyTollBadge = clkExpanded.querySelector(".rome-clock-key-toll");
+assert(
+  clkExpandedTxt.includes("EDGE TOLL") && keyTollBadge && collectAllText(keyTollBadge).includes("10"),
+  "Clock Board Key includes EDGE TOLL 10(d) badge"
+);
+
+const climateHelpBoardEl = renderPoliticalClimateBoard(gsContra, gsContra.players[0]);
+const helpBtn = climateHelpBoardEl.querySelector("#btn-political-climate-help");
+assert(helpBtn !== null && collectAllText(helpBtn).trim() === "?", "Political Climate Board renders ? help button beside title");
+assert(!climateHelpBoardEl.querySelector(".climate-explainer-panel"), "Political Climate Board omits inline explainer paragraph block");
+let openedModalTitle = null;
+let openedModalBody = null;
+const origShowModal = showModal;
+showModal = (t, body) => {
+  openedModalTitle = t;
+  openedModalBody = body;
+};
+helpBtn.click();
+assert(
+  openedModalTitle && openedModalTitle.includes("Political Climate Board Works") && collectAllText(openedModalBody).includes("Row 1 rules"),
+  "Clicking ? button opens Political Climate help modal"
+);
+
+const gsBanner = buildMinimalGs("delivery_entry");
+gsBanner.speedMode = "normal";
+gsBanner.players[0].name = "Dashiell Renaud";
+gsBanner.players[1].name = "Titus Valerius";
+const bannerNormalTxt = collectAllText(renderClockAndTurnBanner(gsBanner, gsBanner.players[0], gsBanner.players[0]));
+assert(bannerNormalTxt.includes("Spring") && !bannerNormalTxt.includes("211 A.D."), "Season badge shortened to season name without year");
+assert(bannerNormalTxt.includes("Phase II: Entry Selection"), "Phase badge shortened to Phase II: Entry Selection");
+assert(bannerNormalTxt.includes("1st: Dashiell") && bannerNormalTxt.includes("Active: Dashiell"), "1st and Active badges shortened cleanly");
+assert(!bannerNormalTxt.includes("Normal") && !bannerNormalTxt.includes("⏳"), "Normal speed badge hidden when not in Fast mode");
+assert(
+  bannerNormalTxt.includes("Undo Turn") &&
+    bannerNormalTxt.includes("Rome") &&
+    bannerNormalTxt.includes("Market") &&
+    bannerNormalTxt.includes("Decrees") &&
+    bannerNormalTxt.includes("All") &&
+    bannerNormalTxt.includes("Decks"),
+  "Top bar buttons use compact emoji-free labels"
+);
+gsBanner.speedMode = "fast";
+gsBanner.turnTimeLimitMinutes = 5;
+const bannerFastTxt = collectAllText(renderClockAndTurnBanner(gsBanner, gsBanner.players[0], gsBanner.players[0]));
+assert(bannerFastTxt.includes("Fast (5m)"), "Fast speed badge remains visible in Fast mode");
+
+gsBanner.deckCounts = { patricii: 28, legiones: 27, nefarii: 25, market: 72, missiones: 44, influence: 33 };
+gsBanner.goodsDeckCounts = {
+  Grain: { remaining: 10, base: 12 },
+  Animals: { remaining: 16, base: 18 },
+  Wine: { remaining: 15, base: 18 },
+  Weapons: { remaining: 11, base: 12 },
+  Marble: { remaining: 10, base: 12 },
+  Guards: { remaining: 10, base: 12 },
+};
+openEncounterDecksOverviewModal(gsBanner);
+const decksModalTxt = collectAllText(openedModalBody);
+assert(
+  decksModalTxt.includes("Patricii") &&
+    decksModalTxt.includes("Legionnaire") &&
+    decksModalTxt.includes("Nefarii") &&
+    decksModalTxt.includes("Goods & Guards") &&
+    decksModalTxt.includes("Missiones") &&
+    decksModalTxt.includes("Influence"),
+  "Decks modal shows all 6 game decks"
+);
+assert(
+  decksModalTxt.includes("Grain: 10/12") &&
+    decksModalTxt.includes("Animals: 16/18") &&
+    decksModalTxt.includes("Wine: 15/18") &&
+    decksModalTxt.includes("Guards: 10/12"),
+  "Decks modal displays 6 Goods category remaining/base counts"
+);
+assert(decksModalTxt.includes("Scout Top of Goods & Guards"), "Decks modal allows scouting any of the 6 decks when eligible");
+showModal = origShowModal;
+
+// Collapsible sections
+appState.collapsedSections = { clockBoard: true, merchantsInRome: true, factionStandings: true };
+const gsCollapse = buildMinimalGs("delivery");
+gsCollapse.turn = 3;
+gsCollapse.season = "Spring";
+gsCollapse.players[0].isBot = true;
+gsCollapse.players[0].botDifficulty = "ionic";
+gsCollapse.players[0].cash = 19;
+gsCollapse.players[1].cash = 24;
+gsCollapse.players[0].favor = { Caracalla: 2, Geta: -1, Domna: 0, Plautilla: 1, Aurelius: -2 };
+const collapsedClk = renderRomeClockBoard(gsCollapse);
+const collapsedClkTxt = collectAllText(collapsedClk);
+assert(
+  collapsedClk.className.includes("is-collapsed") &&
+    collapsedClkTxt.includes("Turn III - 10:00 P.M.") &&
+    collapsedClkTxt.includes("Spring Curfew: City: 12, Gate: 6"),
+  "Collapsed Clock Board renders single-line turn & curfew summary"
+);
+const sidebarCollapsed = renderPlayerSidebar(gsCollapse, gsCollapse.players[0]);
+const merchantsCollapsedNode = sidebarCollapsed.querySelector("#merchants-rome-panel");
+const favorCollapsedNode = sidebarCollapsed.querySelector("#faction-standings-panel");
+assert(merchantsCollapsedNode && merchantsCollapsedNode.className.includes("is-collapsed"), "Merchants panel renders collapsed state");
+assert(
+  merchantsCollapsedNode.querySelectorAll(".merchant-collapsed-chip").length === 2 &&
+    merchantsCollapsedNode.querySelectorAll(".player-name-with-capital").length === 0 &&
+    merchantsCollapsedNode.querySelectorAll(".merchant-collapsed-cash").length === 2 &&
+    collectAllText(merchantsCollapsedNode).includes("19") &&
+    collectAllText(merchantsCollapsedNode).includes("24"),
+  "Collapsed Merchants strip omits AI icons and shows cash chips"
+);
+assert(
+  favorCollapsedNode &&
+    favorCollapsedNode.className.includes("is-collapsed") &&
+    favorCollapsedNode.querySelectorAll(".favor-collapsed-gem-chip").length === 5 &&
+    collectAllText(favorCollapsedNode).includes("+2") &&
+    collectAllText(favorCollapsedNode).includes("-1"),
+  "Collapsed Faction Standings strip shows 5 gems with centered favor values"
+);
+appState.collapsedSections = { clockBoard: false, merchantsInRome: false, factionStandings: false };
+
+// Reactive vs Anytime Influence card playability checks
+const gsInf = buildMinimalGs("market");
+gsInf.activePlayerIndex = 1; // Viewer 0 is off-turn
+gsInf.viewerPlayerIndex = 0;
+const vInf = gsInf.players[0];
+assert(
+  getInfluenceCardPlayability(gsInf, vInf, { id: "c1", name: "Patron", effectCode: "patron_caracalla_domna" }).playable === true,
+  "Patron (anytime) remains playable off-turn in Market phase"
+);
+assert(
+  getInfluenceCardPlayability(gsInf, vInf, { id: "c2", name: "Caracalla Favor", effectCode: "faction_favor_caracalla" }).playable === true,
+  "Faction Favor (anytime) remains playable off-turn"
+);
+assert(
+  getInfluenceCardPlayability(gsInf, vInf, { id: "c3", name: "Cartwright", effectCode: "permanent_storage_plus_2" }).playable === true,
+  "Cartwright (anytime) remains playable off-turn"
+);
+for (const rCard of [
+  { id: "r1", name: "Mercenary Ambush" },
+  { id: "r2", name: "Flying Chamber Pot" },
+  { id: "r3", name: "Gladiator's Intervention" },
+  { id: "r4", name: "Supplicant" },
+  { id: "r5", name: "Man Of The People" },
+  { id: "r6", name: "Dramaturge" },
+  { id: "r7", name: "Trained Dog" },
+  { id: "r8", name: "Plea" },
+  { id: "r9", name: "Make Haste" },
+  { id: "r10", name: "Puffery" },
+]) {
+  assert(
+    getInfluenceCardPlayability(gsInf, vInf, rCard).playable === false,
+    `Reactive Influence card ${rCard.name} is NOT playable outside its trigger situation`
+  );
+}
+gsInf.phase = "delivery";
+gsInf.pendingEncounter = { playerIndex: 0, stage: "combat_post_roll", card: { name: "Centurion" } };
+assert(
+  getInfluenceCardPlayability(gsInf, vInf, { id: "r2", name: "Flying Chamber Pot" }).playable === true,
+  "Flying Chamber Pot becomes playable during combat_post_roll"
+);
+
+// Tile face low-saturation tile-back underlay (no monument images)
+const faceTileNode = renderDynamicTileCardNode(
+  { id: "t_c3", sells: [{ category: "Wine", modifier: "+1" }], buys: [], edges: { N: "green" }, encounter: "patricii" },
+  "C3",
+  "board"
+);
+const underlayEl = faceTileNode.querySelector(".dyn-tile-back-underlay");
+assert(underlayEl !== null, "Revealed tile face renders .dyn-tile-back-underlay");
+assert(faceTileNode.querySelector(".dyn-tile-monument-bg") === null, "Revealed tile face omits removed monument background");
+assert(underlayEl.style.backgroundPosition === "40% 40%", "Tile back underlay aligns with C3 slice (40% 40%)");
+
+// Instant optimistic Scout using prepared cell.nextTile
+const gsScoutFast = buildMinimalGs("delivery");
+gsScoutFast.activePlayerIndex = 0;
+gsScoutFast.viewerPlayerIndex = 0;
+gsScoutFast.players[0].scoutedThisTurn = false;
+gsScoutFast.players[0].scoutedInfo = [];
+gsScoutFast.romeBoard.C3.stackCount = 11;
+gsScoutFast.romeBoard.C3.nextTile = {
+  id: "tile_c3_fast",
+  sells: [{ category: "Grain", modifier: "=" }],
+  buys: [],
+  edges: { N: "green", S: "green", E: "green", W: "green" },
+  encounter: "legiones",
+};
+appState.currentGameId = "g_fast_scout";
+appState.gameState = gsScoutFast;
+let fastModalTitle = null;
+let actionSentPayload = null;
+const origShowModalFast = showModal;
+const origApiRequestFast = apiRequest;
+showModal = (t) => {
+  fastModalTitle = t;
+};
+apiRequest = (_url, _method, payload) => {
+  actionSentPayload = payload;
+  return new Promise(() => {}); // Simulate pending network request
+};
+executeTileScoutAction(gsScoutFast, gsScoutFast.players[0], "C3");
+assert(
+  fastModalTitle && fastModalTitle.includes("Scouted Intelligence") && fastModalTitle.includes("C3"),
+  "Clicking Scout immediately opens Scouted Intelligence modal before network response resolves"
+);
+assert(gsScoutFast.players[0].scoutedThisTurn === true, "Optimistic Scout immediately marks scoutedThisTurn");
+assert(
+  actionSentPayload && actionSentPayload.type === "delivery_scout" && actionSentPayload.targetKey === "C3",
+  "Optimistic Scout dispatches delivery_scout request in background"
+);
+// Ensure authoritative server response with same tile does not trigger a duplicate Scout modal
+fastModalTitle = null;
+checkPostActionModals({
+  ...gsScoutFast,
+  players: [
+    {
+      ...gsScoutFast.players[0],
+      scoutedInfo: [
+        {
+          id: "scout_srv_1",
+          turn: gsScoutFast.turn,
+          targetType: "tile",
+          targetKey: "C3",
+          label: "Tile Stack C3",
+          revealedData: { id: "tile_c3_fast" },
+        },
+      ],
+    },
+    gsScoutFast.players[1],
+  ],
+});
+assert(fastModalTitle === null, "Matching authoritative scoutedInfo does not reopen duplicate Scout modal");
+showModal = origShowModalFast;
+apiRequest = origApiRequestFast;
+appState._pendingActionCount = 0;
+appState._actionQueuePromise = Promise.resolve();
 
 print("JS_UI_TESTS_PASSED");

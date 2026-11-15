@@ -68,13 +68,13 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         styles_css = (REPO_ROOT / "public/styles.css").read_text(encoding="utf-8")
         rulebook_md = (REPO_ROOT / "NightMerchant Rule Book.md").read_text(encoding="utf-8")
         version_json = json.loads((REPO_ROOT / "public/version.json").read_text(encoding="utf-8"))
-        self.assertEqual(version_json["version"], "61")
-        self.assertIn("cards_catalog.json?v=61", app_js)
-        self.assertIn("app.js?v=61", index_html)
+        self.assertEqual(version_json["version"], "62")
+        self.assertIn("cards_catalog.json?v=62", app_js)
+        self.assertIn("app.js?v=62", index_html)
         self.assertTrue((REPO_ROOT / "public/assets/icons/rome_211_map_bg_v4.jpg").is_file())
         self.assertTrue((REPO_ROOT / "public/assets/icons/ostia_market_board_bg.jpg").is_file())
-        self.assertIn("ostia_market_board_bg.jpg?v=61", styles_css)
-        self.assertEqual(styles_css.count("rome_211_map_bg_v4.jpg?v=61"), 2)
+        self.assertIn("ostia_market_board_bg.jpg?v=62", styles_css)
+        self.assertEqual(styles_css.count("rome_211_map_bg_v4.jpg?v=62"), 2)
         self.assertNotIn("rome_211_map_bg_v3.jpg", styles_css)
         self.assertNotIn("Divided Tiber", app_js)
         self.assertNotIn("Guild Ledger", app_js)
@@ -961,6 +961,179 @@ class GameplayUpdatesTestCase(unittest.TestCase):
         acted = ge._execute_single_bot_encounter_step(state)
         self.assertTrue(acted)
         self.assertEqual(len(bot["influence"]), 0, "Bot should play Supplicant when +2 shifts reaction upward")
+
+    def test_surprise_shipment_removed_and_40_influence_cards(self):
+        decks_path = REPO_ROOT / "src/data/decks.json"
+        catalog_path = REPO_ROOT / "public/data/cards_catalog.json"
+        with open(decks_path, "r", encoding="utf-8") as f:
+            decks = json.load(f)
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            catalog = json.load(f)
+        self.assertEqual(len(decks["influence"]), 40)
+        self.assertFalse(any(c.get("id") == "inf_35" or c.get("name") == "Surprise Shipment" for c in decks["influence"]))
+        self.assertEqual(len(catalog["influence"]), 40)
+        self.assertFalse(any(c.get("id") == "inf_35" or c.get("name") == "Surprise Shipment" for c in catalog["influence"]))
+
+    def test_reactive_vs_anytime_influence_enforcement(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        p0, p1 = state["players"][0], state["players"][1]
+        p0["cash"] = 30
+        p1["cash"] = 30
+        state["phase"] = "market"
+        state["activePlayerIndex"] = 0
+
+        # Reactive cards rejected outside their triggering situations
+        reactive_cards = [
+            {"id": "r_amb", "name": "Mercenary Ambush", "effectCode": "combat_plus_2r_pre"},
+            {"id": "r_dis", "name": "Distraction", "effectCode": "combat_minus_1r_pre"},
+            {"id": "r_glad", "name": "Gladiator's Intervention", "effectCode": "combat_plus_1r_post"},
+            {"id": "r_pot", "name": "Flying Chamber Pot", "effectCode": "combat_plus_1_post"},
+            {"id": "r_sup", "name": "Supplicant", "effectCode": "temp_favor_plus_2"},
+            {"id": "r_mob", "name": "Man Of The People", "effectCode": "ignore_mob"},
+            {"id": "r_the", "name": "Dramaturge", "effectCode": "ignore_theater"},
+            {"id": "r_haste", "name": "Make Haste", "effectCode": "move_twice"},
+            {"id": "r_puff", "name": "Puffery", "effectCode": "increase_own_sale_scarcity"},
+        ]
+        p0["influence"] = list(reactive_cards)
+        for rc in reactive_cards:
+            ok, _msg = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": rc["id"], "targetSide": "player"})
+            self.assertFalse(ok, f"Reactive card {rc['name']} should be rejected when situation is absent")
+
+        # Anytime cards remain playable even off-turn (p1 acting during p0's Market turn)
+        with open(REPO_ROOT / "src/data/decks.json", "r", encoding="utf-8") as f:
+            inf_by_id = {c["id"]: c for c in json.load(f)["influence"]}
+        p1["influence"] = [
+            dict(inf_by_id["inf_2"], id="any_pat"),   # Patron: +6(d), -1 Caracalla, -1 Domna
+            dict(inf_by_id["inf_53"], id="any_fav"),  # Caracalla Favor: +5(d), +1 Caracalla, -1 Geta, -1 Plautilla
+            {"id": "any_cw", "name": "Cartwright", "effectCode": "permanent_storage_plus_2"},
+            {"id": "any_wf", "name": "Wine Forger", "effectCode": "wine_forger"},
+            {"id": "any_thug", "name": "Thug", "effectCode": "free_guard_1r"},
+        ]
+        before_cash = p1["cash"]
+        before_caracalla = p1["favor"]["Caracalla"]
+        for ac in list(p1["influence"]):
+            ok, msg = ge.handle_player_action(state, p1["userId"], {"type": "play_influence", "cardId": ac["id"]})
+            self.assertTrue(ok, f"Anytime card {ac['name']} should be playable off-turn: {msg}")
+        self.assertEqual(p1["favor"]["Caracalla"], before_caracalla)
+        self.assertEqual(p1["favor"]["Domna"], -1)
+        self.assertEqual(p1["favor"]["Geta"], -1)
+        self.assertEqual(p1["favor"]["Plautilla"], -1)
+        self.assertGreaterEqual(p1["cash"], before_cash + 11)
+        self.assertEqual(p1["bonusBlocks"], 2)
+
+        # Man Of The People succeeds during Mob chart_pre_roll; Gladiator succeeds during combat_post_roll
+        state["phase"] = "delivery"
+        p0["position"] = "C3"
+        mob_cash_before = p0["cash"]
+        state["pendingEncounter"] = {
+            "playerIndex": 0,
+            "stage": "chart_pre_roll",
+            "chartType": "mob",
+            "card": {"id": "mob_c", "name": "Angry Mob"},
+        }
+        ok, _ = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "r_mob"})
+        self.assertTrue(ok, "Man Of The People should succeed during Angry Mob chart_pre_roll")
+        self.assertIsNone(state["pendingEncounter"])
+        self.assertEqual(p0["cash"], mob_cash_before + 4)
+
+        state["pendingEncounter"] = {
+            "playerIndex": 0,
+            "stage": "combat_post_roll",
+            "card": {"id": "leg_c", "name": "Centurion"},
+            "playerCP": 4,
+            "oppCP": 4,
+            "playerDiceObjs": [{"label": "Base", "value": 1, "raw": 1, "roman": "I", "sign": 1, "color": "Z1"}],
+            "oppDiceObjs": [{"label": "Opp", "value": 1, "raw": 1, "roman": "I", "sign": 1, "color": "Black"}],
+            "playerFlat": 0,
+            "oppFlat": 0,
+            "playerFlatMods": [],
+            "oppFlatMods": [],
+        }
+        ok, _ = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "r_pot", "targetSide": "player"})
+        self.assertTrue(ok, "Flying Chamber Pot should succeed during combat_post_roll")
+
+        # Casus Belli rejected when combat is already available in pre_decision
+        p0["influence"].append({"id": "r_cb", "name": "Casus Belli", "effectCode": "casus_belli"})
+        state["pendingEncounter"] = {
+            "playerIndex": 0,
+            "stage": "pre_decision",
+            "canInitiateCombat": True,
+            "combatMandatory": False,
+            "isPvp": False,
+            "card": {"id": "nef_c", "name": "Cutthroat"},
+        }
+        ok, _ = ge.handle_player_action(state, p0["userId"], {"type": "play_influence", "cardId": "r_cb"})
+        self.assertFalse(ok, "Casus Belli should be rejected when combat is already available")
+
+    def test_goods_deck_counts_and_six_deck_scout_and_informants(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        p0 = state["players"][0]
+        pub = ge.sanitize_state_for_player(state, user_id=p0["userId"])
+        g_counts = pub.get("goodsDeckCounts")
+        self.assertIsInstance(g_counts, dict)
+        expected_bases = {"Grain": 12, "Animals": 18, "Wine": 18, "Weapons": 12, "Marble": 12, "Guards": 12}
+        self.assertEqual(set(g_counts.keys()), set(expected_bases.keys()))
+        for cat, base_val in expected_bases.items():
+            self.assertEqual(g_counts[cat]["base"], base_val)
+            self.assertGreaterEqual(g_counts[cat]["remaining"], 0)
+            self.assertLessEqual(g_counts[cat]["remaining"], base_val)
+
+        # Scout works on market, missiones, and influence
+        state["phase"] = "delivery"
+        state["activePlayerIndex"] = 0
+        p0["position"] = "C3"
+        for dk in ("market", "missiones", "influence"):
+            p0["scoutedThisTurn"] = False
+            ok, msg = ge.handle_player_action(
+                state,
+                p0["userId"],
+                {"type": "delivery_scout", "targetType": "deck", "targetKey": dk},
+            )
+            self.assertTrue(ok, f"Scouting {dk} should succeed: {msg}")
+            self.assertGreater(len(p0["scoutedInfo"]), 0)
+
+        # Informants works on market, missiones, and influence
+        for dk in ("market", "missiones", "influence"):
+            inf_id = f"info_{dk}"
+            p0["influence"] = [{"id": inf_id, "name": "Informants", "effectCode": "reorder_top_3_any"}]
+            ok, msg = ge.handle_player_action(
+                state,
+                p0["userId"],
+                {"type": "play_influence", "cardId": inf_id, "targetType": "deck", "targetKey": dk},
+            )
+            self.assertTrue(ok, f"Informants on {dk} should succeed: {msg}")
+            self.assertTrue(p0.get("pendingTop3Reorder"))
+            p0["pendingTop3Reorder"] = None
+
+    def test_prepared_next_tile_monuments_removed_and_port_8081(self):
+        state = _make_two_human_state()
+        _complete_setup_discard(state, clear_hands=True)
+        p0 = state["players"][0]
+
+        san_player = ge.sanitize_state_for_player(state, user_id=p0["userId"])
+        for coord, cell_view in san_player["romeBoard"].items():
+            if cell_view["stackCount"] > 0:
+                self.assertIsNotNone(cell_view.get("nextTile"), f"{coord} should prepare nextTile for player")
+                self.assertEqual(cell_view["nextTile"]["id"], state["romeBoard"][coord]["stack"][0]["id"])
+                self.assertIsInstance(cell_view["nextTile"].get("edges"), dict)
+
+        san_spectator = ge.sanitize_state_for_player(state, user_id=None)
+        for coord, cell_view in san_spectator["romeBoard"].items():
+            self.assertIsNone(cell_view.get("nextTile"), f"Spectator view must omit nextTile for {coord}")
+
+        self.assertFalse((REPO_ROOT / "public/assets/monuments").exists())
+        app_js = (REPO_ROOT / "public/app.js").read_text(encoding="utf-8")
+        styles_css = (REPO_ROOT / "public/styles.css").read_text(encoding="utf-8")
+        server_py = (REPO_ROOT / "src/server.py").read_text(encoding="utf-8")
+        self.assertNotIn("monuments/", app_js)
+        self.assertIn("dyn-tile-back-underlay", app_js)
+        self.assertIn(".dyn-tile-back-underlay", styles_css)
+        self.assertIn("http://127.0.0.1:8081", server_py)
+        self.assertIn('port: int = 8081', server_py)
+        self.assertIn('"8081"', server_py)
+        self.assertNotIn("http://127.0.0.1:8080", server_py)
 
     def test_frontend_ui_js_suite_via_jsc(self):
         jsc = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc"

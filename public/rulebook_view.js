@@ -452,7 +452,7 @@ const RULEBOOK_SECTIONS = [
     title: "12. Influence Cards",
     catalogKey: "influence",
     paragraphs: [
-      "Complete reference catalog of all 41 Influence cards found in the Influence deck. Filter by tactical role or use the Rulebook search box to find specific effects.",
+      "Complete reference catalog of all 40 Influence cards found in the Influence deck. Filter by tactical role or use the Rulebook search box to find specific effects.",
     ],
   },
   {
@@ -496,7 +496,6 @@ function getInfluenceCatalogCategory(c) {
   if (
     ec === "move_twice" ||
     ec === "pass_edge_as_green" ||
-    ec === "shift_category_scarcity_right" ||
     ec === "increase_own_sale_scarcity" ||
     ec === "reduce_fine" ||
     ec === "reorder_top_3_any"

@@ -756,6 +756,100 @@ const ENCOUNTER_DECK_PROFILES = {
   },
 };
 
+const OTHER_DECK_PROFILES = {
+  market: {
+    key: "market",
+    label: "Goods & Guards",
+    subtitle: "Cargo & Armed Escorts",
+    totalCards: 84,
+    img: "/assets/icons/card_back_goods.png?v=24",
+    mechanicsSummary:
+      "Drawn into the 6 Ostia Port Market tracks each Season: Grain (12), Animals (18: Meat & Exotic), Wine (18: Cheap & Fine), Weapons (12), Marble (12), and Guards (12). Shifts Scarcity dynamically as cards are drawn or sold.",
+    historicalSummary:
+      "Bulk grain barges from Egypt, amphorae of Falernian and posca, Apuan marble blocks, gladius steel, exotic beast cages, and hired Thracian or Illyrian escorts landing on Ostia's docks.",
+  },
+  missiones: {
+    key: "missiones",
+    label: "Missiones",
+    subtitle: "Deliveries, Purchases & Contracts",
+    totalCards: 52,
+    icon: "📜",
+    mechanicsSummary:
+      "Personal and Patron contracts across Rome's five imperial factions. Unfulfilled active Missions at Winter's end subtract from your Net Missions unless completed or balanced by Patronage.",
+    historicalSummary:
+      "Sealed waxed tablets from senatorial procurators, Praetorian quartermasters, and collegia brokers commissioning nocturnal freight runs between Ostia and Rome's seven hills.",
+  },
+  influence: {
+    key: "influence",
+    label: "Influence",
+    subtitle: "Schemes, Patronage & Interventions",
+    totalCards: 40,
+    icon: "🃏",
+    mechanicsSummary:
+      "Spontaneous anytime cards (Patron, Favor, Cartwright, Thug, Wine Forger, Procurer), turn utilities (Informants, Prophecy, Puffery, Make Haste, Shortcut), and reactive combat, chart, demand, or die-roll plays.",
+    historicalSummary:
+      "Whispered bribes, back-alley ambushes, hired dramatists, street urchins, and forged vintage labels—the covert currency of survival in Severan Rome after dark.",
+  },
+};
+
+const GOODS_DECK_CATEGORY_META = [
+  { key: "Grain", icon: "🌾", base: 12 },
+  { key: "Animals", icon: "🐑", base: 18 },
+  { key: "Wine", icon: "🍷", base: 18 },
+  { key: "Weapons", icon: "⚔️", base: 12 },
+  { key: "Marble", icon: "🏛️", base: 12 },
+  { key: "Guards", icon: "🛡️", base: 12 },
+];
+
+function renderGoodsDeckCategoryStripNode(gs) {
+  const liveMap = (gs && gs.goodsDeckCounts) || null;
+  return el(
+    "div",
+    { className: "goods-deck-categories-row" },
+    ...GOODS_DECK_CATEGORY_META.map((cat) => {
+      const entry = liveMap && liveMap[cat.key];
+      const base = entry && typeof entry.base === "number" ? entry.base : cat.base;
+      const rem = entry && typeof entry.remaining === "number" ? entry.remaining : base;
+      const countText = liveMap && rem !== base ? `${rem}/${base}` : String(rem);
+      const subParts = [];
+      if (entry && entry.subcounts && typeof entry.subcounts === "object") {
+        Object.entries(entry.subcounts).forEach(([k, v]) => {
+          subParts.push(`${k}: ${v}`);
+        });
+      }
+      const subSuffix = subParts.length > 0 ? ` (${subParts.join(", ")})` : "";
+      const tip = liveMap
+        ? `${cat.key} remaining in Goods deck: ${rem} of ${base}${subSuffix}`
+        : `${cat.key}: ${base} of 84 cards in Goods & Guards deck`;
+      return el("span", {
+        className: "encounter-deck-gem-chip goods-cat-chip",
+        title: tip,
+        text: `${cat.icon} ${cat.key}: ${countText}`,
+      });
+    })
+  );
+}
+
+function canViewerScoutNow(gs, viewer) {
+  if (!gs || !viewer) return { eligible: false, actionType: null };
+  if (gs.phase === "delivery_entry" && !viewer.scoutedThisTurn) {
+    return { eligible: true, actionType: "initial_scout" };
+  }
+  if (
+    gs.phase === "delivery" &&
+    gs.activePlayerIndex === viewer.index &&
+    !viewer.exitedRome &&
+    !viewer.nightEnded &&
+    !viewer.eliminated &&
+    !viewer.scoutedThisTurn &&
+    !gs.pendingEncounter &&
+    !hasPlayerBlockingPrompt(viewer, true, gs)
+  ) {
+    return { eligible: true, actionType: "delivery_scout" };
+  }
+  return { eligible: false, actionType: null };
+}
+
 const ALL_PICKER_DECK_SPECS = [
   { key: "patricii", label: "Patricii", img: "/assets/icons/card_back_patricii.png?v=24" },
   { key: "nefarii", label: "Nefarii", img: "/assets/icons/card_back_nefarii.png?v=24" },
@@ -894,40 +988,84 @@ function renderEncounterDeckMetaBlockNode(gs, deckKey, opts = {}) {
 }
 
 function openEncounterDecksOverviewModal(gs, focusDeck = null) {
-  const deckKeys = ["patricii", "legiones", "nefarii"];
+  const deckKeys = ["patricii", "legiones", "nefarii", "market", "missiones", "influence"];
   const normalizedFocus = focusDeck ? String(focusDeck).trim().toLowerCase() : null;
   const counts = (gs && gs.deckCounts) || {};
+  const viewer = gs ? getViewerPlayer(gs) : null;
+  const scoutEligibility = canViewerScoutNow(gs, viewer);
 
   showModal(
-    "🃏 Roman Encounter Decks — Mechanics, History & Faction Odds",
+    "🃏 Game Decks — Composition, Goods Odds & Faction Ties",
     el(
       "div",
       {},
       el("p", {
         style: { fontSize: "0.84rem", color: "var(--text-main)", marginTop: "0", marginBottom: "0.75rem" },
-        text: "Inspect the faction composition, mechanical danger, and historical context of Rome's three street encounter decks at any time. Gem badges show card counts across Caracalla (Ruby), Geta (Emerald), Domna (Diamond), Plautilla (Sapphire), Aurelius (Amethyst), plus unaligned Events.",
+        text: "Inspect all six Roman decks at any time: the three Encounter decks (faction & event odds), Goods & Guards (remaining vs. starting counts for all 6 market categories), Missiones, and Influence. When eligible to Scout, you can also peek at the top card of any deck below.",
       }),
       el(
         "div",
         { className: "encounter-deck-profiles-grid" },
         ...deckKeys.map((dk) => {
-          const profile = ENCOUNTER_DECK_PROFILES[dk];
+          const profile = ENCOUNTER_DECK_PROFILES[dk] || OTHER_DECK_PROFILES[dk];
           const rem = typeof counts[dk] === "number" ? counts[dk] : profile.totalCards;
           const isFocused = normalizedFocus === dk;
+          const isEnc = Boolean(ENCOUNTER_DECK_PROFILES[dk]);
+
+          const thumbNode = profile.img
+            ? el("img", {
+                className: "encounter-deck-profile-thumb",
+                src: profile.img,
+                alt: `${profile.label} Card Back`,
+              })
+            : el(
+                "div",
+                {
+                  className: "encounter-deck-profile-thumb deck-symbol-thumb",
+                  style: {
+                    background:
+                      dk === "missiones"
+                        ? "radial-gradient(circle at 50% 35%, #5b3a1d, #241509)"
+                        : "radial-gradient(circle at 50% 35%, #4c1d4b, #1d0c24)",
+                  },
+                },
+                profile.icon || "📜"
+              );
+
+          const metaNode = isEnc
+            ? renderEncounterDeckMetaBlockNode(gs, dk, {
+                useLiveCounts: true,
+                includeHistory: true,
+                showFactionName: false,
+              })
+            : el(
+                "div",
+                { className: "encounter-deck-meta-box" },
+                el(
+                  "div",
+                  { className: "encounter-deck-meta-line" },
+                  el("span", { className: "encounter-deck-meta-tag", text: "Mechanics:" }),
+                  profile.mechanicsSummary
+                ),
+                el(
+                  "div",
+                  { className: "encounter-deck-meta-line" },
+                  el("span", { className: "encounter-deck-meta-tag", text: "History:" }),
+                  profile.historicalSummary
+                ),
+                dk === "market" ? renderGoodsDeckCategoryStripNode(gs) : null
+              );
+
           return el(
             "div",
             { className: `encounter-deck-profile-card ${isFocused ? "is-active" : ""}` },
             el(
               "div",
               { className: "encounter-deck-profile-head" },
-              el("img", {
-                className: "encounter-deck-profile-thumb",
-                src: profile.img,
-                alt: `${profile.label} Card Back`,
-              }),
+              thumbNode,
               el(
                 "div",
-                {},
+                { style: { flex: "1 1 auto", minWidth: "0" } },
                 el("div", { className: "encounter-deck-profile-title", text: profile.label }),
                 el("div", {
                   className: "encounter-deck-profile-sub",
@@ -939,11 +1077,27 @@ function openEncounterDecksOverviewModal(gs, focusDeck = null) {
                 })
               )
             ),
-            renderEncounterDeckMetaBlockNode(gs, dk, {
-              useLiveCounts: true,
-              includeHistory: true,
-              showFactionName: false,
-            })
+            metaNode,
+            scoutEligibility.eligible
+              ? el("button", {
+                  type: "button",
+                  className: "btn btn-sm btn-primary",
+                  style: { marginTop: "auto", width: "100%" },
+                  disabled: typeof counts[dk] === "number" && counts[dk] <= 0,
+                  text:
+                    typeof counts[dk] === "number" && counts[dk] <= 0
+                      ? "Deck Empty"
+                      : `👁️ Scout Top of ${profile.label}`,
+                  onClick: () => {
+                    closeModal();
+                    sendGameAction({
+                      type: scoutEligibility.actionType,
+                      targetType: "deck",
+                      targetKey: dk,
+                    });
+                  },
+                })
+              : null
           );
         })
       ),
@@ -953,7 +1107,7 @@ function openEncounterDecksOverviewModal(gs, focusDeck = null) {
         el("button", {
           type: "button",
           className: "btn",
-          text: "📖 Open Rulebook Section 14",
+          text: "📖 Open Rulebook Card Catalog",
           onClick: () => {
             closeModal();
             openFullRulebookView("catalog-encounters");
@@ -1281,24 +1435,11 @@ function getNeighborCoordInDir(coord, dir) {
   return `${COLS[nc]}${ROWS[nr]}`;
 }
 
-const ROW_TO_ROMAN_ASSET = {
-  "1": "I",
-  "2": "II",
-  "3": "III",
-  "4": "IV",
-  "5": "V",
-  "6": "VI",
-};
-
-function getMonumentImageUrl(coord) {
+function getTileBackBackgroundPosition(coord) {
   const c = String(coord || "B1").trim();
-  if (c === "A1" || c === "AI") {
-    return "/assets/monuments/A1.png?v=26";
-  }
-  const col = c.slice(0, 1);
-  const rowPart = c.slice(1);
-  const romanRow = ROW_TO_ROMAN_ASSET[rowPart] || rowPart;
-  return `/assets/monuments/${col}${romanRow}.png?v=26`;
+  const colIdx = Math.max(0, COLS.indexOf(c.slice(0, 1)));
+  const rowIdx = Math.max(0, ROWS.indexOf(c.slice(1)));
+  return `${(colIdx / 5) * 100}% ${(rowIdx / 5) * 100}%`;
 }
 
 const CART_COLOR_PALETTE = [
@@ -1785,6 +1926,11 @@ const appState = {
   boardViewMode: "auto", // "auto" | "rome" | "market" | "both"
   cartPanelTab: "cart", // "cart" | "navigate"
   inspectedCell: "C3",
+  collapsedSections: {
+    clockBoard: false,
+    merchantsInRome: false,
+    factionStandings: false,
+  },
   setupDiscardMissions: new Set(),
   setupDiscardInfluence: new Set(),
   cleanupKeepGuards: new Set(),
@@ -1799,6 +1945,9 @@ const appState = {
   highlightedMarketTrack: null,
   swappedMissionStackIds: new Set(),
   shownScoutIds: new Set(),
+  shownScoutKeys: new Set(),
+  _actionQueuePromise: Promise.resolve(),
+  _pendingActionCount: 0,
   pollTimer: null,
   _lastTabletopPollJson: null,
   _lastPortalPollJson: null,
@@ -1870,7 +2019,7 @@ function ensureCardsCatalogLoaded() {
   }
   appState.cardsCatalogLoading = true;
   appState.cardsCatalogError = null;
-  const p = fetch("./data/cards_catalog.json?v=61")
+  const p = fetch("./data/cards_catalog.json?v=62")
     .then((resp) => {
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status} loading card catalog`);
@@ -2029,11 +2178,13 @@ function getCasusBelliProactiveDisabledReason(gs, viewer) {
       pStage === "pre_decision" &&
       !pend.isPvp &&
       pend.playerIndex === viewer.index &&
-      pend.interveningPlayerIndex == null
+      pend.interveningPlayerIndex == null &&
+      !pend.canInitiateCombat &&
+      !pend.combatMandatory
     ) {
       return null;
     }
-    return "Casus Belli can only be played during an initial NPC Encounter decision or outside an Encounter on your Night Delivery turn (Turn 2+).";
+    return "Casus Belli can only be played during an initial NPC Encounter decision when combat is not already available, or outside an Encounter on your Night Delivery turn (Turn 2+).";
   }
   if (gs.phase !== "delivery" || gs.activePlayerIndex !== viewer.index) {
     return "Casus Belli can only initiate PvP combat on your Night Delivery turn.";
@@ -2058,6 +2209,320 @@ function getCasusBelliProactiveDisabledReason(gs, viewer) {
     return `No eligible opponent merchant is present in ${myCell} to challenge with Casus Belli.`;
   }
   return null;
+}
+
+function getAbbrevMerchantName(player) {
+  const raw = String((player && (player.name || player.displayName || player.label)) || "Player").trim();
+  if (!raw) return "Player";
+  const firstWord = raw.split(/\s+/)[0];
+  return firstWord.length > 8 ? `${firstWord.slice(0, 7)}…` : firstWord;
+}
+
+function createSectionCollapseToggleBtn(sectionKey, isCollapsed, labelText) {
+  return el("button", {
+    type: "button",
+    className: "collapse-toggle-btn",
+    "data-collapse-section": sectionKey,
+    title: labelText,
+    "aria-label": labelText,
+    text: isCollapsed ? "+" : "−",
+    onClick: (e) => {
+      e.stopPropagation();
+      if (!appState.collapsedSections) {
+        appState.collapsedSections = { clockBoard: false, merchantsInRome: false, factionStandings: false };
+      }
+      appState.collapsedSections[sectionKey] = !Boolean(appState.collapsedSections[sectionKey]);
+      renderApp();
+    },
+  });
+}
+
+function getActiveDemandKind(pend) {
+  if (!pend || (pend.stage && pend.stage !== "pre_decision")) return null;
+  if (pend.combatMandatory) return null;
+  const rType = pend.reaction || pend.reactionType || "";
+  if (rType !== "demand" && rType !== "demand_strict") return null;
+  const c = pend.card || {};
+  const actionTxt = String(c.actionText || "").trim();
+  if (actionTxt.startsWith("?")) return null;
+  if (c.mission || !actionTxt) return null;
+  if (actionTxt.includes("(d)") || actionTxt.toLowerCase().includes("denari")) return "cash";
+  return "goods";
+}
+
+function isSpontaneousAnytimeInfluenceCard(card) {
+  if (!card) return false;
+  const cname = String(card.name || "");
+  const eff = String(card.effectCode || "");
+  return (
+    ["Patron", "Cartwright", "Thug", "Wine Forger", "Procurer"].includes(cname) ||
+    cname.includes("Favor") ||
+    [
+      "patron_caracalla_domna",
+      "patron_geta_aurelius",
+      "permanent_storage_plus_2",
+      "free_guard_1r",
+      "wine_forger",
+      "buy_from_deck_uncommon",
+      "buy_any_good_common",
+    ].includes(eff) ||
+    eff.startsWith("faction_favor_")
+  );
+}
+
+function getInfluenceCardPlayability(gs, viewer, card) {
+  const cName = String((card && card.name) || "");
+  const effCode = String((card && card.effectCode) || "");
+  const effTxt = String((card && card.effectText) || "").toLowerCase();
+  const res = {
+    playable: false,
+    spontaneousAnytime: false,
+    mode: "normal",
+    badgeText: null,
+    badgePositive: false,
+    disabledReason: null,
+  };
+  if (!gs || !viewer || !card) return res;
+  if (["setup_discard", "setup_climate", "finished"].includes(gs.phase)) return res;
+
+  const pend = gs.pendingEncounter || null;
+  const pendStage = pend ? pend.stage || "pre_decision" : null;
+  const isViewerParticipant = Boolean(
+    pend && (pend.playerIndex === viewer.index || pend.interveningPlayerIndex === viewer.index)
+  );
+  const isViewerPrimaryEnc = Boolean(
+    pend && pend.playerIndex === viewer.index && pend.interveningPlayerIndex == null
+  );
+  const isMyDeliveryActive = Boolean(
+    gs.phase === "delivery" &&
+      gs.activePlayerIndex === viewer.index &&
+      Boolean(viewer.position) &&
+      !viewer.exitedRome &&
+      !viewer.nightEnded &&
+      !viewer.eliminated &&
+      viewer.turnStep !== "done" &&
+      !pend &&
+      !hasPlayerBlockingPrompt(viewer, true, gs)
+  );
+
+  if (cName === "Twist Of Fate") {
+    res.mode = "twist";
+    const okStage =
+      isViewerParticipant &&
+      [
+        "combat_pre_strike_post_roll",
+        "combat_post_roll",
+        "driver_fate_post_roll",
+        "chart_post_roll",
+        "demand_post_roll",
+        "gamble_post_roll",
+      ].includes(pendStage) &&
+      getEligibleRerollTargets(pend).length > 0;
+    if (okStage) {
+      res.playable = true;
+    } else {
+      res.badgeText = "⚡ Reactive on Die Rolls";
+      res.disabledReason = "Twist Of Fate can only be played right after a die roll.";
+    }
+    return res;
+  }
+
+  if (pend && pendStage === "combat_pre_strike_post_roll") {
+    res.badgeText = "⚔️ Pre-Strike (Twist Only)";
+    res.disabledReason = "Only Twist Of Fate may be played during the Sagittae pre-roll strike window.";
+    return res;
+  }
+
+  if (isSpontaneousAnytimeInfluenceCard(card)) {
+    res.spontaneousAnytime = true;
+    res.playable = true;
+    if (
+      effCode === "buy_any_good_common" ||
+      effCode === "buy_from_deck_uncommon" ||
+      cName.toLowerCase() === "procurer"
+    ) {
+      res.mode = "procurer";
+    }
+    return res;
+  }
+
+  if (cName === "Lucky Break") {
+    res.mode = "lucky_break";
+    const okLucky =
+      isViewerParticipant &&
+      ["driver_fate_post_roll", "chart_post_roll"].includes(pendStage) &&
+      pend.chartType !== "soothsayer";
+    if (okLucky) {
+      res.playable = true;
+    } else {
+      res.badgeText = "⚡ Reactive on Chart Rolls";
+      res.disabledReason =
+        "Lucky Break can only be played after rolling on the Death, Angry Mob, or Theater Troupe chart.";
+    }
+    return res;
+  }
+
+  if (cName.includes("Match Fixing") || effCode === "match_fixing") {
+    const mfActive = Boolean(viewer.turnEffects && viewer.turnEffects.matchFixing);
+    res.badgeText = mfActive ? "✨ Match Fixing Active" : "🏟️ Play in Gamble UI";
+    res.badgePositive = mfActive;
+    res.disabledReason = "Match Fixing can only be played inside the Stadium Gambling modal on a Gambling tile.";
+    return res;
+  }
+
+  if (cName.includes("Shortcut") || effCode === "shortcut") {
+    res.mode = "shortcut";
+    const scReady = Boolean(viewer.turnEffects && viewer.turnEffects.shortcut);
+    if (isMyDeliveryActive && Number(viewer.movesRemaining || 0) > 0 && !scReady) {
+      res.playable = true;
+    } else {
+      res.badgeText = scReady ? "✨ Shortcut Readied" : "🛣️ Play When Moving";
+      res.badgePositive = scReady;
+      res.disabledReason = scReady
+        ? "Shortcut is already readied for your move this turn."
+        : "Shortcut can only be played on your Night Delivery turn when you have movement remaining.";
+    }
+    return res;
+  }
+
+  if (cName === "Gladiator's Intervention" || cName === "Flying Chamber Pot") {
+    if (isViewerParticipant && pendStage === "combat_post_roll") {
+      res.playable = true;
+    } else {
+      res.badgeText = "⚔️ Reactive After Combat Roll";
+      res.disabledReason = `${cName} is a reactive card — play it after rolling during an active Combat.`;
+    }
+    return res;
+  }
+
+  if (cName === "Mercenary Ambush" || cName === "Distraction") {
+    const okCombatPre =
+      isViewerParticipant &&
+      (pendStage === "combat_consumable_pre_roll" ||
+        (pendStage === "pre_decision" &&
+          (pend.canInitiateCombat || pend.combatMandatory || pend.combatThreatened)));
+    if (okCombatPre) {
+      res.playable = true;
+    } else {
+      res.badgeText = "⚔️ Reactive Before Combat Roll";
+      res.disabledReason = `${cName} is a reactive card — play it before rolling when an Encounter with Combat is active.`;
+    }
+    return res;
+  }
+
+  if (cName === "Supplicant" || cName === "Minor Supplicant") {
+    if (isViewerPrimaryEnc && pendStage === "pre_decision") {
+      res.playable = true;
+    } else {
+      res.badgeText = "🙏 Reactive in Encounter";
+      res.disabledReason = `${cName} is a reactive card — play it during your active Encounter before choosing an option.`;
+    }
+    return res;
+  }
+
+  if (cName === "Man Of The People") {
+    if (
+      isViewerPrimaryEnc &&
+      ["chart_pre_roll", "chart_post_roll"].includes(pendStage) &&
+      pend.chartType === "mob"
+    ) {
+      res.playable = true;
+    } else {
+      res.badgeText = "🔥 Reactive on Angry Mob";
+      res.disabledReason = "Man Of The People is a reactive card — play it when an Angry Mob encounter occurs.";
+    }
+    return res;
+  }
+
+  if (cName === "Dramaturge") {
+    if (
+      isViewerPrimaryEnc &&
+      ["chart_pre_roll", "chart_post_roll"].includes(pendStage) &&
+      pend.chartType === "theater"
+    ) {
+      res.playable = true;
+    } else {
+      res.badgeText = "🎭 Reactive on Theater";
+      res.disabledReason = "Dramaturge is a reactive card — play it when a Theater Troupe encounter occurs.";
+    }
+    return res;
+  }
+
+  if (cName === "Trained Dog") {
+    if (isViewerPrimaryEnc && getActiveDemandKind(pend) === "cash") {
+      res.playable = true;
+    } else {
+      res.badgeText = "🐕 Reactive on Cash Demand";
+      res.disabledReason = "Trained Dog is a reactive card — play it during a non-optional Cash Demand encounter.";
+    }
+    return res;
+  }
+
+  if (cName.includes("Plea")) {
+    if (isViewerPrimaryEnc && getActiveDemandKind(pend) === "goods") {
+      res.playable = true;
+    } else {
+      res.badgeText = "📜 Reactive on Goods Demand";
+      res.disabledReason = "Plea is a reactive card — play it during a non-optional Goods Demand encounter.";
+    }
+    return res;
+  }
+
+  if (cName === "Casus Belli" || effCode === "casus_belli") {
+    res.mode = "casus_belli";
+    const cbReason = getCasusBelliProactiveDisabledReason(gs, viewer);
+    if (!cbReason) {
+      res.playable = true;
+    } else {
+      res.disabledReason = cbReason;
+      if (pend || gs.phase !== "delivery" || gs.activePlayerIndex !== viewer.index) {
+        res.badgeText = "⚔️ Play in Non-Combat Enc / PvP";
+      }
+    }
+    return res;
+  }
+
+  if (cName === "Make Haste" || effCode === "move_twice") {
+    const activeMH = Boolean(viewer.turnEffects && viewer.turnEffects.makeHasteExtraTransact);
+    if (isMyDeliveryActive) {
+      res.playable = true;
+    } else {
+      res.badgeText = activeMH ? "✨ Make Haste Active" : "⚡ Play on Delivery Turn";
+      res.badgePositive = activeMH;
+      res.disabledReason =
+        "Make Haste can only be played on your Night Delivery turn while your Cart is active on the city board.";
+    }
+    return res;
+  }
+
+  if (cName === "Puffery" || effCode === "increase_own_sale_scarcity") {
+    if (isMyDeliveryActive) {
+      res.playable = true;
+    } else {
+      res.badgeText = "📈 Play on Delivery Turn";
+      res.disabledReason =
+        "Puffery can only be played on your Night Delivery turn while your Cart is active on the city board.";
+    }
+    return res;
+  }
+
+  if (
+    effCode.startsWith("reorder_top_3") ||
+    cName.toLowerCase().includes("informants") ||
+    effTxt.includes("look at the top three")
+  ) {
+    res.mode = "top3";
+  } else if (cName === "Prophecy" || effCode === "trigger_soothsayer") {
+    res.mode = "prophecy";
+  }
+
+  if (gs.activePlayerIndex === viewer.index && !pend && !hasPlayerBlockingPrompt(viewer, true, gs)) {
+    res.playable = true;
+  } else {
+    res.badgeText = "⏳ Play on Your Turn";
+    res.disabledReason = "Resolve the current encounter or wait for your turn to play this card.";
+  }
+  return res;
 }
 
 /**
@@ -2818,7 +3283,7 @@ function renderDynamicEdgeSlotNode(dir, edgeVal, _coord = null) {
 /**
  * Dynamically renders a revealed Rome Tile Card face from its JSON features
  * (edges, sells, buys, encounter, gamble, persistent, refresh, id, coord).
- * Only the isolated monument illustration is placed in the center background.
+ * Uses a low-saturation copy of the tile back underneath the encounter icons.
  */
 function renderDynamicTileCardNode(tile, coord, mode = "board") {
   if (!tile) return null;
@@ -2909,10 +3374,10 @@ function renderDynamicTileCardNode(tile, coord, mode = "board") {
         edges.SW ? "has-edge-sw" : ""
       } ${edges.SE ? "has-edge-se" : ""}`.trim(),
     },
-    el("img", {
-      className: "dyn-tile-monument-bg",
-      src: getMonumentImageUrl(tileCoord),
-      alt: tileCoord,
+    el("div", {
+      className: "dyn-tile-back-underlay",
+      style: { backgroundPosition: getTileBackBackgroundPosition(tileCoord) },
+      "aria-hidden": "true",
     }),
     ...edgeNodes,
     tradeBannerNodes.length > 0 ? el("div", { className: "dyn-tile-trade-stack" }, ...tradeBannerNodes) : null,
@@ -2926,16 +3391,11 @@ function renderDynamicTileCardNode(tile, coord, mode = "board") {
  * Renders the back side of an unrevealed tile card (matching the underlying Rome map board square).
  */
 function renderDynamicTileBackNode(coord, cell) {
-  const colIdx = Math.max(0, COLS.indexOf(coord.slice(0, 1)));
-  const rowIdx = Math.max(0, ROWS.indexOf(coord.slice(1)));
-  const bgPosX = `${(colIdx / 5) * 100}%`;
-  const bgPosY = `${(rowIdx / 5) * 100}%`;
-
   return el(
     "div",
     {
       className: "dyn-tile-back",
-      style: { backgroundPosition: `${bgPosX} ${bgPosY}` },
+      style: { backgroundPosition: getTileBackBackgroundPosition(coord) },
     },
     el("div", { className: "cell-neighborhood-title", text: cell ? cell.name : coord }),
     el(
@@ -4681,7 +5141,7 @@ function buildTabletopSnapshotKey(res) {
 async function pollTabletopGameNow() {
   if (!appState.user || appState.user.needsUsernameSetup) return;
   if (appState.activeTab !== "tabletop" || !appState.currentGameId) return;
-  if (appState._tabletopPollInFlight) return;
+  if (appState._tabletopPollInFlight || appState._pendingActionCount > 0) return;
   appState._tabletopPollInFlight = true;
   try {
     const res = await apiRequest(`/api/games/${appState.currentGameId}`);
@@ -4842,11 +5302,26 @@ async function refreshPortalOverview() {
   return changed;
 }
 
-function seedSeenScoutIds(state) {
+function getScoutEntryDedupeKey(si) {
+  if (!si || typeof si !== "object") return "";
+  const tType = String(si.targetType || "").toLowerCase();
+  const tKey = String(si.targetKey || "").trim();
+  const turnVal = si.turn !== undefined && si.turn !== null ? String(si.turn) : "";
+  const revId = si.revealedData && si.revealedData.id ? String(si.revealedData.id) : "";
+  return `${tType}:${tKey}:${turnVal}:${revId}`;
+}
+
+function seedSeenScoutIds(state, { reset = false } = {}) {
+  if (reset) {
+    appState.shownScoutIds.clear();
+    appState.shownScoutKeys.clear();
+  }
   const vp = getViewerPlayer(state);
   if (!vp || !Array.isArray(vp.scoutedInfo)) return;
   vp.scoutedInfo.forEach((si) => {
     if (si && si.id) appState.shownScoutIds.add(si.id);
+    const dk = getScoutEntryDedupeKey(si);
+    if (dk) appState.shownScoutKeys.add(dk);
   });
 }
 
@@ -5797,8 +6272,18 @@ function checkPostActionModals(state) {
     if (Array.isArray(vp.scoutedInfo)) {
       for (let i = vp.scoutedInfo.length - 1; i >= 0; i--) {
         const si = vp.scoutedInfo[i];
-        if (si && si.id && !appState.shownScoutIds.has(si.id)) {
-          appState.shownScoutIds.add(si.id);
+        if (!si) continue;
+        const dk = getScoutEntryDedupeKey(si);
+        const alreadySeen =
+          (si.id && appState.shownScoutIds.has(si.id)) ||
+          (dk && appState.shownScoutKeys.has(dk));
+        if (alreadySeen) {
+          if (si.id) appState.shownScoutIds.add(si.id);
+          continue;
+        }
+        if (si.id || dk) {
+          if (si.id) appState.shownScoutIds.add(si.id);
+          if (dk) appState.shownScoutKeys.add(dk);
           openScoutResultModal(si);
           return;
         }
@@ -5869,7 +6354,7 @@ async function openGame(gameId) {
       appState.marketBoardScrollLeft = 0;
       appState.marketBoardScrollTop = 0;
       appState.climateBoardScrollLeft = 0;
-      seedSeenScoutIds(res.state);
+      seedSeenScoutIds(res.state, { reset: true });
       stopNpcTurnPacing();
       enqueueNewNpcEvents(res.state, true);
     } else {
@@ -5908,66 +6393,152 @@ async function openGame(gameId) {
   }
 }
 
-async function sendGameAction(actionPayload, options = {}) {
-  if (!appState.currentGameId) return;
-  const silentToast = Boolean(options && options.silentToast);
-  try {
-    const res = await apiRequest(`/api/games/${appState.currentGameId}/action`, "POST", actionPayload);
-    if (res.user) {
-      appState.user = { ...(appState.user || {}), ...res.user };
-    }
-    const actType = actionPayload && actionPayload.type ? String(actionPayload.type) : "";
-    if (
-      [
-        "market_buy",
-        "delivery_sell",
-        "delivery_forum_buy",
-        "cleanup_take_loan",
-        "cleanup_repay_loan",
-        "cleanup_buy_influence",
-        "delivery_complete_mission",
-        "delivery_gamble",
-      ].includes(actType)
-    ) {
-      playSfx("coin");
-    } else if (
-      actType === "delivery_trash" ||
-      actType === "delivery_attack" ||
-      (actType === "resolve_encounter" &&
-        (actionPayload.decision === "fight" || actionPayload.decision === "refuse"))
-    ) {
-      playSfx("combat");
-    }
-    appState.gameSummary = res.summary;
-    appState.gameState = res.state;
-    appState._lastTabletopPollJson = buildTabletopSnapshotKey(res);
-    if (actType === "market_buy") {
-      appState.tutorialMarketBoughtAny = true;
-    } else if (actType === "initial_scout" && actionPayload.cell) {
-      appState.tutorialLastScoutedCoord = String(actionPayload.cell);
-    } else if (actType === "delivery_scout" && actionPayload.targetType === "tile" && actionPayload.targetKey) {
-      appState.tutorialLastScoutedCoord = String(actionPayload.targetKey);
-    }
-    syncGameUiTransitions(res.state, false);
-    enqueueNewNpcEvents(res.state, false);
-    enqueueNewDiceEvents(res.state);
-    enqueueNewMissionEvents(res.state);
-    if (res.message && !silentToast) showToast(res.message, false);
-    if (actType === "delivery_scout" && actionPayload.targetType === "tile" && actionPayload.targetKey) {
-      appState.inspectedCell = actionPayload.targetKey;
-    } else if (actType === "initial_scout" && actionPayload.cell) {
-      appState.inspectedCell = actionPayload.cell;
-    } else if (res.state && res.state.players) {
-      const vp = getViewerPlayer(res.state);
-      if (vp && vp.position) {
-        appState.inspectedCell = vp.position;
-      }
-    }
-    renderApp();
-    checkPostActionModals(res.state);
-  } catch (err) {
-    showToast(err.message, true);
+function formatTileScoutSummaryClient(tile, coord) {
+  if (!tile) return String(coord || "");
+  const sellsList = Array.isArray(tile.sells) && tile.sells.length > 0
+    ? tile.sells.map((s) => `${s.category} (${formatTileModifier(s.modifier)})`).join(", ")
+    : "None";
+  const buysList = Array.isArray(tile.buys) && tile.buys.length > 0
+    ? ` | Forum Sells [${tile.buys.map((b) => `${b.category} (${formatTileModifier(b.modifier)})`).join(", ")}]`
+    : "";
+  const enc = tile.encounter || "No center encounter";
+  return `${tile.id || coord || "Tile"}: Buys [${sellsList}]${buysList} | Encounter: ${enc} | Gamble: ${tile.gamble ? "Yes" : "No"}`;
+}
+
+function executeTileScoutAction(gs, viewer, rawCoord) {
+  const coord = String(rawCoord || "").trim().toUpperCase();
+  if (!coord) return Promise.resolve();
+  const isEntryPhase = Boolean(gs && gs.phase === "delivery_entry");
+  const actionPayload = isEntryPhase
+    ? { type: "initial_scout", targetType: "tile", cell: coord }
+    : { type: "delivery_scout", targetType: "tile", targetKey: coord };
+
+  const cell = gs && gs.romeBoard ? gs.romeBoard[coord] : null;
+  const nextTile = cell && cell.nextTile ? cell.nextTile : null;
+  if (!viewer || viewer.scoutedThisTurn || !nextTile) {
+    closeModal();
+    return sendGameAction(actionPayload);
   }
+
+  const optTurn = Number((gs && gs.turn) || 1);
+  const optSi = {
+    id: `opt_scout_${coord}_${optTurn}_${Date.now()}`,
+    turn: optTurn,
+    targetType: "tile",
+    targetKey: coord,
+    label: isEntryPhase ? `Initial Scout (${coord})` : `Tile Stack ${coord}`,
+    summary: formatTileScoutSummaryClient(nextTile, coord),
+    revealedData: nextTile,
+  };
+  const optKey = getScoutEntryDedupeKey(optSi);
+  appState.shownScoutIds.add(optSi.id);
+  if (optKey) appState.shownScoutKeys.add(optKey);
+
+  const prevScouted = Boolean(viewer.scoutedThisTurn);
+  const prevScoutedList = Array.isArray(viewer.scoutedInfo) ? viewer.scoutedInfo.slice() : [];
+  const prevInspected = appState.inspectedCell;
+  const prevTutorialCoord = appState.tutorialLastScoutedCoord;
+
+  viewer.scoutedThisTurn = true;
+  viewer.scoutedInfo = [...prevScoutedList, optSi];
+  appState.inspectedCell = coord;
+  appState.tutorialLastScoutedCoord = coord;
+
+  renderApp();
+  openScoutResultModal(optSi);
+
+  return sendGameAction(actionPayload, {
+    optimisticRollback: () => {
+      appState.shownScoutIds.delete(optSi.id);
+      if (optKey) appState.shownScoutKeys.delete(optKey);
+      viewer.scoutedThisTurn = prevScouted;
+      viewer.scoutedInfo = prevScoutedList;
+      appState.inspectedCell = prevInspected;
+      appState.tutorialLastScoutedCoord = prevTutorialCoord;
+      closeModal();
+      renderApp();
+    },
+  });
+}
+
+function sendGameAction(actionPayload, options = {}) {
+  if (!appState.currentGameId) return Promise.resolve();
+  const prevQueue = appState._actionQueuePromise;
+  appState._pendingActionCount = (appState._pendingActionCount || 0) + 1;
+  const runAction = async () => {
+    try {
+      if (!appState.currentGameId) return;
+      const silentToast = Boolean(options && options.silentToast);
+      try {
+        const res = await apiRequest(`/api/games/${appState.currentGameId}/action`, "POST", actionPayload);
+        if (res.user) {
+          appState.user = { ...(appState.user || {}), ...res.user };
+        }
+        const actType = actionPayload && actionPayload.type ? String(actionPayload.type) : "";
+        if (
+          [
+            "market_buy",
+            "delivery_sell",
+            "delivery_forum_buy",
+            "cleanup_take_loan",
+            "cleanup_repay_loan",
+            "cleanup_buy_influence",
+            "delivery_complete_mission",
+            "delivery_gamble",
+          ].includes(actType)
+        ) {
+          playSfx("coin");
+        } else if (
+          actType === "delivery_trash" ||
+          actType === "delivery_attack" ||
+          (actType === "resolve_encounter" &&
+            (actionPayload.decision === "fight" || actionPayload.decision === "refuse"))
+        ) {
+          playSfx("combat");
+        }
+        appState.gameSummary = res.summary;
+        appState.gameState = res.state;
+        appState._lastTabletopPollJson = buildTabletopSnapshotKey(res);
+        if (actType === "market_buy") {
+          appState.tutorialMarketBoughtAny = true;
+        } else if (actType === "initial_scout" && actionPayload.cell) {
+          appState.tutorialLastScoutedCoord = String(actionPayload.cell);
+        } else if (actType === "delivery_scout" && actionPayload.targetType === "tile" && actionPayload.targetKey) {
+          appState.tutorialLastScoutedCoord = String(actionPayload.targetKey);
+        }
+        syncGameUiTransitions(res.state, false);
+        enqueueNewNpcEvents(res.state, false);
+        enqueueNewDiceEvents(res.state);
+        enqueueNewMissionEvents(res.state);
+        if (res.message && !silentToast) showToast(res.message, false);
+        if (actType === "delivery_scout" && actionPayload.targetType === "tile" && actionPayload.targetKey) {
+          appState.inspectedCell = actionPayload.targetKey;
+        } else if (actType === "initial_scout" && actionPayload.cell) {
+          appState.inspectedCell = actionPayload.cell;
+        } else if (res.state && res.state.players) {
+          const vp = getViewerPlayer(res.state);
+          if (vp && vp.position) {
+            appState.inspectedCell = vp.position;
+          }
+        }
+        renderApp();
+        checkPostActionModals(res.state);
+      } catch (err) {
+        if (options && typeof options.optimisticRollback === "function") {
+          options.optimisticRollback();
+        }
+        showToast(err.message, true);
+      }
+    } finally {
+      appState._pendingActionCount = Math.max(0, (appState._pendingActionCount || 1) - 1);
+    }
+  };
+  const nextRun =
+    appState._pendingActionCount === 1 || !prevQueue
+      ? runAction()
+      : prevQueue.catch(() => {}).then(runAction);
+  appState._actionQueuePromise = nextRun;
+  return nextRun;
 }
 
 async function sendChronicleChatMessage(rawText, { keepFocus = true } = {}) {
@@ -8301,13 +8872,13 @@ function renderTabletopView() {
 function renderClockAndTurnBanner(gs, viewer, activePlayer) {
   const firstPlayer = gs.players[gs.firstPlayerIndex] || gs.players[0];
   const phaseNames = {
-    setup_discard: "Preparation: Select Starting Contracts",
-    setup_climate: "Preparation: Political Climate Draft",
-    market: "Phase I: Ostia Port Market",
-    delivery_entry: "Phase II: Dusk Gate Entry & Initial Scout",
-    delivery: "Phase II: Rome Night Delivery",
-    cleanup: "Phase III: Dawn Clean-Up & Upkeep",
-    finished: "December 211 A.D. — Winter Reckoning Complete",
+    setup_discard: "Prep: Discard",
+    setup_climate: "Prep: Climate",
+    market: "Phase I: Market",
+    delivery_entry: "Phase II: Entry Selection",
+    delivery: "Phase II: Delivery",
+    cleanup: "Phase III: Dawn",
+    finished: "Game Complete",
   };
   const activeClimateCount =
     gs.politicalClimate && Array.isArray(gs.politicalClimate.activeIds) ? gs.politicalClimate.activeIds.length : 0;
@@ -8325,33 +8896,31 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
   const speedBadge =
     gs.speedMode === "fast"
       ? el("span", {
-        className: "speed-badge fast",
-        title: `Fast Speed: Overdue humans swap to Ionic AI after ${gs.turnTimeLimitMinutes || 6} minute(s)`,
-        text: `⚡ Fast (${gs.turnTimeLimitMinutes || 6}m)`,
-      })
-      : el("span", {
-        className: "speed-badge normal",
-        title: "Normal Speed: Untimed turns",
-        text: "⏳ Normal",
-      });
+          className: "speed-badge fast",
+          title: `Fast Speed: Overdue humans swap to Ionic AI after ${gs.turnTimeLimitMinutes || 6} minute(s)`,
+          text: `Fast (${gs.turnTimeLimitMinutes || 6}m)`,
+        })
+      : null;
 
   const remSec = getFastCountdownRemainingSec(gs);
   const countdownBadge =
     remSec !== null
       ? el(
-        "span",
-        {
-          className: "badge fast-countdown-badge",
-          title: "Time remaining before overdue human turn swaps to Ionic AI",
-        },
-        "⏱️ ",
-        el("span", {
-          id: "fast-countdown-timer",
-          className: remSec <= 30 ? "urgent" : "",
-          text: formatCountdownSeconds(remSec),
-        })
-      )
+          "span",
+          {
+            className: "badge fast-countdown-badge",
+            title: "Time remaining before overdue human turn swaps to Ionic AI",
+          },
+          el("span", {
+            id: "fast-countdown-timer",
+            className: remSec <= 30 ? "urgent" : "",
+            text: formatCountdownSeconds(remSec),
+          })
+        )
       : null;
+
+  const firstShort = getAbbrevMerchantName(firstPlayer);
+  const activeShort = getAbbrevMerchantName(activePlayer);
 
   return el(
     "div",
@@ -8359,62 +8928,60 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
     el(
       "div",
       { className: "clock-badges" },
-      el("span", { className: "badge badge-season", text: `🏛️ Season: ${gs.season} 211 A.D.` }),
+      el("span", {
+        className: "badge badge-season",
+        title: `Season: ${gs.season} 211 A.D.`,
+        text: String(gs.season || "Spring"),
+      }),
       el("span", { className: "badge badge-phase", text: phaseNames[gs.phase] || gs.phase }),
-      gs.phase === "delivery" ? el("span", { className: "badge badge-hour", text: `🕰️ ${gs.turnHourLabel}` }) : null,
-      el(
-        "span",
-        { className: "badge" },
-        "🦅 1st Player: ",
-        createPlayerNameNode(firstPlayer, { iconSize: 16 })
-      ),
-      el(
-        "span",
-        {
-          className: "badge",
-          style: { borderColor: "#16a34a", color: "#14532d", background: "#ecfdf5" },
-        },
-        "▶ Active Turn: ",
-        createPlayerNameNode(activePlayer, { iconSize: 16 })
-      ),
+      gs.phase === "delivery" ? el("span", { className: "badge badge-hour", text: String(gs.turnHourLabel || "") }) : null,
+      el("span", {
+        className: "badge",
+        title: `1st Player: ${(firstPlayer && firstPlayer.name) || "Merchant"}`,
+        text: `1st: ${firstShort}`,
+      }),
+      el("span", {
+        className: "badge",
+        style: { borderColor: "#16a34a", color: "#14532d", background: "#ecfdf5" },
+        title: `Active Turn: ${(activePlayer && activePlayer.name) || "Merchant"}`,
+        text: `Active: ${activeShort}`,
+      }),
       speedBadge,
       countdownBadge,
-      !viewer ? el("span", { className: "badge spectator-pill", text: "👁️ Spectating" }) : null
+      !viewer ? el("span", { className: "badge spectator-pill", text: "Spectating" }) : null
     ),
     el(
       "div",
-      { style: { display: "flex", gap: "0.4rem", flexWrap: "wrap" } },
+      { className: "clock-banner-actions" },
       viewer
         ? el("button", {
-          className: "btn btn-sm",
-          style: canUndo ? { borderColor: "#8c5612", color: "#6e2119" } : {},
-          disabled: !canUndo || undoPending,
-          title: undoTooltip,
-          text: undoPending
-            ? "⏳ Undo Pending..."
-            : canUndo && gs.undoTargetType === "previous_turn"
-              ? "↩️ Undo Turn (Prev)"
-              : "↩️ Undo Turn",
-          onClick: () => sendGameAction({ type: "request_undo_turn" }),
-        })
+            className: "btn btn-sm",
+            style: canUndo ? { borderColor: "#8c5612", color: "#6e2119" } : {},
+            disabled: !canUndo || undoPending,
+            title: undoTooltip,
+            text: undoPending ? "Undo Pending..." : "Undo Turn",
+            onClick: () => sendGameAction({ type: "request_undo_turn" }),
+          })
         : null,
       ...["auto", "rome", "market", "climate", "both"].map((mode) =>
         el("button", {
           className: `btn btn-sm ${appState.boardViewMode === mode ? "btn-primary" : ""}`,
           title:
             mode === "climate"
-              ? "Switch to the 6×3 Roman Senate Political Climate Board"
+              ? `Switch to the 6×3 Roman Senate Political Climate Board (${activeClimateCount} enacted)`
+              : mode === "both"
+              ? "Show all boards together"
               : undefined,
           text:
             mode === "auto"
-              ? "Auto View"
+              ? "Auto"
               : mode === "rome"
-              ? "🗺️ Rome 211 A.D. Board"
+              ? "Rome"
               : mode === "market"
-              ? "⚓ Ostia Port Market"
+              ? "Market"
               : mode === "climate"
-              ? `🏛️ Political Climate (${activeClimateCount})`
-              : "All Boards",
+              ? "Decrees"
+              : "All",
           onClick: () => {
             appState.boardViewMode = mode;
             renderApp();
@@ -8424,8 +8991,8 @@ function renderClockAndTurnBanner(gs, viewer, activePlayer) {
       el("button", {
         type: "button",
         className: "btn btn-sm",
-        title: "Inspect Patricii, Legiones, and Nefarii encounter deck mechanics, Roman history, and live faction card counts",
-        text: "🃏 Encounter Decks",
+        title: "Inspect all 6 decks (Patricii, Legiones, Nefarii, Goods & Guards, Missiones, Influence), Goods counts, or Scout",
+        text: "Decks",
         onClick: () => openEncounterDecksOverviewModal(gs),
       })
     )
@@ -8708,6 +9275,27 @@ function buildPoliticalClimateExplainerNode(_gs) {
   );
 }
 
+function openPoliticalClimateHelpModal(gs) {
+  showModal(
+    "🏛️ How the Political Climate Board Works",
+    el(
+      "div",
+      {},
+      buildPoliticalClimateExplainerNode(gs),
+      el(
+        "div",
+        { style: { display: "flex", justifyContent: "flex-end", marginTop: "0.8rem" } },
+        el("button", {
+          type: "button",
+          className: "btn btn-primary",
+          text: "Close",
+          onClick: closeModal,
+        })
+      )
+    )
+  );
+}
+
 function buildPoliticalClimateBoardGridNode(gs, viewer, interactiveDraft = false) {
   const pc = (gs && gs.politicalClimate) || {};
   const rawFactors =
@@ -8851,7 +9439,20 @@ function renderPoliticalClimateBoard(gs, viewer) {
     el(
       "div",
       { className: "panel-title fresco-banner-header fresco-griffin", style: { flexWrap: "wrap", gap: "0.5rem" } },
-      el("span", { text: "🏛️ Curia Julia — Political Climate Board" }),
+      el(
+        "div",
+        { className: "climate-title-with-help" },
+        el("span", { text: "🏛️ Curia Julia — Political Climate Board" }),
+        el("button", {
+          type: "button",
+          id: "btn-political-climate-help",
+          className: "climate-help-circle-btn",
+          title: "How the Political Climate Board Works",
+          "aria-label": "How the Political Climate Board Works",
+          text: "?",
+          onClick: () => openPoliticalClimateHelpModal(gs),
+        })
+      ),
       el(
         "div",
         { style: { display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" } },
@@ -8906,7 +9507,6 @@ function renderPoliticalClimateBoard(gs, viewer) {
           : null
       )
     ),
-    buildPoliticalClimateExplainerNode(gs),
     isDraftPhase && draftOrder.length > 0
       ? el(
           "div",
@@ -10164,6 +10764,13 @@ function renderPendingEncounterPanelCore(gs, viewer) {
       })
     );
 
+    const preRollCombatCards =
+      !isOtherConsumableActor && viewer
+        ? (viewer.influence || []).filter(
+            (c) => c.name === "Mercenary Ambush" || c.name === "Distraction"
+          )
+        : [];
+
     return el(
       "div",
       {
@@ -10202,6 +10809,30 @@ function renderPendingEncounterPanelCore(gs, viewer) {
             { style: { display: "flex", flexDirection: "column", gap: "0.55rem", marginBottom: "0.9rem" } },
             ...buildConsumableWeaponPickerNodes(consumables, selectedSet, () => renderApp())
           ),
+          preRollCombatCards.length > 0
+            ? el(
+                "div",
+                { style: { marginBottom: "0.9rem" } },
+                el("div", {
+                  style: { fontSize: "0.8rem", fontWeight: "700", color: "var(--gold-bright)", marginBottom: "0.4rem" },
+                  text: "🃏 Pre-Roll Combat Influence Cards (Play Before Rolling):",
+                }),
+                el(
+                  "div",
+                  { className: "phys-cards-grid compact-sidebar-grid" },
+                  ...preRollCombatCards.map((rc) =>
+                    renderPhysicalInfluenceCardNode(rc, {
+                      actionButton: buildCombatInfluenceCardActionNode(
+                        rc,
+                        encPlayer.name,
+                        card.name || "Opponent",
+                        encPlayer.index !== viewer.index
+                      ),
+                    })
+                  )
+                )
+              )
+            : null,
           !isOtherConsumableActor
             ? el("button", {
                 type: "button",
@@ -11039,28 +11670,34 @@ function renderPendingEncounterPanelCore(gs, viewer) {
   const hasCasusBelli =
     Boolean(viewer) &&
     !isOtherPlayerEncounter &&
+    !canFight &&
+    !combatMandatory &&
     (Boolean(pend.hasCasusBelliCard) || (viewer.influence || []).some((c) => c.name === "Casus Belli"));
 
+  const demandKind = getActiveDemandKind(pend);
+  const combatAvailableNow = Boolean(canFight || combatMandatory || pend.combatThreatened);
   const reactionInfluenceCards = ((viewer && viewer.influence) || []).filter((c) => {
     const nm = String(c.name || "");
     if (isOtherPlayerEncounter) {
-      return (
-        nm === "Mercenary Ambush" ||
-        nm === "Distraction" ||
-        nm === "Gladiator's Intervention" ||
-        nm === "Flying Chamber Pot"
-      );
+      return combatAvailableNow && (nm === "Mercenary Ambush" || nm === "Distraction");
+    }
+    if (nm === "Mercenary Ambush" || nm === "Distraction") {
+      return combatAvailableNow;
+    }
+    if (nm === "Casus Belli") {
+      return !pend.isPvp && !combatAvailableNow;
+    }
+    if (nm === "Trained Dog") {
+      return demandKind === "cash";
+    }
+    if (nm.includes("Plea")) {
+      return demandKind === "goods";
     }
     return (
-      nm === "Casus Belli" ||
-      nm === "Mercenary Ambush" ||
-      nm === "Distraction" ||
       nm === "Thug" ||
-      nm === "Trained Dog" ||
       nm === "Supplicant" ||
       nm === "Minor Supplicant" ||
-      nm.includes("Favor") ||
-      nm.includes("Plea")
+      nm.includes("Favor")
     );
   });
 
@@ -14180,6 +14817,29 @@ function renderRomeClockBoard(gs) {
         : 1;
   const fineBase = gs && gs.season === "Fall" ? 32 : gs && gs.season === "Summer" ? 20 : 12;
   const fineGate = Math.floor(fineBase / 2);
+  const seasonLabel = (gs && gs.season) || "Spring";
+  const activeSlot = ROME_CLOCK_SLOTS.find((s) => s.turn === activeSlotTurn) || ROME_CLOCK_SLOTS[0];
+  const isClockCollapsed = Boolean(appState.collapsedSections && appState.collapsedSections.clockBoard);
+
+  if (isClockCollapsed) {
+    const turnStr = `Turn ${activeSlot.numeral} - ${activeSlot.label}`;
+    return el(
+      "section",
+      { className: "rome-clock-board-panel is-collapsed", id: "rome-clock-board" },
+      el(
+        "div",
+        { className: "rome-clock-collapsed-row" },
+        el(
+          "div",
+          {
+            className: "rome-clock-collapsed-summary",
+            text: `Clock: ${turnStr}   ${seasonLabel} Curfew: City: ${fineBase}, Gate: ${fineGate}`,
+          }
+        ),
+        createSectionCollapseToggleBtn("clockBoard", true, "Expand Clock Board & Roll Charts")
+      )
+    );
+  }
 
   const hourNodes = ROME_CLOCK_SLOTS.map((slot) => {
     const isActive = slot.turn === activeSlotTurn;
@@ -14253,6 +14913,11 @@ function renderRomeClockBoard(gs) {
       desc: "Wager up to 20(d) as Transaction",
     },
     {
+      tollText: "10(d)",
+      title: "EDGE TOLL",
+      desc: "Pay (d) to cross (Shortcut / Guard waives)",
+    },
+    {
       barClass: "edge-green",
       title: "GREEN BORDER",
       desc: "Open road (pass freely)",
@@ -14324,10 +14989,15 @@ function renderRomeClockBoard(gs) {
       "div",
       { className: "rome-clock-board-header" },
       el("div", { className: "rome-clock-board-title", text: "🕰️ Nocturnal Clock Board, Encounter Key & Roll Charts" }),
-      el("div", {
-        className: "rome-clock-curfew-note",
-        text: `${(gs && gs.season) || "Spring"} Dawn Curfew: ${fineBase}(d) in City • ${fineGate}(d) on a Gate`,
-      })
+      el(
+        "div",
+        { className: "rome-clock-header-actions" },
+        el("div", {
+          className: "rome-clock-curfew-note",
+          text: `${seasonLabel} Dawn Curfew: ${fineBase}(d) in City • ${fineGate}(d) on a Gate`,
+        }),
+        createSectionCollapseToggleBtn("clockBoard", false, "Collapse Clock Board")
+      )
     ),
     el("div", { className: "rome-clock-hours-grid" }, ...hourNodes),
     el(
@@ -14350,7 +15020,9 @@ function renderRomeClockBoard(gs) {
                 el(
                   "div",
                   { className: "rome-clock-key-icon-box" },
-                  k.barClass
+                  k.tollText
+                    ? el("span", { className: "dyn-edge-toll rome-clock-key-toll", text: k.tollText })
+                    : k.barClass
                     ? el("span", { className: `rome-clock-key-bar ${k.barClass}`, "aria-label": k.title })
                     : el("img", { className: "rome-clock-key-icon", src: resolveAssetUrl(k.img), alt: k.title })
                 ),
@@ -14789,218 +15461,306 @@ function renderPlayerSidebar(gs, viewer) {
   const isGameCreator = Boolean(currentUserId && summary.hostUserId && currentUserId === summary.hostUserId);
   const canManageHumanPlayers = Boolean((isGameCreator || isAdminUser) && gs.phase !== "finished");
   const canChatInGame = Boolean(appState.user && gs && (viewer || isGameCreator || isAdminUser));
+  const isMerchantsCollapsed = Boolean(appState.collapsedSections && appState.collapsedSections.merchantsInRome);
+  const isFavorCollapsed = Boolean(appState.collapsedSections && appState.collapsedSections.factionStandings);
+  const focusFavorPlayer =
+    viewer || (gs.players && gs.players[gs.activePlayerIndex]) || (gs.players && gs.players[0]) || null;
 
   return el(
     "div",
     { className: "sidebar-stack" },
     // All Players Summary
-    el(
-      "div",
-      { className: "panel" },
-      el(
-        "h3",
-        { className: "panel-title" },
-        el("span", { text: "👥 Merchants in Rome" }),
-        el("span", { style: { fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "600" }, text: "Click to inspect Cart" })
-      ),
-      el(
-        "div",
-        { className: "players-strip" },
-        ...gs.players.map((p) => {
-          const swatchColor = resolveDieSwatchColor(p.color, "player");
-          const pDone = Number(p.missionsCompleted) || 0;
-          const pFail = Number(p.missionsFailed) || 0;
-          const pNet = typeof p.netMissions === "number" ? p.netMissions : pDone - pFail;
-          const isSelfSeat = Boolean(viewer && p.index === viewer.index);
-          const showReplaceBtn = canManageHumanPlayers && !p.isBot;
-          return el(
+    isMerchantsCollapsed
+      ? el(
+          "div",
+          { className: "panel merchants-panel is-collapsed", id: "merchants-rome-panel" },
+          el(
             "div",
-            {
-              className: `player-mini-card clickable-merchant-card ${p.index === gs.activePlayerIndex ? "active-turn" : ""}`,
-              style: { borderLeft: `3px solid ${swatchColor}` },
-              title: `Click to view ${p.name}'s Cart Mat (${p.usedBlocks}/${p.maxBlocks}■ Goods, ${p.usedGuards}/${p.maxGuards}▲ Guards, Net Missions ${pNet >= 0 ? `+${pNet}` : pNet}, 𐆖${p.cash})`,
-              onClick: () => openPlayerCartModal(gs, p, viewer),
-            },
+            { className: "merchants-collapsed-row" },
+            el("span", { className: "merchants-collapsed-label", text: "Merchants:" }),
             el(
               "div",
-              { style: { display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: "700", flexWrap: "wrap" } },
-              renderCartIconNode(p.color, "", `${p.name}'s Cart`),
-              p.eliminated ? el("span", { text: "☠️ " }) : null,
-              createPlayerNameNode(p, { iconSize: 16 })
-            ),
-            el("div", {
-              style: { color: p.eliminated ? "#b91c1c" : swatchColor, fontWeight: "800", marginTop: "0.2rem" },
-              text: p.eliminated ? `☠️ ${p.cash}(d) (Eliminated)` : `💰 ${p.cash}(d)`,
-            }),
-            el("div", {
-              style: { fontSize: "0.71rem", color: "var(--text-muted)" },
-              text: `Cart: ${p.usedBlocks}/${p.maxBlocks}■ • ${p.usedGuards}/${p.maxGuards}▲ • 📜 Net ${pNet >= 0 ? `+${pNet}` : pNet}`,
-            }),
-            el("div", {
-              style: { fontSize: "0.72rem", color: p.exitedRome ? "#15803d" : "var(--text-main)", fontWeight: p.exitedRome ? "700" : "400" },
-              text: p.position ? `📍 At ${p.position}` : p.exitedRome ? "✓ Exited Safely" : "At Ostia",
-            }),
-            showReplaceBtn
-              ? el(
-                "div",
-                { style: { marginTop: "0.32rem" } },
-                el("button", {
-                  type: "button",
-                  className: "btn btn-xs btn-crimson",
-                  style: { width: "100%", fontSize: "0.68rem", padding: "0.18rem 0.35rem" },
-                  title: isSelfSeat
-                    ? "Leave this seat and enter Spectator Mode (an Ionic AI bot takes over)"
-                    : `Replace ${p.name} with an Ionic AI bot`,
-                  text: isSelfSeat ? "👁️ Spectate (Ionic AI)" : "🤖 → Ionic AI",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    confirmRemovePlayerToIonicBot(gs, p, isSelfSeat);
+              { className: "merchants-collapsed-strip" },
+              ...(gs.players || []).map((p) => {
+                const cashColor = p.eliminated ? "#b91c1c" : resolveDieSymbolColor(p.color, "player");
+                const dotColor = resolveDieSwatchColor(p.color, "player");
+                const shortName = getAbbrevMerchantName(p);
+                const isActiveTurn = p.index === gs.activePlayerIndex;
+                return el(
+                  "button",
+                  {
+                    type: "button",
+                    className: `merchant-collapsed-chip ${isActiveTurn ? "is-active-turn" : ""} ${p.eliminated ? "is-eliminated" : ""}`,
+                    style: { borderBottomColor: dotColor },
+                    title: `${p.name}: ${p.cash}(d) (Click to inspect Cart)`,
+                    onClick: () => openPlayerCartModal(gs, p, viewer),
                   },
-                })
-              )
-              : null
-          );
-        })
-      )
-    ),
-
-    // Imperial Faction Standings (Directly under Merchants in Rome, above Cart Holdings)
-    el(
-      "div",
-      { className: "panel" },
-      el(
-        "h3",
-        { className: "panel-title" },
-        el("span", { text: "🏛️ Faction Standings" }),
-        el("span", {
-          style: { fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "600" },
-          text: "Click a Gem for Details",
-        })
-      ),
-      viewer
-        ? el(
-          "div",
-          { className: "favor-row", style: { margin: "0" } },
-          ...FACTION_META.map((fm) => {
-            const val = (viewer.favor && viewer.favor[fm.key]) || 0;
-            const rivals = (gs.players || []).filter((p) => p.index !== viewer.index);
-            return el(
-              "div",
-              {
-                className: "favor-box clickable-favor-box",
-                style: { cursor: "pointer" },
-                title: `Click to view ${fm.key} Favor breakdown, alignments & deck counts`,
-                onClick: () => openFactionFavorModal(gs, viewer, fm.key),
-              },
-              el("img", { className: "favor-gem-img", src: fm.gem, alt: fm.key }),
-              el("div", { style: { fontWeight: "700", color: fm.color }, text: fm.key }),
-              el("div", {
-                style: {
-                  fontWeight: "800",
-                  fontSize: "0.86rem",
-                  color: val > 0 ? "#15803d" : val < 0 ? "#b91c1c" : "var(--text-main)",
-                },
-                text: val > 0 ? `+${val}` : String(val),
-              }),
-              rivals.length > 0
-                ? el(
-                  "div",
-                  { className: "faction-standings-rivals" },
-                  ...rivals.map((rv) => {
-                    const rVal = (rv.favor && rv.favor[fm.key]) || 0;
-                    const fullName = String(rv.name || "Rival").trim() || "Rival";
-                    return el(
-                      "div",
-                      {
-                        className: "faction-standing-rival-line",
-                        title: `${fullName}: ${rVal > 0 ? `+${rVal}` : rVal} ${fm.key}`,
-                      },
-                      el(
-                        "span",
-                        { className: "faction-standing-rival-name" },
-                        el("span", {
-                          className: "faction-standing-swatch",
-                          style: { background: resolveDieSwatchColor(rv.color, "player") },
-                        }),
-                        el("span", {
-                          className: "faction-standing-rival-label",
-                          "data-full-name": fullName,
-                          text: fullName,
-                        })
-                      ),
-                      el("strong", {
-                        style: {
-                          color: rVal > 0 ? "#15803d" : rVal < 0 ? "#b91c1c" : "var(--text-muted)",
-                        },
-                        text: rVal > 0 ? `+${rVal}` : String(rVal),
-                      })
-                    );
+                  el("span", { className: "merchant-collapsed-dot", style: { background: dotColor } }),
+                  el("span", { className: "merchant-collapsed-name", text: shortName }),
+                  el("span", {
+                    className: "merchant-collapsed-cash",
+                    style: { color: cashColor },
+                    text: `${p.cash}d`,
                   })
-                )
-                : null
-            );
-          })
+                );
+              })
+            ),
+            createSectionCollapseToggleBtn("merchantsInRome", true, "Expand Merchants in Rome")
+          )
         )
-        : el(
+      : el(
           "div",
-          { className: "favor-row", style: { margin: "0" } },
-          ...FACTION_META.map((fm) =>
+          { className: "panel merchants-panel", id: "merchants-rome-panel" },
+          el(
+            "h3",
+            { className: "panel-title" },
+            el("span", { text: "👥 Merchants in Rome" }),
             el(
               "div",
-              {
-                className: "favor-box clickable-favor-box",
-                style: { cursor: "pointer" },
-                title: `Click to view ${fm.key} Favor alignments & deck counts`,
-                onClick: () => {
-                  if (gs.players && gs.players[0]) openFactionFavorModal(gs, gs.players[0], fm.key);
-                },
-              },
-              el("img", { className: "favor-gem-img", src: fm.gem, alt: fm.key }),
-              el("div", { style: { fontWeight: "700", color: fm.color }, text: fm.key }),
-              el(
+              { className: "panel-title-right-group" },
+              el("span", { style: { fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "600" }, text: "Click to inspect Cart" }),
+              createSectionCollapseToggleBtn("merchantsInRome", false, "Collapse Merchants in Rome")
+            )
+          ),
+          el(
+            "div",
+            { className: "players-strip" },
+            ...gs.players.map((p) => {
+              const swatchColor = resolveDieSwatchColor(p.color, "player");
+              const pDone = Number(p.missionsCompleted) || 0;
+              const pFail = Number(p.missionsFailed) || 0;
+              const pNet = typeof p.netMissions === "number" ? p.netMissions : pDone - pFail;
+              const isSelfSeat = Boolean(viewer && p.index === viewer.index);
+              const showReplaceBtn = canManageHumanPlayers && !p.isBot;
+              return el(
                 "div",
-                { className: "faction-standings-rivals", style: { marginTop: "0.3rem" } },
-                ...(gs.players || []).map((rv) => {
-                  const rVal = (rv.favor && rv.favor[fm.key]) || 0;
-                  const fullName = String(rv.name || "Merchant").trim() || "Merchant";
-                  return el(
+                {
+                  className: `player-mini-card clickable-merchant-card ${p.index === gs.activePlayerIndex ? "active-turn" : ""}`,
+                  style: { borderLeft: `3px solid ${swatchColor}` },
+                  title: `Click to view ${p.name}'s Cart Mat (${p.usedBlocks}/${p.maxBlocks}■ Goods, ${p.usedGuards}/${p.maxGuards}▲ Guards, Net Missions ${pNet >= 0 ? `+${pNet}` : pNet}, 𐆖${p.cash})`,
+                  onClick: () => openPlayerCartModal(gs, p, viewer),
+                },
+                el(
+                  "div",
+                  { style: { display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: "700", flexWrap: "wrap" } },
+                  renderCartIconNode(p.color, "", `${p.name}'s Cart`),
+                  p.eliminated ? el("span", { text: "☠️ " }) : null,
+                  createPlayerNameNode(p, { iconSize: 16 })
+                ),
+                el("div", {
+                  style: { color: p.eliminated ? "#b91c1c" : swatchColor, fontWeight: "800", marginTop: "0.2rem" },
+                  text: p.eliminated ? `☠️ ${p.cash}(d) (Eliminated)` : `💰 ${p.cash}(d)`,
+                }),
+                el("div", {
+                  style: { fontSize: "0.71rem", color: "var(--text-muted)" },
+                  text: `Cart: ${p.usedBlocks}/${p.maxBlocks}■ • ${p.usedGuards}/${p.maxGuards}▲ • 📜 Net ${pNet >= 0 ? `+${pNet}` : pNet}`,
+                }),
+                el("div", {
+                  style: { fontSize: "0.72rem", color: p.exitedRome ? "#15803d" : "var(--text-main)", fontWeight: p.exitedRome ? "700" : "400" },
+                  text: p.position ? `📍 At ${p.position}` : p.exitedRome ? "✓ Exited Safely" : "At Ostia",
+                }),
+                showReplaceBtn
+                  ? el(
                     "div",
-                    {
-                      className: "faction-standing-rival-line",
-                      style: { cursor: "pointer" },
-                      title: `View ${fullName}'s ${fm.key} Favor details`,
+                    { style: { marginTop: "0.32rem" } },
+                    el("button", {
+                      type: "button",
+                      className: "btn btn-xs btn-crimson",
+                      style: { width: "100%", fontSize: "0.68rem", padding: "0.18rem 0.35rem" },
+                      title: isSelfSeat
+                        ? "Leave this seat and enter Spectator Mode (an Ionic AI bot takes over)"
+                        : `Replace ${p.name} with an Ionic AI bot`,
+                      text: isSelfSeat ? "👁️ Spectate (Ionic AI)" : "🤖 → Ionic AI",
                       onClick: (e) => {
                         e.stopPropagation();
-                        openFactionFavorModal(gs, rv, fm.key);
+                        confirmRemovePlayerToIonicBot(gs, p, isSelfSeat);
                       },
-                    },
-                    el(
-                      "span",
-                      { className: "faction-standing-rival-name" },
-                      el("span", {
-                        className: "faction-standing-swatch",
-                        style: { background: resolveDieSwatchColor(rv.color, "player") },
-                      }),
-                      el("span", {
-                        className: "faction-standing-rival-label",
-                        "data-full-name": fullName,
-                        text: fullName,
-                      })
-                    ),
-                    el("strong", {
-                      style: {
-                        color: rVal > 0 ? "#15803d" : rVal < 0 ? "#b91c1c" : "var(--text-muted)",
-                      },
-                      text: rVal > 0 ? `+${rVal}` : String(rVal),
                     })
-                  );
-                })
-              )
-            )
+                  )
+                  : null
+              );
+            })
           )
         ),
-      viewer ? renderDomnaMediatorExchangeBar(gs, viewer, false) : null
-    ),
+
+    // Imperial Faction Standings (Directly under Merchants in Rome, above Cart Holdings)
+    isFavorCollapsed
+      ? el(
+          "div",
+          { className: "panel faction-standings-panel is-collapsed", id: "faction-standings-panel" },
+          el(
+            "div",
+            { className: "favor-collapsed-row" },
+            el("span", { className: "favor-collapsed-label", text: "Favor:" }),
+            el(
+              "div",
+              { className: "favor-collapsed-strip" },
+              ...FACTION_META.map((fm) => {
+                const val =
+                  focusFavorPlayer && focusFavorPlayer.favor ? Number(focusFavorPlayer.favor[fm.key]) || 0 : 0;
+                const valText = val > 0 ? `+${val}` : String(val);
+                return el(
+                  "button",
+                  {
+                    type: "button",
+                    className: "favor-collapsed-gem-chip",
+                    title: `${fm.key}: ${valText} Favor (Click for Details)`,
+                    onClick: () => {
+                      if (focusFavorPlayer) openFactionFavorModal(gs, focusFavorPlayer, fm.key);
+                    },
+                  },
+                  el("img", { className: "favor-collapsed-gem-img", src: fm.gem, alt: fm.key }),
+                  el("span", {
+                    className: `favor-collapsed-gem-val ${val > 0 ? "pos" : val < 0 ? "neg" : "zero"}`,
+                    text: valText,
+                  })
+                );
+              })
+            ),
+            createSectionCollapseToggleBtn("factionStandings", true, "Expand Faction Standings")
+          )
+        )
+      : el(
+          "div",
+          { className: "panel faction-standings-panel", id: "faction-standings-panel" },
+          el(
+            "h3",
+            { className: "panel-title" },
+            el("span", { text: "🏛️ Faction Standings" }),
+            el(
+              "div",
+              { className: "panel-title-right-group" },
+              el("span", {
+                style: { fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "600" },
+                text: "Click a Gem for Details",
+              }),
+              createSectionCollapseToggleBtn("factionStandings", false, "Collapse Faction Standings")
+            )
+          ),
+          viewer
+            ? el(
+              "div",
+              { className: "favor-row", style: { margin: "0" } },
+              ...FACTION_META.map((fm) => {
+                const val = (viewer.favor && viewer.favor[fm.key]) || 0;
+                const rivals = (gs.players || []).filter((p) => p.index !== viewer.index);
+                return el(
+                  "div",
+                  {
+                    className: "favor-box clickable-favor-box",
+                    style: { cursor: "pointer" },
+                    title: `Click to view ${fm.key} Favor breakdown, alignments & deck counts`,
+                    onClick: () => openFactionFavorModal(gs, viewer, fm.key),
+                  },
+                  el("img", { className: "favor-gem-img", src: fm.gem, alt: fm.key }),
+                  el("div", { style: { fontWeight: "700", color: fm.color }, text: fm.key }),
+                  el("div", {
+                    style: {
+                      fontWeight: "800",
+                      fontSize: "0.86rem",
+                      color: val > 0 ? "#15803d" : val < 0 ? "#b91c1c" : "var(--text-main)",
+                    },
+                    text: val > 0 ? `+${val}` : String(val),
+                  }),
+                  rivals.length > 0
+                    ? el(
+                      "div",
+                      { className: "faction-standings-rivals" },
+                      ...rivals.map((rv) => {
+                        const rVal = (rv.favor && rv.favor[fm.key]) || 0;
+                        const fullName = String(rv.name || "Rival").trim() || "Rival";
+                        return el(
+                          "div",
+                          {
+                            className: "faction-standing-rival-line",
+                            title: `${fullName}: ${rVal > 0 ? `+${rVal}` : rVal} ${fm.key}`,
+                          },
+                          el(
+                            "span",
+                            { className: "faction-standing-rival-name" },
+                            el("span", {
+                              className: "faction-standing-swatch",
+                              style: { background: resolveDieSwatchColor(rv.color, "player") },
+                            }),
+                            el("span", {
+                              className: "faction-standing-rival-label",
+                              "data-full-name": fullName,
+                              text: fullName,
+                            })
+                          ),
+                          el("strong", {
+                            style: {
+                              color: rVal > 0 ? "#15803d" : rVal < 0 ? "#b91c1c" : "var(--text-muted)",
+                            },
+                            text: rVal > 0 ? `+${rVal}` : String(rVal),
+                          })
+                        );
+                      })
+                    )
+                    : null
+                );
+              })
+            )
+            : el(
+              "div",
+              { className: "favor-row", style: { margin: "0" } },
+              ...FACTION_META.map((fm) =>
+                el(
+                  "div",
+                  {
+                    className: "favor-box clickable-favor-box",
+                    style: { cursor: "pointer" },
+                    title: `Click to view ${fm.key} Favor alignments & deck counts`,
+                    onClick: () => {
+                      if (gs.players && gs.players[0]) openFactionFavorModal(gs, gs.players[0], fm.key);
+                    },
+                  },
+                  el("img", { className: "favor-gem-img", src: fm.gem, alt: fm.key }),
+                  el("div", { style: { fontWeight: "700", color: fm.color }, text: fm.key }),
+                  el(
+                    "div",
+                    { className: "faction-standings-rivals", style: { marginTop: "0.3rem" } },
+                    ...(gs.players || []).map((rv) => {
+                      const rVal = (rv.favor && rv.favor[fm.key]) || 0;
+                      const fullName = String(rv.name || "Merchant").trim() || "Merchant";
+                      return el(
+                        "div",
+                        {
+                          className: "faction-standing-rival-line",
+                          style: { cursor: "pointer" },
+                          title: `View ${fullName}'s ${fm.key} Favor details`,
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            openFactionFavorModal(gs, rv, fm.key);
+                          },
+                        },
+                        el(
+                          "span",
+                          { className: "faction-standing-rival-name" },
+                          el("span", {
+                            className: "faction-standing-swatch",
+                            style: { background: resolveDieSwatchColor(rv.color, "player") },
+                          }),
+                          el("span", {
+                            className: "faction-standing-rival-label",
+                            "data-full-name": fullName,
+                            text: fullName,
+                          })
+                        ),
+                        el("strong", {
+                          style: {
+                            color: rVal > 0 ? "#15803d" : rVal < 0 ? "#b91c1c" : "var(--text-muted)",
+                          },
+                          text: rVal > 0 ? `+${rVal}` : String(rVal),
+                        })
+                      );
+                    })
+                  )
+                )
+              )
+            ),
+          viewer ? renderDomnaMediatorExchangeBar(gs, viewer, false) : null
+        ),
 
     ...(viewer
       ? [
@@ -15224,176 +15984,112 @@ function renderPlayerSidebar(gs, viewer) {
             { className: "phys-cards-grid compact-sidebar-grid" },
             ...(viewer.influence || []).map((c) => {
               const effCode = String(c.effectCode || "");
-              const effTxt = String(c.effectText || "").toLowerCase();
               const cName = String(c.name || "");
-              const isTop3Card =
-                effCode.startsWith("reorder_top_3") ||
-                cName.toLowerCase().includes("informants") ||
-                effTxt.includes("look at the top three");
-              const isProcurerCard =
-                effCode === "buy_any_good_common" ||
-                cName.toLowerCase() === "procurer";
-              const isProphecyCard = cName === "Prophecy" || effCode === "trigger_soothsayer";
-              const isSurpriseShipmentCard =
-                cName === "Surprise Shipment" || effCode === "shift_category_scarcity_right";
-              const isShortcutCard = cName.includes("Shortcut") || effCode === "shortcut";
-              const isMatchFixingCard = cName.includes("Match Fixing") || effCode === "match_fixing";
-              const isReactiveOnly = cName === "Twist Of Fate" || cName === "Lucky Break";
               const pend = gs.pendingEncounter;
-              const canPlayShortcutNow =
-                gs.phase === "delivery" &&
-                gs.activePlayerIndex === viewer.index &&
-                Boolean(viewer.position) &&
-                !viewer.exitedRome &&
-                !viewer.nightEnded &&
-                Number(viewer.movesRemaining || 0) > 0 &&
-                !pend &&
-                !hasPlayerBlockingPrompt(viewer, true, gs) &&
-                !(viewer.turnEffects && viewer.turnEffects.shortcut);
-              const pendStage = pend ? pend.stage || "pre_decision" : null;
-              const isViewerInPostRoll =
-                Boolean(pend) &&
-                (pend.playerIndex === viewer.index || pend.interveningPlayerIndex === viewer.index) &&
-                (cName === "Twist Of Fate"
-                  ? [
-                      "combat_pre_strike_post_roll",
-                      "combat_post_roll",
-                      "driver_fate_post_roll",
-                      "chart_post_roll",
-                      "demand_post_roll",
-                      "gamble_post_roll",
-                    ].includes(pendStage)
-                  : ["driver_fate_post_roll", "chart_post_roll"].includes(pendStage) &&
-                    pend.chartType !== "soothsayer");
+              const playInfo = getInfluenceCardPlayability(gs, viewer, c);
 
               let actionNode = null;
               if (
-                isReactiveOnly &&
-                !isViewerInPostRoll &&
                 gs.phase !== "setup_discard" &&
                 gs.phase !== "setup_climate" &&
                 gs.phase !== "finished"
               ) {
-                actionNode = el("div", {
-                  style: {
-                    fontSize: "0.68rem",
-                    color: "#92400e",
-                    textAlign: "center",
-                    padding: "0.24rem 0.4rem",
-                    background: "#fef3c7",
-                    border: "1px solid #d97706",
-                    borderRadius: "5px",
-                    fontWeight: "700",
-                  },
-                  text: "⚡ Reactive on Die Rolls",
-                });
-              } else if (
-                isMatchFixingCard &&
-                gs.phase !== "setup_discard" &&
-                gs.phase !== "setup_climate" &&
-                gs.phase !== "finished"
-              ) {
-                const mfActive = Boolean(viewer.turnEffects && viewer.turnEffects.matchFixing);
-                actionNode = el("div", {
-                  style: {
-                    fontSize: "0.68rem",
-                    color: mfActive ? "#14532d" : "#92400e",
-                    textAlign: "center",
-                    padding: "0.24rem 0.4rem",
-                    background: mfActive ? "#ecfdf5" : "#fef3c7",
-                    border: mfActive ? "1px solid #16a34a" : "1px solid #d97706",
-                    borderRadius: "5px",
-                    fontWeight: "700",
-                  },
-                  title: "Match Fixing can only be played inside the Stadium Gambling modal on a Gambling tile",
-                  text: mfActive ? "✨ Match Fixing Active" : "🏟️ Play in Gamble UI",
-                });
-              } else if (
-                isShortcutCard &&
-                !canPlayShortcutNow &&
-                gs.phase !== "setup_discard" &&
-                gs.phase !== "setup_climate" &&
-                gs.phase !== "finished"
-              ) {
-                actionNode = el("div", {
-                  style: {
-                    fontSize: "0.68rem",
-                    color: "#92400e",
-                    textAlign: "center",
-                    padding: "0.24rem 0.4rem",
-                    background: "#fef3c7",
-                    border: "1px solid #d97706",
-                    borderRadius: "5px",
-                    fontWeight: "700",
-                  },
-                  title:
-                    viewer.turnEffects && viewer.turnEffects.shortcut
-                      ? "Shortcut is already readied for your move this turn"
-                      : "Shortcut can only be played on your Night Delivery turn when you have movement remaining",
-                  text:
-                    viewer.turnEffects && viewer.turnEffects.shortcut
-                      ? "✨ Shortcut Readied"
-                      : "🛣️ Play When Moving",
-                });
-              } else if (
-                (isViewerInPostRoll || gs.activePlayerIndex === viewer.index) &&
-                gs.phase !== "setup_discard" &&
-                gs.phase !== "setup_climate" &&
-                gs.phase !== "finished"
-              ) {
-                const isCasusBelliCard = cName === "Casus Belli" || effCode === "casus_belli";
-                const cbDisabledReason = isCasusBelliCard ? getCasusBelliProactiveDisabledReason(gs, viewer) : null;
-                const singleRerollSidebar =
-                  cName === "Twist Of Fate" && isViewerInPostRoll && getEligibleRerollTargets(pend).length === 1;
-                const needsThugSwap =
-                  cName.includes("Thug") && !doesItemFitWithoutSwap(viewer, { reqGuards: 1 });
-                const needsWineForgerSwap =
-                  cName.includes("Wine Forger") && !doesItemFitWithoutSwap(viewer, { reqBlocks: 1 });
-                const isArmedCard = Boolean(appState.armedDieAction && appState.armedDieAction.cardId === c.id);
-                actionNode = el("button", {
-                  className: `btn btn-sm ${isArmedCard ? "btn-crimson" : "btn-primary"}`,
-                  style: { width: "100%", fontSize: "0.72rem", padding: "0.28rem 0.5rem" },
-                  disabled: Boolean(cbDisabledReason),
-                  title: cbDisabledReason || undefined,
-                  text:
-                    isCasusBelliCard
-                      ? "⚔️ Play Casus Belli"
-                      : isTop3Card
-                      ? "👁️ Inspect & Reorder Top 3"
-                      : isProcurerCard
-                      ? "🛒 Choose Good @ Common (>)"
-                      : isProphecyCard
-                      ? "🔮 Summon Soothsayer..."
-                      : isSurpriseShipmentCard
-                      ? "🚢 Shift Category Scarcity..."
-                      : isShortcutCard
-                      ? "🛣️ Ready Shortcut for Move"
-                      : isReactiveOnly
-                      ? singleRerollSidebar
-                        ? "🎲 Re-Roll Die"
-                        : isArmedCard
-                        ? "👆 Click Any Die to Apply"
-                        : "🎲 Click a Die to Apply"
-                      : needsThugSwap
-                      ? "▶ Play Card (Fire Guard)"
-                      : needsWineForgerSwap
-                      ? "▶ Play Card (Swap Good)"
-                      : "▶ Play Card",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    if (isTop3Card) {
-                      openInformantsTargetModal(gs, viewer, c);
-                    } else if (isProcurerCard) {
-                      openProcurerGoodModal(gs, viewer, c);
-                    } else if (isProphecyCard) {
-                      openProphecyTargetModal(gs, viewer, c);
-                    } else if (isSurpriseShipmentCard) {
-                      openSurpriseShipmentModal(gs, viewer, c);
-                    } else {
-                      triggerInfluenceCardPlay(gs, viewer, c);
-                    }
-                  },
-                });
+                if (playInfo.playable) {
+                  const singleRerollSidebar =
+                    cName === "Twist Of Fate" && pend && getEligibleRerollTargets(pend).length === 1;
+                  const needsThugSwap =
+                    cName.includes("Thug") && !doesItemFitWithoutSwap(viewer, { reqGuards: 1 });
+                  const needsWineForgerSwap =
+                    cName.includes("Wine Forger") && !doesItemFitWithoutSwap(viewer, { reqBlocks: 1 });
+                  const isArmedCard = Boolean(appState.armedDieAction && appState.armedDieAction.cardId === c.id);
+                  const isCombatSideCard =
+                    cName === "Mercenary Ambush" ||
+                    cName === "Distraction" ||
+                    cName === "Gladiator's Intervention" ||
+                    cName === "Flying Chamber Pot";
+                  if (isCombatSideCard && pend) {
+                    const encP =
+                      (gs.players || []).find((p) => p.index === pend.playerIndex) ||
+                      (gs.players && gs.players[pend.playerIndex]) ||
+                      viewer;
+                    const oppNm = (pend.card && pend.card.name) || "Opponent";
+                    const isOtherEnc = encP.index !== viewer.index;
+                    actionNode = buildCombatInfluenceCardActionNode(
+                      c,
+                      encP.name,
+                      oppNm,
+                      isOtherEnc
+                    );
+                  } else {
+                    actionNode = el("button", {
+                      className: `btn btn-sm ${isArmedCard ? "btn-crimson" : "btn-primary"}`,
+                      style: { width: "100%", fontSize: "0.72rem", padding: "0.28rem 0.5rem" },
+                      text:
+                        playInfo.mode === "casus_belli"
+                          ? "⚔️ Play Casus Belli"
+                          : playInfo.mode === "top3"
+                          ? "👁️ Inspect & Reorder Top 3"
+                          : playInfo.mode === "procurer"
+                          ? "🛒 Choose Good @ Common (>)"
+                          : playInfo.mode === "prophecy"
+                          ? "🔮 Summon Soothsayer..."
+                          : playInfo.mode === "shortcut"
+                          ? "🛣️ Ready Shortcut for Move"
+                          : playInfo.mode === "twist" || playInfo.mode === "lucky_break"
+                          ? singleRerollSidebar
+                            ? "🎲 Re-Roll Die"
+                            : isArmedCard
+                            ? "👆 Click Any Die to Apply"
+                            : "🎲 Click a Die to Apply"
+                          : needsThugSwap
+                          ? "▶ Play Card (Fire Guard)"
+                          : needsWineForgerSwap
+                          ? "▶ Play Card (Swap Good)"
+                          : "▶ Play Card",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        if (playInfo.mode === "top3") {
+                          openInformantsTargetModal(gs, viewer, c);
+                        } else if (playInfo.mode === "procurer") {
+                          openProcurerGoodModal(gs, viewer, c);
+                        } else if (playInfo.mode === "prophecy") {
+                          openProphecyTargetModal(gs, viewer, c);
+                        } else {
+                          triggerInfluenceCardPlay(gs, viewer, c);
+                        }
+                      },
+                    });
+                  }
+                } else if (
+                  playInfo.mode === "casus_belli" &&
+                  !pend &&
+                  gs.phase === "delivery" &&
+                  gs.activePlayerIndex === viewer.index
+                ) {
+                  actionNode = el("button", {
+                    className: "btn btn-sm btn-primary",
+                    style: { width: "100%", fontSize: "0.72rem", padding: "0.28rem 0.5rem" },
+                    disabled: true,
+                    title: playInfo.disabledReason || undefined,
+                    text: "⚔️ Play Casus Belli",
+                  });
+                } else if (playInfo.badgeText) {
+                  const isActivePositive = Boolean(playInfo.badgePositive);
+                  actionNode = el("div", {
+                    style: {
+                      fontSize: "0.68rem",
+                      color: isActivePositive ? "#14532d" : "#92400e",
+                      textAlign: "center",
+                      padding: "0.24rem 0.4rem",
+                      background: isActivePositive ? "#ecfdf5" : "#fef3c7",
+                      border: isActivePositive ? "1px solid #16a34a" : "1px solid #d97706",
+                      borderRadius: "5px",
+                      fontWeight: "700",
+                    },
+                    title: playInfo.disabledReason || undefined,
+                    text: playInfo.badgeText,
+                  });
+                }
               }
 
               return renderPhysicalInfluenceCardNode(c, {
@@ -15870,12 +16566,7 @@ function openFaceUpTileUpCloseModal(gs, viewer, coord, cell, tileData, moveOpts 
             text: `👁️ Scout ${cellName}`,
             onClick: () => {
               if (!canScoutTile) return;
-              closeModal();
-              if (isEntryPhase) {
-                sendGameAction({ type: "initial_scout", targetType: "tile", cell: coord });
-              } else {
-                sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: coord });
-              }
+              executeTileScoutAction(gs, viewer, coord);
             },
           }),
           el("button", {
@@ -17311,6 +18002,11 @@ function triggerInfluenceCardPlay(gs, viewer, card) {
     showToast("🏟️ Match Fixing can only be played inside the Stadium Gambling modal.", "error");
     return;
   }
+  const playInfo = getInfluenceCardPlayability(gs, viewer, card);
+  if (playInfo && !playInfo.playable && playInfo.disabledReason) {
+    showToast(playInfo.disabledReason, true);
+    return;
+  }
   if (cName.includes("Thug") && viewer && !doesItemFitWithoutSwap(viewer, { reqGuards: 1 })) {
     openCartReplacementModal(viewer, {
       itemType: "guard",
@@ -17405,10 +18101,12 @@ function triggerInfluenceCardPlay(gs, viewer, card) {
       pend.isPvp ||
       !viewer ||
       pend.playerIndex !== viewer.index ||
-      pend.interveningPlayerIndex != null
+      pend.interveningPlayerIndex != null ||
+      pend.canInitiateCombat ||
+      pend.combatMandatory
     ) {
       showToast(
-        "Casus Belli can only be played during an initial NPC Encounter decision or proactively on your Night Delivery turn (Turn 2+).",
+        "Casus Belli can only be played during an initial NPC Encounter decision when combat is not already available, or proactively on your Night Delivery turn (Turn 2+).",
         true
       );
       return;
@@ -17729,55 +18427,6 @@ function openProphecyTargetModal(gs, viewer, card) {
   );
 }
 
-function openSurpriseShipmentModal(gs, _viewer, card) {
-  const tracks = ["Marble", "Wine", "Animals", "Weapons", "Grain"];
-  const meta = gs.marketMeta || {};
-  showModal(
-    `🚢 Play "${card.name}" — Shift Category Scarcity`,
-    el(
-      "div",
-      { style: { display: "flex", flexDirection: "column", gap: "0.75rem" } },
-      el("p", {
-        style: { fontSize: "0.88rem", color: "var(--text-main)", margin: "0" },
-        text: "Move the Scarcity for one category of Goods one level to the right (more abundant / lower sell price) for the rest of this Season.",
-      }),
-      el(
-        "div",
-        { style: { display: "flex", flexDirection: "column", gap: "0.45rem" } },
-        ...tracks.map((tName) => {
-          const tMeta = meta[tName] || {};
-          return el(
-            "button",
-            {
-              type: "button",
-              className: "btn btn-primary",
-              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
-              onClick: () => {
-                closeModal();
-                sendGameAction({
-                  type: "play_influence",
-                  cardId: card.id,
-                  track: tName,
-                });
-              },
-            },
-            el("span", { text: `📦 ${tName}` }),
-            el("span", {
-              style: { fontSize: "0.76rem", opacity: "0.9" },
-              text: `Current: ${tMeta.scarcitySymbol || "="} (${tMeta.scarcityLabel || "Normal"})`,
-            })
-          );
-        })
-      ),
-      el(
-        "div",
-        { style: { display: "flex", justifyContent: "flex-end" } },
-        el("button", { type: "button", className: "btn", text: "Cancel", onClick: closeModal })
-      )
-    )
-  );
-}
-
 function renderDeckCardBackPickerGrid(gs, deckSpecs, onSelectDeck, tapPillLabel = "👆 Tap Deck to Scout") {
   const counts = (gs && gs.deckCounts) || {};
   return el(
@@ -17835,6 +18484,13 @@ function renderDeckCardBackPickerGrid(gs, deckSpecs, onSelectDeck, tapPillLabel 
             includeHistory: true,
             showFactionName: false,
           })
+        : spec.key === "market"
+        ? el(
+            "div",
+            { className: "encounter-deck-meta-box" },
+            el("div", { className: "encounter-deck-meta-line", text: spec.shortDesc }),
+            renderGoodsDeckCategoryStripNode(gs)
+          )
         : spec.shortDesc
         ? el(
             "div",
@@ -18179,7 +18835,7 @@ function openGambleModal(viewer) {
   );
 }
 
-function openScoutModal(gs, _viewer) {
+function openScoutModal(gs, viewer) {
   const isEntryPhase = gs.phase === "delivery_entry";
   const cellSelect = el(
     "select",
@@ -18249,18 +18905,12 @@ function openScoutModal(gs, _viewer) {
           cellSelect
         ),
         el("button", {
+          id: "scout-modal-tile-btn",
           type: "button",
           className: "btn btn-primary",
           style: { width: "100%" },
           text: "👁️ Scout Selected Neighborhood Stack",
-          onClick: () => {
-            closeModal();
-            if (isEntryPhase) {
-              sendGameAction({ type: "initial_scout", targetType: "tile", cell: cellSelect.value });
-            } else {
-              sendGameAction({ type: "delivery_scout", targetType: "tile", targetKey: cellSelect.value });
-            }
-          },
+          onClick: () => executeTileScoutAction(gs, viewer || getViewerPlayer(gs), cellSelect.value),
         })
       )
     ),

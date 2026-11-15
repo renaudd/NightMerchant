@@ -34,7 +34,7 @@ Players register or sign in via the **Collegium Mercatorum** portal (Username/Em
 ## Local Development
 
 ```bash
-# Run locally with SQLite fallback on http://127.0.0.1:8080
+# Run locally with SQLite fallback on http://127.0.0.1:8081
 python3 src/server.py
 ```
 

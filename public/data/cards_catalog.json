@@ -2269,14 +2269,6 @@
       "sellTable": null
     },
     {
-      "id": "inf_35",
-      "name": "Surprise Shipment",
-      "effectText": "Move the Scarcity for one category of Goods one level to the right for this Season (Place card on Mkt until Season ends)",
-      "effectCode": "shift_category_scarcity_right",
-      "favorGain": null,
-      "sellTable": null
-    },
-    {
       "id": "inf_36",
       "name": "Informants",
       "effectText": "Look at the top three cards of any deck or the top three tiles of any stack and put them back in any order",
